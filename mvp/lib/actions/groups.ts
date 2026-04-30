@@ -51,25 +51,19 @@ export async function joinGroupByCode(formData: FormData) {
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Ikke innlogget" };
 
-  const { data: group, error } = await supabase
-    .from("groups")
-    .select("id, name")
-    .eq("invite_code", code)
-    .is("deleted_at", null)
-    .single();
+  // SECURITY DEFINER-RPC slipper unna RLS-fellen ved at en bruker ikke kan se
+  // gruppen før de er medlem av den.
+  const { data: groupId, error } = await supabase.rpc("join_group_by_code", {
+    p_code: code,
+  });
 
-  if (error || !group) return { ok: false, error: "Fant ikke gruppe med den koden" };
-
-  const { error: insertError } = await supabase
-    .from("group_members")
-    .insert({ group_id: group.id, profile_id: user.id, role: "member" });
-
-  if (insertError && !insertError.message.includes("duplicate")) {
-    return { ok: false, error: insertError.message };
+  if (error) {
+    console.error("joinGroupByCode rpc error:", error);
+    return { ok: false, error: error.message };
   }
 
   revalidatePath("/dashboard");
-  redirect(`/dashboard?group=${group.id}`);
+  redirect(`/dashboard?group=${groupId}`);
 }
 
 export async function updateMemberRole(groupId: string, profileId: string, role: "admin" | "member") {
