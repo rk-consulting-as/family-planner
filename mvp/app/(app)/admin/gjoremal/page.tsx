@@ -14,13 +14,25 @@ export default async function AdminGjoremalPage() {
   if (!ctx) return null;
   if (ctx.role === "member") redirect("/dashboard");
 
+  type ChoreRow = {
+    id: string;
+    title: string;
+    description: string | null;
+    reward_type: string | null;
+    reward_value: number | null;
+    requires_approval: boolean | null;
+    pool_enabled: boolean | null;
+    default_assignee_id: string | null;
+  };
+
   const supabase = await createClient();
-  const { data: chores } = await supabase
+  const { data: choresRaw } = await supabase
     .from("chores")
     .select("id, title, description, reward_type, reward_value, requires_approval, pool_enabled, default_assignee_id")
     .eq("group_id", ctx.group.id)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
+  const chores = (choresRaw ?? []) as ChoreRow[];
 
   return (
     <div className="space-y-6">
@@ -95,7 +107,7 @@ export default async function AdminGjoremalPage() {
           <CardTitle>Eksisterende gjøremål</CardTitle>
         </CardHeader>
         <CardBody>
-          {!chores || chores.length === 0 ? (
+          {chores.length === 0 ? (
             <EmptyState title="Ingen gjøremål enda" description="Opprett ditt første over." />
           ) : (
             <ul className="divide-y divide-slate-100">
