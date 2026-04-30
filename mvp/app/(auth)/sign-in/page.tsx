@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Card, CardBody, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
@@ -9,6 +9,28 @@ import { Field, Input } from "@/components/ui/Input";
 import { createClient } from "@/lib/supabase/client";
 
 export default function SignInPage() {
+  return (
+    <Suspense fallback={<SignInSkeleton />}>
+      <SignInForm />
+    </Suspense>
+  );
+}
+
+function SignInSkeleton() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Logg inn</CardTitle>
+        <CardDescription>Velkommen tilbake.</CardDescription>
+      </CardHeader>
+      <CardBody>
+        <div className="h-40 animate-pulse bg-slate-100 rounded-lg" />
+      </CardBody>
+    </Card>
+  );
+}
+
+function SignInForm() {
   const router = useRouter();
   const params = useSearchParams();
   const redirectTo = params.get("redirect") || "/dashboard";
