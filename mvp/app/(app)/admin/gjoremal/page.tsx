@@ -35,7 +35,10 @@ export default async function AdminGjoremalPage() {
         </CardHeader>
         <CardBody>
           <form
-            action={createChore.bind(null, ctx.group.id)}
+            action={async (fd: FormData) => {
+              "use server";
+              await createChore(ctx.group.id, fd);
+            }}
             className="grid sm:grid-cols-2 gap-4"
           >
             <Field label="Tittel">

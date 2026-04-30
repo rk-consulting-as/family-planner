@@ -44,7 +44,10 @@ export default async function TimeplanPage() {
         </CardHeader>
         <CardBody>
           <form
-            action={createTimetableEntry.bind(null, ctx.group.id)}
+            action={async (fd: FormData) => {
+              "use server";
+              await createTimetableEntry(ctx.group.id, fd);
+            }}
             className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"
           >
             {isAdmin && (

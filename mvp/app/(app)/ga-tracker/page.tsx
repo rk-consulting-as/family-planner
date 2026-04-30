@@ -49,7 +49,13 @@ export default async function GaTrackerPage() {
           <CardTitle>Ny tur</CardTitle>
         </CardHeader>
         <CardBody>
-          <form action={createWalkingEntry.bind(null, ctx.group.id)} className="grid sm:grid-cols-2 gap-4">
+          <form
+            action={async (fd: FormData) => {
+              "use server";
+              await createWalkingEntry(ctx.group.id, fd);
+            }}
+            className="grid sm:grid-cols-2 gap-4"
+          >
             <Field label="Dato">
               <Input type="date" name="occurred_on" defaultValue={new Date().toISOString().slice(0, 10)} />
             </Field>
