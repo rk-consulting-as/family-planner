@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getActiveContext } from "@/lib/queries";
-import { Shield, Users, FolderTree, LayoutDashboard } from "lucide-react";
+import { Shield, Users, FolderTree, LayoutDashboard, ScrollText } from "lucide-react";
 
 export default async function SuperAdminLayout({ children }: { children: React.ReactNode }) {
   const ctx = await getActiveContext();
@@ -25,6 +25,9 @@ export default async function SuperAdminLayout({ children }: { children: React.R
             </SideLink>
             <SideLink href="/superadmin/brukere" icon={<Users className="w-4 h-4" />}>
               Brukere
+            </SideLink>
+            <SideLink href="/superadmin/audit" icon={<ScrollText className="w-4 h-4" />}>
+              Audit log
             </SideLink>
           </nav>
         </div>

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card, CardBody } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 
 export default async function AllGroupsPage() {
   const supabase = await createClient();
@@ -21,11 +22,16 @@ export default async function AllGroupsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Alle grupper</h1>
-        <p className="text-slate-600 text-sm">
-          Du ser alle {groups.length} aktive familier/grupper i systemet.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Alle grupper</h1>
+          <p className="text-slate-600 text-sm">
+            Du ser alle {groups.length} aktive familier/grupper i systemet.
+          </p>
+        </div>
+        <Link href="/superadmin/grupper/ny">
+          <Button>+ Ny gruppe</Button>
+        </Link>
       </div>
 
       <Card>

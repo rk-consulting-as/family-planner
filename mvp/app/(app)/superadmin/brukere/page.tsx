@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -32,9 +33,14 @@ export default async function AllUsersPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Alle brukere</h1>
-        <p className="text-slate-600 text-sm">{users.length} brukere registrert.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Alle brukere</h1>
+          <p className="text-slate-600 text-sm">{users.length} brukere registrert.</p>
+        </div>
+        <Link href="/superadmin/brukere/ny">
+          <Button>+ Ny bruker</Button>
+        </Link>
       </div>
 
       <Card>
@@ -96,23 +102,6 @@ export default async function AllUsersPage() {
         </CardBody>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Opprette nye brukere</CardTitle>
-        </CardHeader>
-        <CardBody>
-          <p className="text-sm text-slate-600">
-            For å opprette nye brukere som system administrator, bruk Supabase
-            sitt eget panel: <strong>Supabase → Authentication → Users → Add user</strong>.
-            Brukeren får automatisk en profil-rad og kan logge inn umiddelbart.
-          </p>
-          <p className="text-sm text-slate-600 mt-2">
-            En full UI for brukeropprettelse via backoffice krever Supabase
-            Service Role Key (server-only env-var). Vi kan legge det til som
-            neste steg om ønskelig.
-          </p>
-        </CardBody>
-      </Card>
     </div>
   );
 }
