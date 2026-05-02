@@ -17,6 +17,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         groupName={ctx.group.name}
         isAdmin={isAdmin}
         displayName={ctx.profile.display_name}
+        isSystemAdmin={ctx.profile.is_system_admin}
       />
       <main className="container mx-auto px-4 sm:px-6 py-6">{children}</main>
       <MobileBottomNav isAdmin={isAdmin} />

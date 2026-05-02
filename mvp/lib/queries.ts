@@ -8,6 +8,7 @@ export type ActiveContext = {
     display_name: string;
     color_hex: string | null;
     avatar_url: string | null;
+    is_system_admin: boolean;
   };
   group: {
     id: string;
@@ -35,12 +36,27 @@ export async function getActiveContext(preferredGroupId?: string): Promise<Activ
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data: profile } = await supabase
+  const { data: profileRaw } = await supabase
     .from("profiles")
-    .select("id, display_name, color_hex, avatar_url")
+    .select("id, display_name, color_hex, avatar_url, is_system_admin")
     .eq("id", user.id)
     .single();
-  if (!profile) return null;
+  if (!profileRaw) return null;
+  type ProfileShape = {
+    id: string;
+    display_name: string;
+    color_hex: string | null;
+    avatar_url: string | null;
+    is_system_admin?: boolean | null;
+  };
+  const p = profileRaw as ProfileShape;
+  const profile = {
+    id: p.id,
+    display_name: p.display_name,
+    color_hex: p.color_hex,
+    avatar_url: p.avatar_url,
+    is_system_admin: !!p.is_system_admin,
+  };
 
   // Find groups
   const { data: memberships } = await supabase

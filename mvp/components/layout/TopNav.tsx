@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
-import { Calendar, CheckSquare, Trophy, Footprints, Home, Settings, LogOut } from "lucide-react";
+import { Calendar, CheckSquare, Trophy, Footprints, Home, Settings, LogOut, Shield } from "lucide-react";
 
 const NAV = [
   { href: "/dashboard", label: "Hjem", icon: Home },
@@ -18,10 +18,12 @@ export function TopNav({
   groupName,
   isAdmin,
   displayName,
+  isSystemAdmin,
 }: {
   groupName: string;
   isAdmin: boolean;
   displayName: string;
+  isSystemAdmin?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -68,13 +70,28 @@ export function TopNav({
               href="/admin"
               className={cn(
                 "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition",
-                pathname.startsWith("/admin")
+                pathname.startsWith("/admin") && !pathname.startsWith("/superadmin")
                   ? "bg-brand-50 text-brand-700"
                   : "text-slate-600 hover:bg-slate-100"
               )}
             >
               <Settings className="w-4 h-4" />
               Admin
+            </Link>
+          )}
+          {isSystemAdmin && (
+            <Link
+              href="/superadmin"
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition",
+                pathname.startsWith("/superadmin")
+                  ? "bg-amber-100 text-amber-800"
+                  : "text-amber-700 hover:bg-amber-50"
+              )}
+              title="System Administrator"
+            >
+              <Shield className="w-4 h-4" />
+              Backoffice
             </Link>
           )}
         </nav>
