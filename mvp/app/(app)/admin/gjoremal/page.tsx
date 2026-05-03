@@ -2,12 +2,11 @@ import { redirect } from "next/navigation";
 import { getActiveContext } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { Field, Input, Textarea, Select } from "@/components/ui/Input";
-import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { createChore } from "@/lib/actions/chores";
+import { Badge } from "@/components/ui/Badge";
 import { formatCurrency } from "@/lib/utils";
+import { createChore } from "@/lib/actions/chores";
+import NewChoreForm from "./NewChoreForm";
 
 export default async function AdminGjoremalPage() {
   const ctx = await getActiveContext();
@@ -18,17 +17,21 @@ export default async function AdminGjoremalPage() {
     id: string;
     title: string;
     description: string | null;
+    icon: string | null;
     reward_type: string | null;
     reward_value: number | null;
     requires_approval: boolean | null;
     pool_enabled: boolean | null;
-    default_assignee_id: string | null;
+    assignee_ids: string[] | null;
+    period_kind: string | null;
   };
 
   const supabase = await createClient();
   const { data: choresRaw } = await supabase
     .from("chores")
-    .select("id, title, description, reward_type, reward_value, requires_approval, pool_enabled, default_assignee_id")
+    .select(
+      "id, title, description, icon, reward_type, reward_value, requires_approval, pool_enabled, assignee_ids, period_kind"
+    )
     .eq("group_id", ctx.group.id)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
@@ -38,7 +41,10 @@ export default async function AdminGjoremalPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Gjøremål (admin)</h1>
-        <p className="text-slate-600 text-sm">Opprett og administrer alle gjøremål.</p>
+        <p className="text-slate-600 text-sm">
+          Tildel til én eller flere personer, sett periode for gjentakelse.
+          Første som hakker av i perioden «tar» oppgaven.
+        </p>
       </div>
 
       <Card>
@@ -46,59 +52,13 @@ export default async function AdminGjoremalPage() {
           <CardTitle>Nytt gjøremål</CardTitle>
         </CardHeader>
         <CardBody>
-          <form
-            action={async (fd: FormData) => {
+          <NewChoreForm
+            members={ctx.members}
+            createAction={async (fd: FormData) => {
               "use server";
               await createChore(ctx.group.id, fd);
             }}
-            className="grid sm:grid-cols-2 gap-4"
-          >
-            <Field label="Tittel">
-              <Input name="title" required placeholder="Rydde rommet" />
-            </Field>
-            <Field label="Estimert tid (min)">
-              <Input type="number" name="estimated_minutes" min="0" placeholder="15" />
-            </Field>
-            <div className="sm:col-span-2">
-              <Field label="Beskrivelse">
-                <Textarea name="description" placeholder="Spesifikke instruksjoner..." />
-              </Field>
-            </div>
-            <Field label="Belønningstype">
-              <Select name="reward_type" defaultValue="money">
-                <option value="money">Penger</option>
-                <option value="screen_time_minutes">Skjermtid (min)</option>
-                <option value="points">Poeng</option>
-              </Select>
-            </Field>
-            <Field label="Belønningsverdi">
-              <Input type="number" name="reward_value" step="0.01" min="0" placeholder="50" />
-            </Field>
-            <Field label="Tildel til (valgfri)">
-              <Select name="default_assignee_id" defaultValue="">
-                <option value="">— Ingen / pool —</option>
-                {ctx.members.map((m) => (
-                  <option key={m.profile_id} value={m.profile_id}>
-                    {m.display_name}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field label="Frist (valgfri)">
-              <Input type="date" name="due_date" />
-            </Field>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" name="requires_approval" defaultChecked />
-              Krever foreldre-godkjenning
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" name="pool_enabled" />
-              Legg i pool (alle kan plukke)
-            </label>
-            <div className="sm:col-span-2">
-              <Button type="submit">Opprett</Button>
-            </div>
-          </form>
+          />
         </CardBody>
       </Card>
 
@@ -112,18 +72,27 @@ export default async function AdminGjoremalPage() {
           ) : (
             <ul className="divide-y divide-slate-100">
               {chores.map((c) => {
-                const assignee = ctx.members.find((m) => m.profile_id === c.default_assignee_id);
+                const assigneeNames =
+                  c.assignee_ids && c.assignee_ids.length > 0
+                    ? c.assignee_ids
+                        .map((id) => ctx.members.find((m) => m.profile_id === id)?.display_name)
+                        .filter(Boolean)
+                        .join(", ")
+                    : "Alle i gruppen";
                 return (
-                  <li key={c.id} className="py-3 flex items-center justify-between gap-3">
-                    <div>
-                      <div className="font-medium">{c.title}</div>
-                      <div className="text-xs text-slate-500 mt-0.5">
-                        {c.pool_enabled ? "I pool" : assignee ? `Til ${assignee.display_name}` : "Ingen"}
-                        {c.requires_approval && " • krever godkjenning"}
+                  <li key={c.id} className="py-3 flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <span className="text-2xl flex-shrink-0">{c.icon || "✅"}</span>
+                      <div className="min-w-0">
+                        <div className="font-medium">{c.title}</div>
+                        <div className="text-xs text-slate-500 mt-0.5">
+                          {assigneeNames} • {periodLabel(c.period_kind)}
+                          {c.requires_approval && " • krever godkjenning"}
+                        </div>
                       </div>
                     </div>
                     {c.reward_type && c.reward_value != null && (
-                      <Badge variant="success">
+                      <Badge variant="success" className="flex-shrink-0">
                         {c.reward_type === "money"
                           ? formatCurrency(Number(c.reward_value))
                           : c.reward_type === "screen_time_minutes"
@@ -139,5 +108,17 @@ export default async function AdminGjoremalPage() {
         </CardBody>
       </Card>
     </div>
+  );
+}
+
+function periodLabel(kind: string | null): string {
+  return (
+    {
+      once: "Engangs",
+      daily: "Daglig",
+      weekly: "Ukentlig",
+      monthly: "Månedlig",
+      custom_days: "Egendefinert",
+    }[kind || "once"] || kind || "Engangs"
   );
 }
