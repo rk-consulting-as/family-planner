@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { format } from "date-fns";
+import { useEffect, useState, useTransition } from "react";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Textarea, Select } from "@/components/ui/Input";
 import { CHORE_ICONS } from "@/lib/chore-icons";
@@ -12,6 +11,8 @@ type Member = {
   display_name: string;
   color_hex: string | null;
 };
+
+const STEP_MIN = 5; // tids-steg i minuttvelger
 
 export default function QuickCreateDialog({
   open,
@@ -32,18 +33,64 @@ export default function QuickCreateDialog({
   start: Date | null;
   end: Date | null;
 }) {
-  const [tab] = useState<"chore">("chore");
   const [icon, setIcon] = useState("✅");
   const [pending, startTransition] = useTransition();
   const [err, setErr] = useState<string | null>(null);
 
+  // Tilstand for tid — initialiseres fra props, men kan justeres
+  const [date, setDate] = useState<string>("");
+  const [startTime, setStartTime] = useState<string>("");
+  const [endTime, setEndTime] = useState<string>("");
+
+  // Synk fra props når dialogen åpnes med nye verdier
+  useEffect(() => {
+    if (start && end) {
+      setDate(toLocalDateInput(start));
+      setStartTime(toLocalTimeInput(start));
+      setEndTime(toLocalTimeInput(end));
+    }
+  }, [start, end]);
+
   if (!open || !start || !end) return null;
+
+  // Beregn varighet (read-only display)
+  const startDt = parseLocal(date, startTime);
+  const endDt = parseLocal(date, endTime);
+  const validTimes = startDt && endDt && endDt > startDt;
+  const durationMin = validTimes
+    ? Math.round((endDt!.getTime() - startDt!.getTime()) / 60000)
+    : 0;
+
+  function adjustStart(deltaMin: number) {
+    const cur = parseLocal(date, startTime);
+    if (!cur) return;
+    cur.setMinutes(cur.getMinutes() + deltaMin);
+    setStartTime(toLocalTimeInput(cur));
+  }
+
+  function adjustEnd(deltaMin: number) {
+    const cur = parseLocal(date, endTime);
+    if (!cur) return;
+    cur.setMinutes(cur.getMinutes() + deltaMin);
+    setEndTime(toLocalTimeInput(cur));
+  }
+
+  function setDuration(min: number) {
+    const sd = parseLocal(date, startTime);
+    if (!sd) return;
+    const ne = new Date(sd.getTime() + min * 60000);
+    setEndTime(toLocalTimeInput(ne));
+  }
 
   function handleSubmit(formData: FormData) {
     setErr(null);
+    if (!validTimes) {
+      setErr("Sluttidspunkt må være etter start.");
+      return;
+    }
     formData.set("icon", icon);
-    formData.set("scheduled_start", start!.toISOString().slice(0, 19));
-    formData.set("scheduled_end", end!.toISOString().slice(0, 19));
+    formData.set("scheduled_start", isoNoTz(startDt!));
+    formData.set("scheduled_end", isoNoTz(endDt!));
     startTransition(async () => {
       const res = await createChore(groupId, formData);
       if (res && !res.ok) {
@@ -74,9 +121,89 @@ export default function QuickCreateDialog({
           </button>
         </div>
 
-        <p className="text-sm text-slate-600 mb-4">
-          {format(start, "EEEE d. MMMM, HH:mm")} – {format(end, "HH:mm")}
-        </p>
+        {/* Tids-justering */}
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 mb-4 space-y-3">
+          <div className="grid sm:grid-cols-3 gap-3">
+            <Field label="Dato">
+              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            </Field>
+            <Field label="Start">
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => adjustStart(-STEP_MIN)}
+                  className="h-10 w-8 rounded-lg border border-slate-300 bg-white text-sm hover:bg-slate-100"
+                  title={`-${STEP_MIN} min`}
+                >
+                  −
+                </button>
+                <Input
+                  type="time"
+                  value={startTime}
+                  step={300}
+                  onChange={(e) => setStartTime(e.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={() => adjustStart(STEP_MIN)}
+                  className="h-10 w-8 rounded-lg border border-slate-300 bg-white text-sm hover:bg-slate-100"
+                  title={`+${STEP_MIN} min`}
+                >
+                  +
+                </button>
+              </div>
+            </Field>
+            <Field label="Slutt">
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => adjustEnd(-STEP_MIN)}
+                  className="h-10 w-8 rounded-lg border border-slate-300 bg-white text-sm hover:bg-slate-100"
+                >
+                  −
+                </button>
+                <Input
+                  type="time"
+                  value={endTime}
+                  step={300}
+                  onChange={(e) => setEndTime(e.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={() => adjustEnd(STEP_MIN)}
+                  className="h-10 w-8 rounded-lg border border-slate-300 bg-white text-sm hover:bg-slate-100"
+                >
+                  +
+                </button>
+              </div>
+            </Field>
+          </div>
+
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="text-xs text-slate-600">
+              {validTimes ? (
+                <>
+                  Varighet: <strong>{formatDuration(durationMin)}</strong>
+                </>
+              ) : (
+                <span className="text-red-600">Slutt må være etter start</span>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-1">
+              <span className="text-xs text-slate-500 self-center mr-1">Hurtigvalg:</span>
+              {[15, 30, 60, 90, 120].map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setDuration(m)}
+                  className="h-7 px-2 rounded-md bg-white border border-slate-300 text-xs hover:bg-slate-100"
+                >
+                  {m < 60 ? `${m} min` : `${m / 60} t`}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
 
         <form action={handleSubmit} className="space-y-4">
           <Field label="Tittel">
@@ -188,7 +315,7 @@ export default function QuickCreateDialog({
             <Button type="button" variant="ghost" onClick={onClose}>
               Avbryt
             </Button>
-            <Button type="submit" disabled={pending}>
+            <Button type="submit" disabled={pending || !validTimes}>
               {pending ? "Oppretter…" : "Opprett gjøremål"}
             </Button>
           </div>
@@ -196,4 +323,37 @@ export default function QuickCreateDialog({
       </div>
     </div>
   );
+}
+
+// ---------- helpers --------------------------------------------------
+
+function pad(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+function toLocalDateInput(d: Date): string {
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+function toLocalTimeInput(d: Date): string {
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function parseLocal(date: string, time: string): Date | null {
+  if (!date || !time) return null;
+  const [y, mo, d] = date.split("-").map(Number);
+  const [h, mi] = time.split(":").map(Number);
+  if (!y || !mo || !d) return null;
+  return new Date(y, mo - 1, d, h || 0, mi || 0, 0);
+}
+
+function isoNoTz(d: Date): string {
+  return `${toLocalDateInput(d)}T${toLocalTimeInput(d)}:00`;
+}
+
+function formatDuration(min: number): string {
+  if (min < 60) return `${min} min`;
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return m === 0 ? `${h} t` : `${h} t ${m} min`;
 }
