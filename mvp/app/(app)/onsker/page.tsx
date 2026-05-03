@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getActiveContext } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -5,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Field, Input, Textarea, Select } from "@/components/ui/Input";
+import { Linkify } from "@/components/ui/Linkify";
 import { ShoppingBag } from "lucide-react";
 import { createNeed, setNeedStatus, deleteNeed } from "@/lib/actions/needs";
 
@@ -224,11 +226,11 @@ function NeedItem({
   const isClosed = need.status === "fulfilled" || need.status === "cancelled";
 
   return (
-    <li className="p-4 rounded-xl border border-slate-200 bg-white">
+    <li className="p-4 rounded-xl border border-slate-200 bg-white hover:border-brand-300 transition">
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+        <Link href={`/onsker/${need.id}`} className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold">{need.title}</span>
+            <span className="font-semibold hover:text-brand-700">{need.title}</span>
             {need.category && <Badge>{need.category}</Badge>}
             <Badge variant={priorityVariant}>
               {need.priority === "high" ? "Høy" : need.priority === "low" ? "Lav" : "Normal"}
@@ -236,7 +238,9 @@ function NeedItem({
             <Badge variant={statusVariant}>{statusLabel(need.status)}</Badge>
           </div>
           {need.description && (
-            <p className="text-sm text-slate-600 mt-1">{need.description}</p>
+            <div className="text-sm text-slate-600 mt-1">
+              <Linkify text={need.description} />
+            </div>
           )}
           <div className="text-xs text-slate-500 mt-2 space-y-0.5">
             <div>
@@ -251,7 +255,7 @@ function NeedItem({
               </div>
             )}
           </div>
-        </div>
+        </Link>
         {canManage && (
           <div className="flex flex-col gap-1">
             {!isClosed && (

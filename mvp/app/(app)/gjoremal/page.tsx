@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { formatCurrency } from "@/lib/utils";
-import { pickChore, completeChore, ensureGroupPeriodAssignments } from "@/lib/actions/chores";
+import { pickChore, ensureGroupPeriodAssignments } from "@/lib/actions/chores";
 import { CheckSquare } from "lucide-react";
+import CompleteWithProofButton from "@/components/chores/CompleteWithProofButton";
 
 export default async function GjoremalPage() {
   const ctx = await getActiveContext();
@@ -127,14 +128,7 @@ export default async function GjoremalPage() {
                         value={a.chore?.reward_value ?? undefined}
                       />
                       {a.status === "selected" || a.status === "in_progress" ? (
-                        <form
-                          action={async () => {
-                            "use server";
-                            await completeChore(a.id);
-                          }}
-                        >
-                          <Button size="sm">Marker ferdig</Button>
-                        </form>
+                        <CompleteWithProofButton assignmentId={a.id} />
                       ) : (
                         <Badge variant="warning">Venter godkjenning</Badge>
                       )}

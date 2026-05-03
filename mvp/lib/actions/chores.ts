@@ -194,6 +194,48 @@ export async function pickChore(assignmentId: string) {
   return { ok: true };
 }
 
+export async function completeChoreWithProof(assignmentId: string, proof_url: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Ikke innlogget" };
+
+  const { data: assignment } = await supabase
+    .from("chore_assignments")
+    .select("assigned_to, chore:chores(requires_approval)")
+    .eq("id", assignmentId)
+    .single();
+  type Row = { assigned_to: string | null; chore?: { requires_approval?: boolean } | null } | null;
+  const a = assignment as Row;
+  const requiresApproval = a?.chore?.requires_approval ?? true;
+
+  const updates: Record<string, unknown> = {
+    status: requiresApproval ? "completed" : "approved",
+    completed_at: new Date().toISOString(),
+    proof_url: proof_url || null,
+  };
+  if (!a?.assigned_to) {
+    updates.assigned_to = user.id;
+    updates.selected_at = new Date().toISOString();
+  }
+  if (!requiresApproval) {
+    updates.approved_at = new Date().toISOString();
+    updates.approved_by = user.id;
+  }
+
+  const { error } = await supabase
+    .from("chore_assignments")
+    .update(updates)
+    .eq("id", assignmentId)
+    .or(`assigned_to.eq.${user.id},assigned_to.is.null`);
+
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/gjoremal");
+  revalidatePath("/admin/godkjenninger");
+  return { ok: true };
+}
+
 export async function completeChore(assignmentId: string) {
   const supabase = await createClient();
   const {

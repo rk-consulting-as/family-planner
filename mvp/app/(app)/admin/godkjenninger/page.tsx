@@ -19,7 +19,7 @@ export default async function GodkjenningerPage() {
   const { data: pending } = await supabase
     .from("chore_assignments")
     .select(
-      "id, status, completed_at, assigned_to, chore:chores(title, reward_type, reward_value)"
+      "id, status, completed_at, assigned_to, proof_url, chore:chores(title, icon, reward_type, reward_value)"
     )
     .eq("group_id", ctx.group.id)
     .eq("status", "completed")
@@ -135,28 +135,46 @@ export default async function GodkjenningerPage() {
           ) : (
             <ul className="space-y-3">
               {pending.map((a) => {
-                type C = { title: string; reward_type?: string | null; reward_value?: number | null } | null;
-                const c = (a as { chore: C }).chore;
+                type C = { title: string; icon?: string | null; reward_type?: string | null; reward_value?: number | null } | null;
+                const row = a as { chore: C; proof_url?: string | null };
+                const c = row.chore;
                 const m = ctx.members.find((mm) => mm.profile_id === a.assigned_to);
                 return (
                   <li
                     key={a.id}
-                    className="p-4 rounded-xl border border-amber-200 bg-amber-50 flex items-center justify-between gap-3"
+                    className="p-4 rounded-xl border border-amber-200 bg-amber-50 flex items-start justify-between gap-3"
                   >
-                    <div>
-                      <div className="font-semibold">{c?.title}</div>
-                      <div className="text-xs text-slate-600">
-                        Fra {m?.display_name || "?"} • Fullført{" "}
-                        {a.completed_at?.slice(0, 16).replace("T", " ")}
-                      </div>
-                      {c?.reward_type && c.reward_value != null && (
-                        <Badge className="mt-1" variant="success">
-                          Belønning:{" "}
-                          {c.reward_type === "money"
-                            ? formatCurrency(Number(c.reward_value))
-                            : `${c.reward_value} ${c.reward_type === "screen_time_minutes" ? "min" : "⭐"}`}
-                        </Badge>
+                    <div className="flex items-start gap-3 min-w-0">
+                      {row.proof_url ? (
+                        <a
+                          href={row.proof_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block w-20 h-20 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0"
+                          title="Klikk for å se bilde i full størrelse"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={row.proof_url} alt="bevis" className="w-full h-full object-cover" />
+                        </a>
+                      ) : (
+                        <span className="text-3xl flex-shrink-0">{c?.icon || "✅"}</span>
                       )}
+                      <div className="min-w-0">
+                        <div className="font-semibold">{c?.title}</div>
+                        <div className="text-xs text-slate-600">
+                          Fra {m?.display_name || "?"} • Fullført{" "}
+                          {a.completed_at?.slice(0, 16).replace("T", " ")}
+                          {!row.proof_url && " • ingen bilde"}
+                        </div>
+                        {c?.reward_type && c.reward_value != null && (
+                          <Badge className="mt-1" variant="success">
+                            Belønning:{" "}
+                            {c.reward_type === "money"
+                              ? formatCurrency(Number(c.reward_value))
+                              : `${c.reward_value} ${c.reward_type === "screen_time_minutes" ? "min" : "⭐"}`}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <form
