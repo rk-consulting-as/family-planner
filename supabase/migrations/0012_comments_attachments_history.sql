@@ -106,6 +106,7 @@ create policy "na_read" on public.need_attachments
     )
   );
 
+drop policy if exists "na_insert" on public.need_attachments;
 create policy "na_insert" on public.need_attachments
   for insert with check (
     uploaded_by = auth.uid() and
@@ -116,6 +117,7 @@ create policy "na_insert" on public.need_attachments
     )
   );
 
+drop policy if exists "na_delete_own" on public.need_attachments;
 create policy "na_delete_own" on public.need_attachments
   for delete using (
     uploaded_by = auth.uid()
@@ -139,6 +141,7 @@ create index idx_nh_need on public.need_history (need_id, created_at desc);
 
 alter table public.need_history enable row level security;
 
+drop policy if exists "nh_read" on public.need_history;
 create policy "nh_read" on public.need_history
   for select using (
     exists(
