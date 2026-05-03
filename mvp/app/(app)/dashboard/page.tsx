@@ -181,19 +181,21 @@ export default async function DashboardPage() {
               {openNeeds.map((n) => {
                 const requester = ctx.members.find((m) => m.profile_id === n.requested_by);
                 return (
-                  <li
-                    key={n.id}
-                    className="p-3 rounded-xl bg-slate-50 flex items-center justify-between"
-                  >
-                    <div className="min-w-0">
-                      <div className="font-medium">{n.title}</div>
-                      <div className="text-xs text-slate-500">
-                        Fra {requester?.display_name || "?"}
-                        {n.location_note && ` • ${n.location_note}`}
-                        {n.category && ` • ${n.category}`}
+                  <li key={n.id}>
+                    <Link
+                      href={`/onsker/${n.id}`}
+                      className="p-3 rounded-xl bg-slate-50 flex items-center justify-between hover:bg-slate-100 transition"
+                    >
+                      <div className="min-w-0">
+                        <div className="font-medium">{n.title}</div>
+                        <div className="text-xs text-slate-500">
+                          Fra {requester?.display_name || "?"}
+                          {n.location_note && ` • ${n.location_note}`}
+                          {n.category && ` • ${n.category}`}
+                        </div>
                       </div>
-                    </div>
-                    {n.priority === "high" && <Badge variant="danger">Høy</Badge>}
+                      {n.priority === "high" && <Badge variant="danger">Høy</Badge>}
+                    </Link>
                   </li>
                 );
               })}
