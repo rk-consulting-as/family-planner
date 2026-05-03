@@ -1,7 +1,7 @@
 import { getActiveContext } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import KalenderShell from "./KalenderShell";
-import type { RawEvent } from "@/components/calendar/WeekView";
+import type { RawEvent, ScheduledChore } from "@/components/calendar/WeekView";
 
 export default async function KalenderPage() {
   const ctx = await getActiveContext();
@@ -11,7 +11,9 @@ export default async function KalenderPage() {
 
   const { data: timetable } = await supabase
     .from("timetable_entries")
-    .select("id, profile_id, subject, start_time, end_time, start_date, recurrence_rule, exception_dates")
+    .select(
+      "id, profile_id, subject, start_time, end_time, start_date, recurrence_rule, exception_dates"
+    )
     .eq("group_id", ctx.group.id)
     .is("deleted_at", null);
 
@@ -21,6 +23,16 @@ export default async function KalenderPage() {
     .eq("group_id", ctx.group.id)
     .is("deleted_at", null);
 
+  // Planlagte gjøremål med tid
+  const { data: chores } = await supabase
+    .from("chores")
+    .select("id, title, icon, scheduled_start, scheduled_end, assignee_ids")
+    .eq("group_id", ctx.group.id)
+    .is("deleted_at", null)
+    .not("scheduled_start", "is", null);
+
+  const isAdmin = ctx.role === "owner" || ctx.role === "admin";
+
   return (
     <div className="space-y-4">
       <div>
@@ -28,10 +40,13 @@ export default async function KalenderPage() {
         <p className="text-slate-600 text-sm">Familiens uke i ett bilde.</p>
       </div>
       <KalenderShell
+        groupId={ctx.group.id}
         members={ctx.members}
         timetable={timetable || []}
         events={(events || []) as RawEvent[]}
+        scheduledChores={(chores || []) as ScheduledChore[]}
         currentUserId={ctx.user.id}
+        isAdmin={isAdmin}
       />
     </div>
   );

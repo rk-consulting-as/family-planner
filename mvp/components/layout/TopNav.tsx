@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
-import { Calendar, CheckSquare, Trophy, Footprints, Home, Settings, LogOut, Shield, CheckCheck, ShoppingBag, User } from "lucide-react";
+import { Calendar, CheckSquare, Trophy, Footprints, Home, Settings, LogOut, Shield, CheckCheck, ShoppingBag, User, Bell } from "lucide-react";
 
 const NAV = [
   { href: "/dashboard", label: "Hjem", icon: Home },
@@ -99,6 +99,18 @@ export function TopNav({
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
+          <Link
+            href="/varsler"
+            className={cn(
+              "p-2 rounded-lg transition",
+              pathname.startsWith("/varsler")
+                ? "bg-brand-50 text-brand-700"
+                : "text-slate-600 hover:bg-slate-100"
+            )}
+            title="Varsler"
+          >
+            <Bell className="w-4 h-4" />
+          </Link>
           <Link
             href="/profil"
             className={cn(

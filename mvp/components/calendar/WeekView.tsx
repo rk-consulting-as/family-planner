@@ -13,6 +13,16 @@ export type CalendarItem = {
   color: string;
   member: string;
   kind: "school" | "chore" | "event";
+  icon?: string | null;
+};
+
+export type ScheduledChore = {
+  id: string;
+  title: string;
+  icon: string | null;
+  scheduled_start: string;
+  scheduled_end: string | null;
+  assignee_ids: string[];
 };
 
 export type RawTimetable = {
@@ -47,13 +57,17 @@ export function WeekView({
   members,
   timetable,
   events,
+  scheduledChores,
   visibleMemberIds,
+  onSlotClick,
 }: {
   weekStart: Date;
   members: Member[];
   timetable: RawTimetable[];
   events: RawEvent[];
+  scheduledChores?: ScheduledChore[];
   visibleMemberIds: string[];
+  onSlotClick?: (start: Date, end: Date) => void;
 }) {
   const [hour] = useState({ from: 7, to: 21 });
 
@@ -119,8 +133,30 @@ export function WeekView({
       });
     }
 
+    // Planlagte gjøremål
+    for (const c of scheduledChores || []) {
+      if (c.assignee_ids.length > 0 && !c.assignee_ids.some((p) => visibleMemberIds.includes(p))) continue;
+      const member = c.assignee_ids.map((id) => byMember.get(id)).find(Boolean);
+      const color = member?.color_hex || "#10b981";
+      const memberName = member?.display_name || "Familien";
+      const start = parseISO(c.scheduled_start);
+      const end = c.scheduled_end ? parseISO(c.scheduled_end) : addDays(start, 0);
+      const realEnd = c.scheduled_end ? end : new Date(start.getTime() + 30 * 60 * 1000);
+      if (!isWithin(start, weekStart, addDays(weekEnd, 1))) continue;
+      expanded.push({
+        id: `chore-${c.id}`,
+        title: `${c.icon || "✅"} ${c.title}`,
+        start,
+        end: realEnd,
+        color,
+        member: memberName,
+        kind: "chore",
+        icon: c.icon,
+      });
+    }
+
     return expanded;
-  }, [weekStart, members, timetable, events, visibleMemberIds]);
+  }, [weekStart, members, timetable, events, scheduledChores, visibleMemberIds]);
 
   const totalHours = hour.to - hour.from;
   const slotPx = 14; // pixels per 15-min slot
@@ -158,9 +194,23 @@ export function WeekView({
         {days.map((d, di) => (
           <div
             key={di}
-            className="relative border-l border-slate-100 bg-[linear-gradient(to_bottom,transparent_55px,rgb(241,245,249)_56px,transparent_57px)]"
+            className="relative border-l border-slate-100 bg-[linear-gradient(to_bottom,transparent_55px,rgb(241,245,249)_56px,transparent_57px)] cursor-pointer hover:bg-slate-50/40"
             style={{
               backgroundSize: `100% ${4 * slotPx}px`,
+            }}
+            onClick={(e) => {
+              if (!onSlotClick) return;
+              // Bare reagér hvis klikk var på selve kolonnen, ikke på en hendelse
+              if ((e.target as HTMLElement).closest("[data-event]")) return;
+              const rect = e.currentTarget.getBoundingClientRect();
+              const y = e.clientY - rect.top;
+              const slot = Math.floor(y / slotPx);
+              const minutes = slot * 15;
+              const start = new Date(d);
+              start.setHours(hour.from, 0, 0, 0);
+              start.setMinutes(start.getMinutes() + minutes);
+              const end = new Date(start.getTime() + 60 * 60 * 1000); // 1 time
+              onSlotClick(start, end);
             }}
           >
             {items
@@ -174,6 +224,7 @@ export function WeekView({
                 return (
                   <div
                     key={it.id}
+                    data-event
                     className="absolute left-1 right-1 rounded-md text-white text-xs px-1.5 py-1 overflow-hidden shadow-sm"
                     style={{
                       top,

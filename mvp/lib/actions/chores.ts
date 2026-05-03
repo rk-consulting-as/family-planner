@@ -25,6 +25,12 @@ export async function createChore(groupId: string, formData: FormData) {
   const due_date = String(formData.get("due_date") || "") || null;
   const icon = String(formData.get("icon") || "✅").trim() || "✅";
 
+  // Planlagt tidspunkt (valgfri — for kalender-visning)
+  const scheduled_start_raw = String(formData.get("scheduled_start") || "");
+  const scheduled_end_raw = String(formData.get("scheduled_end") || "");
+  const scheduled_start = scheduled_start_raw ? new Date(scheduled_start_raw).toISOString() : null;
+  const scheduled_end = scheduled_end_raw ? new Date(scheduled_end_raw).toISOString() : null;
+
   // Multiple assignees (kan være tom = "alle i gruppen")
   const assigneesRaw = formData.getAll("assignee_ids") as string[];
   const assignee_ids = assigneesRaw.filter(Boolean);
@@ -42,6 +48,26 @@ export async function createChore(groupId: string, formData: FormData) {
   const period_reset_day_of_month = Math.max(1, Math.min(31, Number(formData.get("period_reset_day_of_month") || 1)));
   const period_interval_days = Math.max(1, Math.min(365, Number(formData.get("period_interval_days") || 1)));
 
+  // Sjekk om bruker er admin (for invitasjons-logikken)
+  const { data: membership } = await supabase
+    .from("group_members")
+    .select("role")
+    .eq("group_id", groupId)
+    .eq("profile_id", user.id)
+    .single();
+  type M = { role?: string } | null;
+  const isAdmin = ["owner", "admin"].includes((membership as M)?.role ?? "");
+
+  // Hvis ikke-admin tildeler ANDRE enn seg selv → de andre må inviteres først
+  const otherAssignees = assignee_ids.filter((id) => id !== user.id);
+  let initialAssigneeIds = assignee_ids;
+  let inviteList: string[] = [];
+  if (!isAdmin && otherAssignees.length > 0) {
+    initialAssigneeIds = assignee_ids.filter((id) => id === user.id);
+    if (initialAssigneeIds.length === 0) initialAssigneeIds = [user.id];
+    inviteList = otherAssignees;
+  }
+
   const { data: chore, error } = await supabase
     .from("chores")
     .insert({
@@ -52,14 +78,16 @@ export async function createChore(groupId: string, formData: FormData) {
       reward_type,
       reward_value,
       requires_approval,
-      pool_enabled,
-      assignee_ids,
+      pool_enabled: initialAssigneeIds.length === 0,
+      assignee_ids: initialAssigneeIds,
       period_kind,
       period_reset_hour,
       period_reset_weekday,
       period_reset_day_of_month,
       period_interval_days,
       icon,
+      scheduled_start,
+      scheduled_end,
       created_by: user.id,
     })
     .select()
@@ -69,7 +97,7 @@ export async function createChore(groupId: string, formData: FormData) {
 
   // For "once"-oppgaver: lag den ene assignment-raden direkte
   if (period_kind === "once") {
-    const initialAssignee = assignee_ids.length === 1 ? assignee_ids[0] : null;
+    const initialAssignee = initialAssigneeIds.length === 1 ? initialAssigneeIds[0] : null;
     const { error: assignError } = await supabase.from("chore_assignments").insert({
       chore_id: chore.id,
       group_id: groupId,
@@ -80,15 +108,66 @@ export async function createChore(groupId: string, formData: FormData) {
     });
     if (assignError) return { ok: false, error: assignError.message };
   } else {
-    // Periode-baserte oppgaver: be databasen lage assignment for inneværende periode
     const { error: ensureError } = await supabase.rpc("ensure_chore_period_assignment", {
       p_chore: chore.id,
     });
     if (ensureError) return { ok: false, error: ensureError.message };
   }
 
+  // Send invitasjoner til de andre tildelte (hvis bruker er ikke-admin)
+  if (inviteList.length > 0) {
+    const message = String(formData.get("invite_message") || "").trim() || null;
+    const invitations = inviteList.map((uid) => ({
+      chore_id: chore.id,
+      group_id: groupId,
+      invited_user_id: uid,
+      invited_by: user.id,
+      message,
+      status: "pending" as const,
+    }));
+    const { error: invErr } = await supabase.from("chore_invitations").insert(invitations);
+    if (!invErr) {
+      // Lag varsler
+      const notifs = inviteList.map((uid) => ({
+        recipient_id: uid,
+        group_id: groupId,
+        title: `Vil du gjøre «${title}» sammen?`,
+        body: message || "Trykk for å akseptere eller avslå",
+        source_kind: "chore_invitation",
+        source_id: chore.id,
+        link_url: `/varsler`,
+      }));
+      await supabase.from("notifications").insert(notifs);
+    }
+  }
+
   revalidatePath("/admin/gjoremal");
   revalidatePath("/gjoremal");
+  revalidatePath("/kalender");
+  revalidatePath("/dashboard");
+  revalidatePath("/varsler");
+  return { ok: true };
+}
+
+export async function respondChoreInvitation(
+  invitation_id: string,
+  decision: "accepted" | "declined"
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Ikke innlogget" };
+
+  const { error } = await supabase.rpc("respond_chore_invitation", {
+    p_invitation: invitation_id,
+    p_decision: decision,
+  });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/varsler");
+  revalidatePath("/gjoremal");
+  revalidatePath("/dashboard");
+  revalidatePath("/kalender");
   return { ok: true };
 }
 
