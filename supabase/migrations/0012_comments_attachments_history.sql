@@ -60,6 +60,7 @@ create policy "nc_update_own" on public.need_comments
     )
   );
 
+drop policy if exists "nc_delete_own" on public.need_comments;
 create policy "nc_delete_own" on public.need_comments
   for delete using (
     author_id = auth.uid()
@@ -90,6 +91,7 @@ create index idx_na_need on public.need_attachments (need_id, created_at);
 
 alter table public.need_attachments enable row level security;
 
+drop policy if exists "na_read" on public.need_attachments;
 create policy "na_read" on public.need_attachments
   for select using (
     exists(
