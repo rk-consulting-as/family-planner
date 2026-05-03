@@ -4,7 +4,7 @@
 -- =====================================================================
 
 -- KOMMENTARER PÅ ØNSKER -------------------------------------------------
-create table public.need_comments (
+create table if not exists public.need_comments (
   id uuid primary key default gen_random_uuid(),
   need_id uuid not null references public.needs(id) on delete cascade,
   author_id uuid not null references public.profiles(id) on delete set null,
@@ -18,6 +18,7 @@ create index idx_nc_need on public.need_comments (need_id, created_at);
 alter table public.need_comments enable row level security;
 
 -- Lese: alle som kan lese selve ønsket kan lese kommentarer
+drop policy if exists "nc_read" on public.need_comments;
 create policy "nc_read" on public.need_comments
   for select using (
     exists(
@@ -33,6 +34,7 @@ create policy "nc_read" on public.need_comments
   );
 
 -- Skrive: samme tilgang
+drop policy if exists "nc_insert" on public.need_comments;
 create policy "nc_insert" on public.need_comments
   for insert with check (
     author_id = auth.uid() and
@@ -48,6 +50,7 @@ create policy "nc_insert" on public.need_comments
   );
 
 -- Oppdatering/sletting: bare forfatter eller admin
+drop policy if exists "nc_update_own" on public.need_comments;
 create policy "nc_update_own" on public.need_comments
   for update using (
     author_id = auth.uid()
@@ -71,7 +74,7 @@ create trigger trg_nc_updated before update on public.need_comments
   for each row execute function public.set_updated_at();
 
 -- VEDLEGG PÅ ØNSKER -----------------------------------------------------
-create table public.need_attachments (
+create table if not exists public.need_attachments (
   id uuid primary key default gen_random_uuid(),
   need_id uuid not null references public.needs(id) on delete cascade,
   uploaded_by uuid not null references public.profiles(id) on delete set null,
@@ -121,7 +124,7 @@ create policy "na_delete_own" on public.need_attachments
   );
 
 -- HISTORIKK FOR ØNSKER --------------------------------------------------
-create table public.need_history (
+create table if not exists public.need_history (
   id uuid primary key default gen_random_uuid(),
   need_id uuid not null references public.needs(id) on delete cascade,
   edited_by uuid references public.profiles(id),
