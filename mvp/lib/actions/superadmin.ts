@@ -27,32 +27,44 @@ export async function adminCreateUser(formData: FormData) {
   await assertSystemAdmin();
   const email = String(formData.get("email") || "").trim().toLowerCase();
   const password = String(formData.get("password") || "");
-  const display_name = String(formData.get("display_name") || "").trim();
+  const first_name = String(formData.get("first_name") || "").trim();
+  const last_name = String(formData.get("last_name") || "").trim();
   const make_admin = formData.get("make_admin") === "on";
   const auto_confirm = formData.get("auto_confirm") !== null; // true unless explicitly off
+  const force_password_change = formData.get("force_password_change") !== null;
 
-  if (!email || !password || !display_name) {
-    return { ok: false, error: "Epost, passord og navn er påkrevd" };
+  if (!email || !password || !first_name) {
+    return { ok: false, error: "Epost, passord og fornavn er påkrevd" };
   }
   if (password.length < 6) {
     return { ok: false, error: "Passord må være minst 6 tegn" };
   }
+
+  const display_name = [first_name, last_name].filter(Boolean).join(" ");
 
   const admin = createAdminClient();
   const { data, error } = await admin.auth.admin.createUser({
     email,
     password,
     email_confirm: auto_confirm,
-    user_metadata: { display_name },
+    user_metadata: { display_name, first_name, last_name },
   });
   if (error) return { ok: false, error: error.message };
   if (!data.user) return { ok: false, error: "Klarte ikke å opprette bruker" };
 
-  // Sikre profil + (optional) super-admin
+  // Sikre profil + (optional) super-admin + tvungen passordbytte
   await admin
     .from("profiles")
     .upsert(
-      { id: data.user.id, display_name, email, is_system_admin: make_admin },
+      {
+        id: data.user.id,
+        display_name,
+        first_name,
+        last_name,
+        email,
+        is_system_admin: make_admin,
+        must_change_password: force_password_change,
+      },
       { onConflict: "id" }
     );
   await admin
@@ -66,7 +78,7 @@ export async function adminCreateUser(formData: FormData) {
     p_target_kind: "profile",
     p_target_id: data.user.id,
     p_group_id: undefined as unknown as string,
-    p_payload: { email, display_name, make_admin },
+    p_payload: { email, display_name, first_name, last_name, make_admin, force_password_change },
   });
 
   revalidatePath("/superadmin/brukere");

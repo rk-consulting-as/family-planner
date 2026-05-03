@@ -49,5 +49,20 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Tvungen passordbytte hvis flagg er satt
+  if (user && !isPublic && path !== "/profil/passord") {
+    const { data } = await supabase
+      .from("profiles")
+      .select("must_change_password")
+      .eq("id", user.id)
+      .single();
+    type R = { must_change_password?: boolean | null } | null;
+    if ((data as R)?.must_change_password) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/profil/passord";
+      return NextResponse.redirect(url);
+    }
+  }
+
   return response;
 }
