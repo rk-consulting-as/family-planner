@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
-import { Calendar, CheckSquare, Trophy, Footprints, Home, Settings, LogOut, Shield, CheckCheck, ShoppingBag } from "lucide-react";
+import { Calendar, CheckSquare, Trophy, Footprints, Home, Settings, LogOut, Shield, CheckCheck, ShoppingBag, User } from "lucide-react";
 
 const NAV = [
   { href: "/dashboard", label: "Hjem", icon: Home },
@@ -98,8 +98,20 @@ export function TopNav({
           )}
         </nav>
 
-        <div className="ml-auto flex items-center gap-3">
-          <span className="hidden sm:inline text-sm text-slate-600">{displayName}</span>
+        <div className="ml-auto flex items-center gap-2">
+          <Link
+            href="/profil"
+            className={cn(
+              "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium transition",
+              pathname.startsWith("/profil")
+                ? "bg-brand-50 text-brand-700"
+                : "text-slate-600 hover:bg-slate-100"
+            )}
+            title="Min profil"
+          >
+            <User className="w-4 h-4" />
+            <span className="hidden sm:inline">{displayName}</span>
+          </Link>
           <button
             onClick={signOut}
             className="p-2 rounded-lg hover:bg-slate-100 text-slate-600"
@@ -119,10 +131,10 @@ export function MobileBottomNav({ isAdmin }: { isAdmin: boolean }) {
     { href: "/dashboard", label: "Hjem", icon: Home },
     { href: "/kalender", label: "Kal.", icon: Calendar },
     { href: "/vaner", label: "Vaner", icon: CheckCheck },
-    { href: "/onsker", label: "Ønsker", icon: ShoppingBag },
     isAdmin
       ? { href: "/admin", label: "Admin", icon: Settings }
       : { href: "/belonninger", label: "Belønn.", icon: Trophy },
+    { href: "/profil", label: "Meg", icon: User },
   ];
   return (
     <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-slate-200">
