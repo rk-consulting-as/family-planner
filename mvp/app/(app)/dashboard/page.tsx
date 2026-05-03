@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { formatCurrency, formatMinutes } from "@/lib/utils";
-import { CheckSquare, Calendar, Footprints, Trophy, Users } from "lucide-react";
+import { CheckSquare, Calendar, Footprints, Trophy, Users, Flame, ShoppingBag } from "lucide-react";
+import { markHabitDone } from "@/lib/actions/habits";
 
 export default async function DashboardPage() {
   const ctx = await getActiveContext();
@@ -48,6 +49,40 @@ export default async function DashboardPage() {
     .gte("occurred_on", weekStartIso())
     .order("occurred_on", { ascending: false });
 
+  // Dagens vaner for innlogget bruker
+  const { data: habitsRaw } = await supabase.rpc("habits_with_stats", {
+    p_group: ctx.group.id,
+    p_profile: ctx.user.id,
+  });
+  type HabitDashRow = {
+    id: string;
+    profile_id: string;
+    title: string;
+    emoji: string | null;
+    target_per_period: number;
+    today_count: number;
+    streak: number;
+  };
+  const todaysHabits = (habitsRaw || []) as HabitDashRow[];
+
+  // Åpne ønsker som denne brukeren skal se (RLS-filtrert i DB)
+  const { data: needsRaw } = await supabase
+    .from("needs")
+    .select("id, title, category, priority, requested_by, location_note")
+    .eq("group_id", ctx.group.id)
+    .in("status", ["open", "in_progress"])
+    .order("created_at", { ascending: false })
+    .limit(5);
+  type NeedDashRow = {
+    id: string;
+    title: string;
+    category: string | null;
+    priority: "low" | "normal" | "high";
+    requested_by: string;
+    location_note: string | null;
+  };
+  const openNeeds = (needsRaw || []) as NeedDashRow[];
+
   const weekKm = (recentWalks || []).reduce((s, w) => s + Number(w.distance_km || 0), 0);
 
   const moneyBalance = balances?.find((b) => b.type === "money")?.balance ?? 0;
@@ -76,6 +111,96 @@ export default async function DashboardPage() {
         <BalanceCard label="Poeng" value={`${Number(pointsBalance)} stk`} icon="⭐" />
         <BalanceCard label="Gå denne uka" value={`${weekKm.toFixed(1)} km`} icon="👟" />
       </div>
+
+      {/* Dagens vaner — vises øverst hvis det er noen */}
+      {todaysHabits.length > 0 && (
+        <Card>
+          <CardHeader className="flex items-center justify-between">
+            <CardTitle>Dagens vaner</CardTitle>
+            <Link href="/vaner">
+              <Button variant="ghost" size="sm">Se alle</Button>
+            </Link>
+          </CardHeader>
+          <CardBody>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {todaysHabits.map((h) => {
+                const done = h.today_count >= h.target_per_period;
+                return (
+                  <div
+                    key={h.id}
+                    className={`p-3 rounded-xl border flex items-center justify-between ${
+                      done ? "border-emerald-200 bg-emerald-50" : "border-slate-200 bg-white"
+                    }`}
+                  >
+                    <div className="min-w-0">
+                      <div className="font-semibold flex items-center gap-2">
+                        <span className="text-xl">{h.emoji || "✅"}</span>
+                        <span className="truncate">{h.title}</span>
+                      </div>
+                      <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1 text-amber-700">
+                          <Flame className="w-3 h-3" />
+                          {h.streak}
+                        </span>
+                        <span>{h.today_count}/{h.target_per_period} i dag</span>
+                      </div>
+                    </div>
+                    {done ? (
+                      <Badge variant="success">✓</Badge>
+                    ) : (
+                      <form
+                        action={async () => {
+                          "use server";
+                          await markHabitDone(h.id, h.profile_id);
+                        }}
+                      >
+                        <Button size="sm">Hak av</Button>
+                      </form>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </CardBody>
+        </Card>
+      )}
+
+      {/* Åpne ønsker som denne brukeren skal se */}
+      {openNeeds.length > 0 && (
+        <Card>
+          <CardHeader className="flex items-center justify-between">
+            <CardTitle>
+              <ShoppingBag className="w-4 h-4 inline mr-1" /> Åpne ønsker
+            </CardTitle>
+            <Link href="/onsker">
+              <Button variant="ghost" size="sm">Se alle</Button>
+            </Link>
+          </CardHeader>
+          <CardBody>
+            <ul className="space-y-2">
+              {openNeeds.map((n) => {
+                const requester = ctx.members.find((m) => m.profile_id === n.requested_by);
+                return (
+                  <li
+                    key={n.id}
+                    className="p-3 rounded-xl bg-slate-50 flex items-center justify-between"
+                  >
+                    <div className="min-w-0">
+                      <div className="font-medium">{n.title}</div>
+                      <div className="text-xs text-slate-500">
+                        Fra {requester?.display_name || "?"}
+                        {n.location_note && ` • ${n.location_note}`}
+                        {n.category && ` • ${n.category}`}
+                      </div>
+                    </div>
+                    {n.priority === "high" && <Badge variant="danger">Høy</Badge>}
+                  </li>
+                );
+              })}
+            </ul>
+          </CardBody>
+        </Card>
+      )}
 
       <div className="grid lg:grid-cols-2 gap-6">
         <Card>

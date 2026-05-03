@@ -4,12 +4,14 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
-import { Calendar, CheckSquare, Trophy, Footprints, Home, Settings, LogOut, Shield } from "lucide-react";
+import { Calendar, CheckSquare, Trophy, Footprints, Home, Settings, LogOut, Shield, CheckCheck, ShoppingBag } from "lucide-react";
 
 const NAV = [
   { href: "/dashboard", label: "Hjem", icon: Home },
   { href: "/kalender", label: "Kalender", icon: Calendar },
   { href: "/gjoremal", label: "Gjøremål", icon: CheckSquare },
+  { href: "/vaner", label: "Vaner", icon: CheckCheck },
+  { href: "/onsker", label: "Ønsker", icon: ShoppingBag },
   { href: "/belonninger", label: "Belønninger", icon: Trophy },
   { href: "/ga-tracker", label: "Gå-tracker", icon: Footprints },
 ];
@@ -115,12 +117,12 @@ export function MobileBottomNav({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname();
   const items = [
     { href: "/dashboard", label: "Hjem", icon: Home },
-    { href: "/kalender", label: "Kalender", icon: Calendar },
-    { href: "/gjoremal", label: "Oppg.", icon: CheckSquare },
-    { href: "/belonninger", label: "Belønn.", icon: Trophy },
+    { href: "/kalender", label: "Kal.", icon: Calendar },
+    { href: "/vaner", label: "Vaner", icon: CheckCheck },
+    { href: "/onsker", label: "Ønsker", icon: ShoppingBag },
     isAdmin
       ? { href: "/admin", label: "Admin", icon: Settings }
-      : { href: "/ga-tracker", label: "Gåtur", icon: Footprints },
+      : { href: "/belonninger", label: "Belønn.", icon: Trophy },
   ];
   return (
     <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-slate-200">
