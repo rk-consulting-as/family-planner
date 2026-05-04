@@ -52,8 +52,8 @@ export default async function PerioderPage() {
         <ul className="space-y-3">
           {periods.map((p) => (
             <Card key={p.id}>
-              <CardHeader className="flex items-center justify-between">
-                <div>
+              <CardHeader className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
                   <CardTitle>{p.name}</CardTitle>
                   <div className="text-xs text-slate-500 mt-0.5">
                     {p.started_on} → {p.closed_on || "pågår"}
@@ -63,9 +63,18 @@ export default async function PerioderPage() {
                     })()}
                   </div>
                 </div>
-                <Badge variant={p.status === "open" ? "info" : "default"}>
-                  {p.status === "open" ? "Aktiv" : "Avsluttet"}
-                </Badge>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Badge variant={p.status === "open" ? "info" : "default"}>
+                    {p.status === "open" ? "Aktiv" : "Avsluttet"}
+                  </Badge>
+                  <Link href={`/utlegg/utskrift/${p.id}?modus=enkel`} target="_blank" className="text-sm text-brand-700 hover:underline">
+                    Enkel
+                  </Link>
+                  <span className="text-slate-300">·</span>
+                  <Link href={`/utlegg/utskrift/${p.id}?modus=detaljert`} target="_blank" className="text-sm text-brand-700 hover:underline">
+                    Detaljert
+                  </Link>
+                </div>
               </CardHeader>
               <CardBody>
                 {p.closed_note && (

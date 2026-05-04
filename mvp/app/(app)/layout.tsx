@@ -13,14 +13,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const isAdmin = ctx.role === "owner" || ctx.role === "admin";
   return (
     <div className="min-h-screen bg-slate-50 pb-16 md:pb-0">
-      <TopNav
-        groupName={ctx.group.name}
-        isAdmin={isAdmin}
-        displayName={ctx.profile.display_name}
-        isSystemAdmin={ctx.profile.is_system_admin}
-      />
+      <div className="print:hidden">
+        <TopNav
+          groupName={ctx.group.name}
+          isAdmin={isAdmin}
+          displayName={ctx.profile.display_name}
+          isSystemAdmin={ctx.profile.is_system_admin}
+        />
+      </div>
       <main className="container mx-auto px-4 sm:px-6 py-6">{children}</main>
-      <MobileBottomNav isAdmin={isAdmin} />
+      <div className="print:hidden">
+        <MobileBottomNav isAdmin={isAdmin} />
+      </div>
     </div>
   );
 }

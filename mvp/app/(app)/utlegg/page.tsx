@@ -82,9 +82,14 @@ export default async function UtleggPage() {
             Aktiv periode: <strong>{p.name}</strong> (siden {p.started_on})
           </p>
         </div>
-        <Link href="/utlegg/perioder">
-          <Button variant="ghost" size="sm">Tidligere oppgjør</Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href={`/utlegg/utskrift/${p.id}?modus=enkel`} target="_blank">
+            <Button variant="secondary" size="sm">🖨 Skriv ut</Button>
+          </Link>
+          <Link href="/utlegg/perioder">
+            <Button variant="ghost" size="sm">Tidligere oppgjør</Button>
+          </Link>
+        </div>
       </div>
 
       {/* Sammendrag */}
