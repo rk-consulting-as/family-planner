@@ -7,8 +7,9 @@ import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { reviewChore } from "@/lib/actions/chores";
 import { reviewChangeRequest } from "@/lib/actions/profile";
+import { approvePendingInvitation, rejectPendingInvitation } from "@/lib/actions/invitations";
 import { formatCurrency } from "@/lib/utils";
-import { Trophy, UserCog } from "lucide-react";
+import { Trophy, UserCog, UserPlus } from "lucide-react";
 
 export default async function GodkjenningerPage() {
   const ctx = await getActiveContext();
@@ -32,6 +33,32 @@ export default async function GodkjenningerPage() {
     .or(`group_id.eq.${ctx.group.id},group_id.is.null`)
     .eq("status", "pending")
     .order("created_at", { ascending: true });
+
+  // Invitasjoner som venter på godkjenning
+  const { data: pendingInvsRaw } = await supabase
+    .from("invitations")
+    .select(
+      "id, invited_email, personal_message, accepted_at, accepted_by, invited_by, role, " +
+        "inviter:profiles!invitations_invited_by_fkey(display_name), " +
+        "acceptee:profiles!invitations_accepted_by_fkey(display_name, email)"
+    )
+    .eq("group_id", ctx.group.id)
+    .not("accepted_at", "is", null)
+    .is("approved_at", null)
+    .is("rejected_at", null)
+    .order("accepted_at", { ascending: true });
+  type PendingInv = {
+    id: string;
+    invited_email: string | null;
+    personal_message: string | null;
+    accepted_at: string;
+    accepted_by: string;
+    invited_by: string;
+    role: string;
+    inviter: { display_name?: string } | null;
+    acceptee: { display_name?: string; email?: string | null } | null;
+  };
+  const pendingInvs = (pendingInvsRaw || []) as PendingInv[];
   type ProfileReq = {
     id: string;
     kind: "name" | "birth_date" | "other";
@@ -51,6 +78,67 @@ export default async function GodkjenningerPage() {
           Fullførte gjøremål som venter på din godkjenning.
         </p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <UserPlus className="w-4 h-4 inline mr-1" />
+            Nye medlemmer ({pendingInvs.length})
+          </CardTitle>
+        </CardHeader>
+        <CardBody>
+          {pendingInvs.length === 0 ? (
+            <p className="text-sm text-slate-500">Ingen ventende invitasjoner.</p>
+          ) : (
+            <ul className="space-y-3">
+              {pendingInvs.map((iv) => (
+                <li
+                  key={iv.id}
+                  className="p-4 rounded-xl border border-emerald-200 bg-emerald-50"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="font-semibold">
+                        {iv.acceptee?.display_name || iv.invited_email || "Ukjent bruker"}
+                      </div>
+                      <div className="text-xs text-slate-600 mt-0.5">
+                        {iv.acceptee?.email && `${iv.acceptee.email} • `}
+                        Invitert av {iv.inviter?.display_name || "?"}
+                        {iv.role !== "member" && ` • Rolle: ${iv.role}`}
+                      </div>
+                      {iv.personal_message && (
+                        <div className="text-xs text-slate-600 mt-1 italic">
+                          «{iv.personal_message}»
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <form
+                        action={async () => {
+                          "use server";
+                          await approvePendingInvitation(iv.id);
+                        }}
+                      >
+                        <Button size="sm">Godkjenn</Button>
+                      </form>
+                      <form
+                        action={async () => {
+                          "use server";
+                          await rejectPendingInvitation(iv.id);
+                        }}
+                      >
+                        <Button size="sm" variant="ghost">
+                          Avvis
+                        </Button>
+                      </form>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardBody>
+      </Card>
 
       <Card>
         <CardHeader>

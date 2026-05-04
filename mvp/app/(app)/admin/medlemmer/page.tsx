@@ -32,15 +32,20 @@ export default async function MedlemmerPage() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Inviter</CardTitle>
+        <CardHeader className="flex items-center justify-between">
+          <CardTitle>Inviter nye medlemmer</CardTitle>
         </CardHeader>
-        <CardBody>
-          <p className="text-sm text-slate-600">
-            Del invitasjonskoden{" "}
-            <span className="font-mono font-bold">{ctx.group.invite_code}</span> — eller la et nytt
-            medlem registrere seg og bruke den i onboarding.
-          </p>
+        <CardBody className="space-y-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <p className="text-sm text-slate-600">
+              Del invitasjonskoden{" "}
+              <span className="font-mono font-bold">{ctx.group.invite_code}</span> — eller send en
+              personlig lenke via epost/SMS.
+            </p>
+            <a href="/inviter">
+              <Button size="sm" variant="secondary">Lag delbar lenke</Button>
+            </a>
+          </div>
         </CardBody>
       </Card>
 
