@@ -1,4 +1,3 @@
-import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getActiveContext } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
@@ -11,13 +10,39 @@ export default async function ChatThreadPage({ params }: { params: { id: string 
 
   const supabase = await createClient();
 
-  const { data: thread } = await supabase
+  const { data: thread, error: threadErr } = await supabase
     .from("chat_threads")
     .select("id, group_id, kind, name, created_by, created_at, last_message_at")
     .eq("id", params.id)
-    .single();
+    .maybeSingle();
 
-  if (!thread) notFound();
+  if (!thread) {
+    return (
+      <div className="max-w-2xl space-y-3">
+        <Link href="/chat" className="text-sm text-brand-700 hover:underline">
+          ← Alle samtaler
+        </Link>
+        <div className="rounded-2xl bg-amber-50 border border-amber-300 p-4 text-sm text-amber-900">
+          <strong>Får ikke åpnet samtalen.</strong>
+          <div className="mt-2 space-y-1">
+            <div>Tråd-ID: <code className="font-mono">{params.id}</code></div>
+            <div>Bruker-ID: <code className="font-mono">{ctx.user.id}</code></div>
+            {threadErr && (
+              <div>
+                Feil: <code className="font-mono">{threadErr.code} — {threadErr.message}</code>
+              </div>
+            )}
+            {!threadErr && (
+              <div>
+                Spørringen returnerte 0 rader. Trolig RLS-problem — sjekk at du
+                er medlem og at policy <code>ct_member_read</code> er korrekt.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   type Thread = {
     id: string;
