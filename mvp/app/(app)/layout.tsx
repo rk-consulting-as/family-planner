@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { TopNav, MobileBottomNav } from "@/components/layout/TopNav";
 import { getActiveContext } from "@/lib/queries";
+import { touchPresence } from "@/lib/actions/presence";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const ctx = await getActiveContext();
@@ -9,6 +10,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     // Not in a group → onboarding
     redirect("/onboarding");
   }
+
+  // Oppdater "siste sett"
+  await touchPresence();
 
   const isAdmin = ctx.role === "owner" || ctx.role === "admin";
   return (

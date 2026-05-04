@@ -16,6 +16,7 @@ import {
   cancelChangeRequest,
   updateBirthDateVisibility,
 } from "@/lib/actions/profile";
+import { setOnlineVisible } from "@/lib/actions/presence";
 
 export default async function ProfilPage() {
   const supabase = await createClient();
@@ -30,7 +31,7 @@ export default async function ProfilPage() {
       "id, display_name, first_name, last_name, nickname, email, color_hex, birth_date, " +
         "avatar_kind, avatar_preset, avatar_upload_path, avatar_url, " +
         "avatar_zoom, avatar_offset_x, avatar_offset_y, " +
-        "birth_date_visible_in, must_change_password"
+        "birth_date_visible_in, must_change_password, online_visible"
     )
     .eq("id", user.id)
     .single();
@@ -53,6 +54,7 @@ export default async function ProfilPage() {
     avatar_offset_y: number | null;
     birth_date_visible_in: string[] | null;
     must_change_password: boolean | null;
+    online_visible: boolean | null;
   };
   const p = prof as Profile;
   if (!p) redirect("/onboarding");
@@ -243,6 +245,38 @@ export default async function ProfilPage() {
               </ul>
             </div>
           )}
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Online-status</CardTitle>
+          <CardDescription>
+            Bestem om andre familiemedlemmer kan se at du er online. Admins ser dette uansett.
+          </CardDescription>
+        </CardHeader>
+        <CardBody>
+          <form
+            action={async () => {
+              "use server";
+              await setOnlineVisible(!p.online_visible);
+            }}
+            className="flex items-center justify-between"
+          >
+            <div>
+              <div className="text-sm">
+                Status nå: <strong>{p.online_visible ? "Synlig for alle" : "Skjult"}</strong>
+              </div>
+              <div className="text-xs text-slate-500 mt-0.5">
+                {p.online_visible
+                  ? "Andre ser en grønn prikk når du er aktiv."
+                  : "Bare admins ser om du er online."}
+              </div>
+            </div>
+            <Button type="submit" variant={p.online_visible ? "secondary" : "primary"}>
+              {p.online_visible ? "Skjul status" : "Vis status"}
+            </Button>
+          </form>
         </CardBody>
       </Card>
 

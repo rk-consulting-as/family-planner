@@ -4,11 +4,12 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
-import { Calendar, CheckSquare, Trophy, Footprints, Home, Settings, LogOut, Shield, CheckCheck, ShoppingBag, User, Bell, Wallet } from "lucide-react";
+import { Calendar, CheckSquare, Trophy, Footprints, Home, Settings, LogOut, Shield, CheckCheck, ShoppingBag, User, Bell, Wallet, MessageSquare } from "lucide-react";
 
 const NAV = [
   { href: "/dashboard", label: "Hjem", icon: Home },
   { href: "/kalender", label: "Kalender", icon: Calendar },
+  { href: "/chat", label: "Chat", icon: MessageSquare },
   { href: "/gjoremal", label: "Gjøremål", icon: CheckSquare },
   { href: "/vaner", label: "Vaner", icon: CheckCheck },
   { href: "/onsker", label: "Ønsker", icon: ShoppingBag },
