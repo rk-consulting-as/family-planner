@@ -71,18 +71,69 @@ export async function createExpense(group_id: string, formData: FormData) {
   return { ok: true, period_id: periodId as string };
 }
 
+async function assertPeriodOpen(expense_id: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("expenses")
+    .select("period:expense_periods(status)")
+    .eq("id", expense_id)
+    .single();
+  type R = { period?: { status?: string } | null } | null;
+  const status = (data as R)?.period?.status;
+  if (status !== "open") {
+    return { open: false as const, error: "Perioden er avsluttet — utlegget er låst" };
+  }
+  return { open: true as const };
+}
+
 export async function editExpense(expense_id: string, formData: FormData) {
+  const check = await assertPeriodOpen(expense_id);
+  if (!check.open) return { ok: false, error: check.error };
+
   const supabase = await createClient();
   const update: Record<string, unknown> = {};
+
   const description = String(formData.get("description") || "").trim();
   const amount = Number(formData.get("amount") || 0);
   const category = String(formData.get("category") || "");
   const expense_date = String(formData.get("expense_date") || "");
+  const paid_by = String(formData.get("paid_by") || "");
 
   if (description) update.description = description;
   if (amount > 0) update.amount = amount;
   if (category) update.category = category;
   if (expense_date) update.expense_date = expense_date;
+  if (paid_by) update.paid_by = paid_by;
+
+  // Splitt-redigering
+  const split_kind_raw = formData.get("split_kind");
+  if (split_kind_raw) {
+    const split_kind = String(split_kind_raw) as "equal" | "only_paid_by" | "custom";
+    update.split_kind = split_kind;
+
+    const split_with_raw = formData.getAll("split_with") as string[];
+    let split_with = split_with_raw.filter(Boolean);
+    if (split_kind === "only_paid_by") {
+      split_with = paid_by ? [paid_by] : split_with;
+    }
+    update.split_with = split_with;
+
+    if (split_kind === "custom") {
+      const split_custom: Record<string, number> = {};
+      let total = 0;
+      for (const id of split_with) {
+        const v = Number(formData.get(`split_pct__${id}`) || 0);
+        split_custom[id] = v;
+        total += v;
+      }
+      if (Math.round(total) !== 100) {
+        return { ok: false, error: `Prosentene må summere til 100 (har ${total})` };
+      }
+      update.split_custom = split_custom;
+    } else {
+      update.split_custom = null;
+    }
+  }
 
   const { error } = await supabase.from("expenses").update(update).eq("id", expense_id);
   if (error) return { ok: false, error: error.message };
@@ -92,6 +143,9 @@ export async function editExpense(expense_id: string, formData: FormData) {
 }
 
 export async function deleteExpense(expense_id: string) {
+  const check = await assertPeriodOpen(expense_id);
+  if (!check.open) return { ok: false, error: check.error };
+
   const supabase = await createClient();
   const { error } = await supabase
     .from("expenses")

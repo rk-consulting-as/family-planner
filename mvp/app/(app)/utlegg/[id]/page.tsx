@@ -10,6 +10,7 @@ import { formatCurrency } from "@/lib/utils";
 import { deleteExpense, deleteExpenseAttachment } from "@/lib/actions/expenses";
 import ExpenseAttachmentUploader from "./ExpenseAttachmentUploader";
 import ExpenseCommentForm from "./ExpenseCommentForm";
+import EditExpenseSection from "./EditExpenseSection";
 
 export default async function ExpenseDetailPage({ params }: { params: { id: string } }) {
   const ctx = await getActiveContext();
@@ -20,7 +21,8 @@ export default async function ExpenseDetailPage({ params }: { params: { id: stri
   const { data: expRaw } = await supabase
     .from("expenses")
     .select(
-      "id, group_id, period_id, paid_by, amount, currency, description, category, expense_date, split_kind, split_with, split_custom, created_by, created_at"
+      "id, group_id, period_id, paid_by, amount, currency, description, category, expense_date, split_kind, split_with, split_custom, created_by, created_at, " +
+        "period:expense_periods(id, name, status, closed_on)"
     )
     .eq("id", params.id)
     .is("deleted_at", null)
@@ -41,12 +43,15 @@ export default async function ExpenseDetailPage({ params }: { params: { id: stri
     split_custom: Record<string, number> | null;
     created_by: string;
     created_at: string;
+    period: { id: string; name: string; status: "open" | "closed"; closed_on: string | null } | null;
   };
   const e = expRaw as Expense | null;
   if (!e) notFound();
 
   const payer = ctx.members.find((m) => m.profile_id === e.paid_by);
   const isAdmin = ctx.role !== "member";
+  const periodOpen = e.period?.status === "open";
+  const canEdit = periodOpen && (isAdmin || e.created_by === ctx.user.id);
 
   // Vedlegg + kommentarer
   const [{ data: attachments }, { data: comments }] = await Promise.all([
@@ -107,9 +112,30 @@ export default async function ExpenseDetailPage({ params }: { params: { id: stri
               {e.category && ` • ${e.category}`}
             </div>
           </div>
-          <Badge variant="info">{formatCurrency(Number(e.amount))}</Badge>
+          <div className="flex flex-col items-end gap-1.5">
+            <Badge variant="info">{formatCurrency(Number(e.amount))}</Badge>
+            {!periodOpen && (
+              <Badge variant="default" title={`Lukket ${e.period?.closed_on || ""}`}>
+                🔒 Periode låst
+              </Badge>
+            )}
+          </div>
         </div>
       </div>
+
+      {!periodOpen && (
+        <Card className="border-amber-200 bg-amber-50">
+          <CardBody className="text-sm text-amber-900">
+            Dette utlegget er en del av perioden <strong>{e.period?.name}</strong> som
+            ble avsluttet {e.period?.closed_on}. Det er nå låst — ingen endringer
+            er mulig. Saldoer fra den perioden ligger under{" "}
+            <Link href="/utlegg/perioder" className="underline font-medium">
+              Tidligere oppgjør
+            </Link>
+            .
+          </CardBody>
+        </Card>
+      )}
 
       {/* Fordeling */}
       {breakdown.length > 0 && e.split_kind !== "only_paid_by" && (
@@ -144,7 +170,7 @@ export default async function ExpenseDetailPage({ params }: { params: { id: stri
           <CardTitle>Kvitteringer / vedlegg ({attList.length})</CardTitle>
         </CardHeader>
         <CardBody className="space-y-3">
-          <ExpenseAttachmentUploader expenseId={e.id} />
+          {periodOpen && <ExpenseAttachmentUploader expenseId={e.id} />}
           {attList.length === 0 ? (
             <p className="text-sm text-slate-500">Ingen vedlegg lagt til ennå.</p>
           ) : (
@@ -197,6 +223,24 @@ export default async function ExpenseDetailPage({ params }: { params: { id: stri
         </CardBody>
       </Card>
 
+      {/* Rediger (kun mens periode er åpen) */}
+      {canEdit && (
+        <EditExpenseSection
+          expense={{
+            id: e.id,
+            paid_by: e.paid_by,
+            amount: Number(e.amount),
+            description: e.description,
+            category: e.category,
+            expense_date: e.expense_date,
+            split_kind: e.split_kind,
+            split_with: e.split_with || [],
+            split_custom: e.split_custom,
+          }}
+          members={ctx.members}
+        />
+      )}
+
       {/* Kommentartråd */}
       <Card>
         <CardHeader>
@@ -239,7 +283,7 @@ export default async function ExpenseDetailPage({ params }: { params: { id: stri
         </CardBody>
       </Card>
 
-      {(e.created_by === ctx.user.id || isAdmin) && (
+      {periodOpen && (e.created_by === ctx.user.id || isAdmin) && (
         <Card>
           <CardBody>
             <form
