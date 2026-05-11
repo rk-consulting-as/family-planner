@@ -333,6 +333,126 @@ Returner JSON.`;
   return { ok: true, data: parsed };
 }
 
+// Send bilde (JPG/PNG/WEBP) til Claude med vision
+export async function extractFromImageFile(
+  project_id: string,
+  formData: FormData
+): Promise<{ ok: boolean; error?: string; data?: ExtractedSuggestion }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Ikke innlogget" };
+
+  const file = formData.get("file") as File | null;
+  if (!file) return { ok: false, error: "Ingen fil valgt" };
+  if (file.size > 4 * 1024 * 1024) {
+    return { ok: false, error: "Bilde for stort (maks 4 MB)" };
+  }
+
+  const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+  let mediaType = file.type;
+  // Noen nettlesere setter ikke type — utled fra navnet
+  if (!mediaType) {
+    const lname = file.name.toLowerCase();
+    if (lname.endsWith(".jpg") || lname.endsWith(".jpeg")) mediaType = "image/jpeg";
+    else if (lname.endsWith(".png")) mediaType = "image/png";
+    else if (lname.endsWith(".webp")) mediaType = "image/webp";
+    else if (lname.endsWith(".gif")) mediaType = "image/gif";
+  }
+  if (!allowedTypes.includes(mediaType)) {
+    return { ok: false, error: "Bildet må være JPG, PNG, WEBP eller GIF" };
+  }
+
+  const arrayBuffer = await file.arrayBuffer();
+  const base64 = Buffer.from(arrayBuffer).toString("base64");
+
+  const title = String(formData.get("title") || file.name).trim();
+  await supabase.from("project_documents").insert({
+    project_id,
+    title,
+    kind: "image",
+    source_text: `[Bilde, ${file.size} bytes — sendt til AI for analyse]`,
+    uploaded_by: user.id,
+  });
+
+  const { data: project } = await supabase
+    .from("projects")
+    .select("title, description, context_subject")
+    .eq("id", project_id)
+    .single();
+  type P = { title?: string; description?: string; context_subject?: string } | null;
+  const p = project as P;
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  const system = `Du er en assistent som hjelper foreldre/admin å holde oversikt over et langvarig prosjekt rundt et barn (typisk utredning, behandling, søknader, utdanning).
+
+Du får tilsendt et bilde av et dokument, brev, melding eller skjermbilde og skal trekke ut strukturert informasjon i JSON-format.
+
+Fokus:
+- Identifiser EKSTERNE INSTANSER og personer (lege, lærer, BUP, NAV, advokat, saksbehandler, etc.)
+- Identifiser DATOER og hva som skjedde / skal skje
+- Identifiser ANSVARSPUNKTER
+- IKKE finn på datoer eller navn — bare ta det som faktisk står i bildet
+- Datoer som "i går", "neste mandag" etc. skal regnes ut basert på dagens dato: ${today}
+
+Returner KUN JSON i nøyaktig dette formatet (ingen annet tekst):
+{
+  "summary": "1-2 setningers oppsummering på norsk",
+  "parties": [
+    { "name": "...", "role": "...", "organization": "...", "is_internal": false }
+  ],
+  "milestones": [
+    {
+      "title": "Kort tittel",
+      "description": "Mer detaljer",
+      "kind": "past_event" | "meeting" | "deadline" | "action_item" | "document" | "decision",
+      "occurred_at": "YYYY-MM-DD" eller null,
+      "due_at": "YYYY-MM-DD" eller null,
+      "responsible_party_name": "Hvem (matcher en av parties hvis mulig)",
+      "source_excerpt": "Direkte sitat fra bildet som støtter dette (maks 100 tegn)"
+    }
+  ]
+}`;
+
+  const userText = `Prosjektkontekst: ${p?.title || ""}${p?.context_subject ? ` (handler om ${p.context_subject})` : ""}${p?.description ? `\nBeskrivelse: ${p.description}` : ""}
+
+Analyser det vedlagte bildet og returner JSON.`;
+
+  let raw = "";
+  try {
+    raw = await callClaude({
+      system,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "image",
+              source: {
+                type: "base64",
+                media_type: mediaType,
+                data: base64,
+              },
+            },
+            { type: "text", text: userText },
+          ],
+        },
+      ],
+      max_tokens: 8192,
+    });
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "AI-kall feilet" };
+  }
+
+  const parsed = safeParseJson<ExtractedSuggestion>(raw);
+  if (!parsed) {
+    return { ok: false, error: "Klarte ikke å tolke AI-svaret. Prøv igjen." };
+  }
+  return { ok: true, data: parsed };
+}
+
 // Send PDF direkte til Claude — håndterer både tekst-PDF og skannede sider via OCR
 export async function extractFromPdfFile(
   project_id: string,

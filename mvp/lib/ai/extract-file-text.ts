@@ -8,12 +8,30 @@ export type ExtractResult = {
   text: string;
   pages: number;
   warning?: string;
+  isImage?: boolean;   // bildet sendes direkte til AI uten klient-uttrekk
 };
+
+export function isImageFile(file: File): boolean {
+  const lower = file.name.toLowerCase();
+  return (
+    file.type.startsWith("image/") ||
+    lower.endsWith(".jpg") ||
+    lower.endsWith(".jpeg") ||
+    lower.endsWith(".png") ||
+    lower.endsWith(".webp") ||
+    lower.endsWith(".gif")
+  );
+}
 
 export async function extractTextFromFile(file: File): Promise<ExtractResult> {
   const lowerName = file.name.toLowerCase();
   const isText = lowerName.endsWith(".txt") || lowerName.endsWith(".md") || file.type.startsWith("text/");
   const isPdf = lowerName.endsWith(".pdf") || file.type === "application/pdf";
+
+  if (isImageFile(file)) {
+    // Bilder: ingen klient-uttrekk, sendes alltid direkte til AI
+    return { text: "", pages: 0, isImage: true };
+  }
 
   if (isText) {
     const text = await file.text();
@@ -24,7 +42,7 @@ export async function extractTextFromFile(file: File): Promise<ExtractResult> {
     return await extractFromPdf(file);
   }
 
-  throw new Error("Filtype støttes ikke. Bruk .pdf, .txt eller .md.");
+  throw new Error("Filtype støttes ikke. Bruk PDF, JPG, PNG, WEBP, TXT eller MD.");
 }
 
 async function extractFromPdf(file: File): Promise<ExtractResult> {

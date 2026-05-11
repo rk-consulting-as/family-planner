@@ -9,11 +9,12 @@ import { Sparkles, Upload } from "lucide-react";
 import {
   extractFromText,
   extractFromPdfFile,
+  extractFromImageFile,
   applyExtractedSuggestions,
   addPastedDocument,
   type ExtractedSuggestion,
 } from "@/lib/actions/projects";
-import { extractTextFromFile } from "@/lib/ai/extract-file-text";
+import { extractTextFromFile, isImageFile } from "@/lib/ai/extract-file-text";
 
 const KIND_LABELS: Record<string, { icon: string; label: string }> = {
   past_event: { icon: "📌", label: "Hendelse" },
@@ -37,6 +38,8 @@ export default function AiImportSection({ projectId }: { projectId: string }) {
   const [selectedMs, setSelectedMs] = useState<Set<number>>(new Set());
   const [extracting, setExtracting] = useState(false);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   function handlePdfDirect() {
@@ -58,12 +61,33 @@ export default function AiImportSection({ projectId }: { projectId: string }) {
     });
   }
 
+  function handleImageDirect() {
+    if (!imageFile) return;
+    setErr(null);
+    setResult(null);
+    startTransition(async () => {
+      const fd = new FormData();
+      fd.set("file", imageFile);
+      fd.set("title", title || imageFile.name.replace(/\.[^.]+$/, ""));
+      const res = await extractFromImageFile(projectId, fd);
+      if (!res.ok || !res.data) {
+        setErr(res.error || "AI-kall feilet");
+        return;
+      }
+      setResult(res.data);
+      setSelectedParties(new Set(res.data.parties.map((_, i) => i)));
+      setSelectedMs(new Set(res.data.milestones.map((_, i) => i)));
+    });
+  }
+
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setErr(null);
     setInfo(null);
     setPdfFile(null);
+    setImageFile(null);
+    setImagePreview(null);
     if (file.size > 15 * 1024 * 1024) {
       setErr("Filen er for stor (maks 15 MB)");
       return;
@@ -72,17 +96,29 @@ export default function AiImportSection({ projectId }: { projectId: string }) {
     const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
     try {
       const res = await extractTextFromFile(file);
+
+      if (res.isImage) {
+        // Bilde: ingen klient-tekst, sendes direkte til AI
+        if (file.size > 4 * 1024 * 1024) {
+          setErr("Bilde for stort (maks 4 MB for AI-prosessering). Komprimér eller skaler ned.");
+          return;
+        }
+        setImageFile(file);
+        setImagePreview(URL.createObjectURL(file));
+        if (!title) setTitle(file.name.replace(/\.[^.]+$/, ""));
+        setInfo(`Bilde lastet opp: ${file.name} (${(file.size / 1024).toFixed(0)} KB). Klikk knappen under for å la AI lese det.`);
+        return;
+      }
+
       setText((cur) => (cur ? cur + "\n\n--- " + file.name + " ---\n" + res.text : res.text));
       if (!title) setTitle(file.name.replace(/\.[^.]+$/, ""));
       if (res.warning) {
         setInfo(res.warning);
-        // For skannede PDFer: tilby direkte AI-prosessering (OCR via Claude)
         if (isPdf && file.size <= 4 * 1024 * 1024) {
           setPdfFile(file);
         }
       } else {
         setInfo(`Lest ${res.pages} side(r) fra ${file.name}. Tekst lagt i feltet under — du kan redigere før AI kjører.`);
-        // Selv ved vellykket tekstuttrekk kan vi tilby PDF-direkte for bedre kvalitet
         if (isPdf && file.size <= 4 * 1024 * 1024) {
           setPdfFile(file);
         }
@@ -194,7 +230,7 @@ export default function AiImportSection({ projectId }: { projectId: string }) {
               <input
                 ref={fileRef}
                 type="file"
-                accept=".pdf,.txt,.md,application/pdf,text/plain,text/markdown"
+                accept=".pdf,.txt,.md,.jpg,.jpeg,.png,.webp,.gif,application/pdf,text/plain,text/markdown,image/jpeg,image/png,image/webp,image/gif"
                 onChange={handleFile}
                 className="hidden"
               />
@@ -202,9 +238,9 @@ export default function AiImportSection({ projectId }: { projectId: string }) {
                 <div className="flex items-center gap-2">
                   <Upload className="w-5 h-5 text-violet-600" />
                   <div>
-                    <div className="font-medium text-sm">Last opp dokument</div>
+                    <div className="font-medium text-sm">Last opp dokument eller bilde</div>
                     <div className="text-xs text-slate-600">
-                      PDF, TXT eller MD. Maks 15 MB. Tekst trekkes ut og legges i feltet under.
+                      PDF, JPG, PNG, WEBP, TXT eller MD. Maks 15 MB. Bilder/skannede PDFer leses av AI-vision.
                     </div>
                   </div>
                 </div>
@@ -223,6 +259,35 @@ export default function AiImportSection({ projectId }: { projectId: string }) {
                   ℹ {info}
                 </div>
               )}
+              {imageFile && imagePreview && (
+                <div className="mt-3 p-3 rounded-lg bg-emerald-50 border border-emerald-200">
+                  <div className="flex items-start gap-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={imagePreview}
+                      alt="forhåndsvisning"
+                      className="w-24 h-24 object-cover rounded-lg flex-shrink-0 bg-white"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-emerald-900">
+                        🖼️ Bilde klart for AI
+                      </div>
+                      <p className="text-xs text-emerald-800 mt-1 mb-2">
+                        Claude leser bildet med vision — funker på fotograferte dokumenter,
+                        skjermbilder, brev. (~0,10 kr per bilde.)
+                      </p>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleImageDirect}
+                        disabled={pending}
+                      >
+                        {pending ? "AI leser bilde…" : "🤖 Send bilde til AI"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
               {pdfFile && (
                 <div className="mt-3 p-3 rounded-lg bg-emerald-50 border border-emerald-200">
                   <div className="text-sm font-medium text-emerald-900">
@@ -230,8 +295,7 @@ export default function AiImportSection({ projectId }: { projectId: string }) {
                   </div>
                   <p className="text-xs text-emerald-800 mt-1 mb-2">
                     Claude leser PDF-en med innebygd OCR — funker på skannede dokumenter,
-                    håndskrift og bilder. Bruker kun ved behov da det er litt dyrere
-                    enn ren tekst (~0,10–0,30 kr per dokument).
+                    håndskrift og bilder. (~0,10–0,30 kr per dokument.)
                   </p>
                   <Button
                     type="button"
