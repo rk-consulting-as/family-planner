@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getActiveContext } from "@/lib/queries";
+import { getActiveContext, requireModule } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -11,8 +11,7 @@ import NewExpenseForm from "./NewExpenseForm";
 import CloseAndStartButton from "./CloseAndStartButton";
 
 export default async function UtleggPage() {
-  const ctx = await getActiveContext();
-  if (!ctx) return null;
+  const ctx = await requireModule("expenses");
 
   const supabase = await createClient();
 

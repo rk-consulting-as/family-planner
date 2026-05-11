@@ -6,20 +6,27 @@ import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { Calendar, CheckSquare, Trophy, Footprints, Home, Settings, LogOut, Shield, CheckCheck, ShoppingBag, User, Bell, Wallet, MessageSquare, UtensilsCrossed, ShoppingCart, Gift, Briefcase } from "lucide-react";
 
-const NAV = [
+type NavItem = {
+  href: string;
+  label: string;
+  icon: typeof Home;
+  module?: string; // hvilken modul-tilgang som kreves
+};
+
+const NAV: NavItem[] = [
   { href: "/dashboard", label: "Hjem", icon: Home },
-  { href: "/kalender", label: "Kalender", icon: Calendar },
-  { href: "/chat", label: "Chat", icon: MessageSquare },
-  { href: "/gjoremal", label: "Gjøremål", icon: CheckSquare },
-  { href: "/vaner", label: "Vaner", icon: CheckCheck },
-  { href: "/onsker", label: "Ønsker", icon: ShoppingBag },
-  { href: "/gaver", label: "Gaver", icon: Gift },
-  { href: "/maltidsplan", label: "Måltider", icon: UtensilsCrossed },
-  { href: "/handleliste", label: "Handleliste", icon: ShoppingCart },
-  { href: "/prosjekter", label: "Prosjekter", icon: Briefcase },
-  { href: "/utlegg", label: "Utlegg", icon: Wallet },
-  { href: "/belonninger", label: "Belønninger", icon: Trophy },
-  { href: "/ga-tracker", label: "Gå-tracker", icon: Footprints },
+  { href: "/kalender", label: "Kalender", icon: Calendar, module: "calendar" },
+  { href: "/chat", label: "Chat", icon: MessageSquare, module: "chat" },
+  { href: "/gjoremal", label: "Gjøremål", icon: CheckSquare, module: "chores" },
+  { href: "/vaner", label: "Vaner", icon: CheckCheck, module: "habits" },
+  { href: "/onsker", label: "Ønsker", icon: ShoppingBag, module: "needs" },
+  { href: "/gaver", label: "Gaver", icon: Gift, module: "gifts" },
+  { href: "/maltidsplan", label: "Måltider", icon: UtensilsCrossed, module: "meals" },
+  { href: "/handleliste", label: "Handleliste", icon: ShoppingCart, module: "shopping" },
+  { href: "/prosjekter", label: "Prosjekter", icon: Briefcase, module: "projects" },
+  { href: "/utlegg", label: "Utlegg", icon: Wallet, module: "expenses" },
+  { href: "/belonninger", label: "Belønninger", icon: Trophy, module: "rewards" },
+  { href: "/ga-tracker", label: "Gå-tracker", icon: Footprints, module: "walking" },
 ];
 
 export function TopNav({
@@ -27,12 +34,17 @@ export function TopNav({
   isAdmin,
   displayName,
   isSystemAdmin,
+  permissions,
 }: {
   groupName: string;
   isAdmin: boolean;
   displayName: string;
   isSystemAdmin?: boolean;
+  permissions?: Record<string, boolean>;
 }) {
+  const allowedNav = NAV.filter(
+    (item) => !item.module || !permissions || permissions[item.module] !== false
+  );
   const pathname = usePathname();
   const router = useRouter();
 
@@ -54,7 +66,7 @@ export function TopNav({
         </Link>
 
         <nav className="hidden md:flex items-center gap-1 ml-4">
-          {NAV.map((item) => {
+          {allowedNav.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href || pathname.startsWith(item.href + "/");
             return (

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { PresenceDot, formatLastSeen } from "@/components/presence/PresenceDot";
 import { updateMemberRole, removeMember } from "@/lib/actions/groups";
+import PermissionsButton from "./PermissionsButton";
 
 export default async function MedlemmerPage() {
   const ctx = await getActiveContext();
@@ -92,6 +93,12 @@ export default async function MedlemmerPage() {
                     <Link href={`/medlem/${m.profile_id}/info`}>
                       <Button size="sm" variant="ghost">📝 Info</Button>
                     </Link>
+                    <PermissionsButton
+                      groupId={ctx.group.id}
+                      memberId={m.profile_id}
+                      memberName={m.display_name}
+                      memberRole={m.role}
+                    />
                     {!isMe && ctx.role === "owner" && m.role !== "owner" && (
                       <>
                         {m.role === "admin" ? (

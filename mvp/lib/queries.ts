@@ -1,5 +1,7 @@
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
+import { defaultsForRole, type ModuleAccess, type ModuleKey } from "@/lib/modules";
 
 export type ActiveContext = {
   user: { id: string; email: string | null };
@@ -17,6 +19,7 @@ export type ActiveContext = {
     invite_code: string | null;
   };
   role: "owner" | "admin" | "member";
+  permissions: ModuleAccess;
   members: Array<{
     profile_id: string;
     display_name: string;
@@ -100,11 +103,36 @@ export async function getActiveContext(preferredGroupId?: string): Promise<Activ
       role: m.role,
     }));
 
+  // Hent modul-tilganger via RPC
+  let permissions: ModuleAccess = defaultsForRole(found.role);
+  if (profile.is_system_admin) {
+    permissions = defaultsForRole("owner");
+  } else {
+    const { data: perms } = await supabase.rpc("my_module_access", {
+      p_group: found.group.id,
+    });
+    if (perms && typeof perms === "object") {
+      permissions = { ...permissions, ...(perms as Partial<ModuleAccess>) };
+    }
+  }
+
   return {
     user: { id: user.id, email: user.email ?? null },
     profile,
     group: found.group,
     role: found.role,
+    permissions,
     members: memberList,
   };
+}
+
+/**
+ * Krever at brukeren har tilgang til en bestemt modul.
+ * Brukes øverst i beskyttede sider — redirecter til /dashboard hvis ikke.
+ */
+export async function requireModule(module: ModuleKey): Promise<ActiveContext> {
+  const ctx = await getActiveContext();
+  if (!ctx) redirect("/onboarding");
+  if (!ctx.permissions[module]) redirect("/dashboard");
+  return ctx;
 }

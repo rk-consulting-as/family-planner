@@ -23,6 +23,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           isAdmin={isAdmin}
           displayName={ctx.profile.display_name}
           isSystemAdmin={ctx.profile.is_system_admin}
+          permissions={ctx.permissions as unknown as Record<string, boolean>}
         />
       </div>
       <main className="container mx-auto px-4 sm:px-6 py-6">{children}</main>

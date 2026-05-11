@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getActiveContext } from "@/lib/queries";
+import { requireModule } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -10,8 +10,7 @@ import { Briefcase } from "lucide-react";
 import { createProject } from "@/lib/actions/projects";
 
 export default async function ProsjekterPage() {
-  const ctx = await getActiveContext();
-  if (!ctx) return null;
+  const ctx = await requireModule("projects");
 
   const supabase = await createClient();
   const { data: projsRaw } = await supabase
