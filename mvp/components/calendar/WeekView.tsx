@@ -7,13 +7,16 @@ import { RRule } from "rrule";
 
 export type CalendarItem = {
   id: string;
+  rawId: string;             // ID til originalrad i DB (uten dato-suffix)
+  kind: "school" | "chore" | "event";
   title: string;
   start: Date;
   end: Date;
   color: string;
   member: string;
-  kind: "school" | "chore" | "event";
   icon?: string | null;
+  allDay?: boolean;
+  editable?: boolean;
 };
 
 export type ScheduledChore = {
@@ -29,9 +32,9 @@ export type RawTimetable = {
   id: string;
   profile_id: string;
   subject: string;
-  start_time: string; // HH:MM:SS
+  start_time: string;
   end_time: string;
-  start_date: string; // YYYY-MM-DD
+  start_date: string;
   recurrence_rule: string | null;
   exception_dates: string[] | null;
 };
@@ -44,6 +47,9 @@ export type RawEvent = {
   participant_ids: string[];
   recurrence_rule: string | null;
   kind: string;
+  all_day?: boolean | null;
+  icon?: string | null;
+  color_hex?: string | null;
 };
 
 export type Member = {
@@ -52,24 +58,42 @@ export type Member = {
   color_hex: string | null;
 };
 
+export type CustodyPeriod = {
+  id: string;
+  host_parent_id: string;
+  child_ids: string[];
+  starts_on: string;
+  ends_on: string;
+  label: string | null;
+  color_hex: string;
+  opacity: number;
+};
+
 export function WeekView({
   weekStart,
   members,
   timetable,
   events,
   scheduledChores,
+  custodyPeriods,
   visibleMemberIds,
   onSlotClick,
+  onEventClick,
+  onEventMove,
 }: {
   weekStart: Date;
   members: Member[];
   timetable: RawTimetable[];
   events: RawEvent[];
   scheduledChores?: ScheduledChore[];
+  custodyPeriods?: CustodyPeriod[];
   visibleMemberIds: string[];
   onSlotClick?: (start: Date, end: Date) => void;
+  onEventClick?: (eventId: string) => void;
+  onEventMove?: (eventId: string, newStart: Date, newEnd: Date) => void;
 }) {
   const [hour] = useState({ from: 7, to: 21 });
+  const [dragInfo, setDragInfo] = useState<{ id: string; durationMs: number } | null>(null);
 
   const days = useMemo(
     () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
@@ -81,7 +105,6 @@ export function WeekView({
     const byMember = new Map(members.map((m) => [m.profile_id, m]));
     const weekEnd = addDays(weekStart, 6);
 
-    // Timetable expansion via RRULE
     for (const t of timetable) {
       if (!visibleMemberIds.includes(t.profile_id)) continue;
       const member = byMember.get(t.profile_id);
@@ -100,7 +123,8 @@ export function WeekView({
         const start = combineDateTime(occ, t.start_time);
         const end = combineDateTime(occ, t.end_time);
         expanded.push({
-          id: `${t.id}-${dateStr}`,
+          id: `tt-${t.id}-${dateStr}`,
+          rawId: t.id,
           title: t.subject,
           start,
           end,
@@ -111,29 +135,29 @@ export function WeekView({
       }
     }
 
-    // Events
     for (const e of events) {
       if (!e.participant_ids.some((p) => visibleMemberIds.includes(p))) continue;
-      const member = e.participant_ids
-        .map((id) => byMember.get(id))
-        .find(Boolean);
-      const color = member?.color_hex || "#7C3AED";
+      const member = e.participant_ids.map((id) => byMember.get(id)).find(Boolean);
+      const color = e.color_hex || member?.color_hex || "#7C3AED";
       const memberName = member?.display_name || "Familien";
       const start = parseISO(e.starts_at);
       const end = parseISO(e.ends_at);
       if (!isWithin(start, weekStart, addDays(weekEnd, 1))) continue;
       expanded.push({
-        id: e.id,
-        title: e.title,
+        id: `ev-${e.id}`,
+        rawId: e.id,
+        title: e.icon ? `${e.icon} ${e.title}` : e.title,
         start,
         end,
         color,
         member: memberName,
         kind: e.kind === "school" ? "school" : e.kind === "chore" ? "chore" : "event",
+        icon: e.icon,
+        allDay: !!e.all_day,
+        editable: true,
       });
     }
 
-    // Planlagte gjøremål
     for (const c of scheduledChores || []) {
       if (c.assignee_ids.length > 0 && !c.assignee_ids.some((p) => visibleMemberIds.includes(p))) continue;
       const member = c.assignee_ids.map((id) => byMember.get(id)).find(Boolean);
@@ -145,6 +169,7 @@ export function WeekView({
       if (!isWithin(start, weekStart, addDays(weekEnd, 1))) continue;
       expanded.push({
         id: `chore-${c.id}`,
+        rawId: c.id,
         title: `${c.icon || "✅"} ${c.title}`,
         start,
         end: realEnd,
@@ -159,8 +184,48 @@ export function WeekView({
   }, [weekStart, members, timetable, events, scheduledChores, visibleMemberIds]);
 
   const totalHours = hour.to - hour.from;
-  const slotPx = 14; // pixels per 15-min slot
+  const slotPx = 14;
   const totalSlots = totalHours * 4;
+
+  // Custody overlays per dag
+  const custodyByDay = useMemo(() => {
+    const map = new Map<string, CustodyPeriod[]>();
+    for (const period of custodyPeriods || []) {
+      const start = parseISO(period.starts_on);
+      const end = parseISO(period.ends_on);
+      for (const d of days) {
+        const dStr = format(d, "yyyy-MM-dd");
+        const dDate = parseISO(dStr);
+        if (dDate >= start && dDate <= end) {
+          // Sjekk at periode involverer minst ett synlig medlem
+          const involves = period.child_ids.some((id) => visibleMemberIds.includes(id));
+          if (involves || visibleMemberIds.includes(period.host_parent_id)) {
+            const arr = map.get(dStr) || [];
+            arr.push(period);
+            map.set(dStr, arr);
+          }
+        }
+      }
+    }
+    return map;
+  }, [custodyPeriods, days, visibleMemberIds]);
+
+  function nameOfHost(hostId: string): string {
+    return members.find((m) => m.profile_id === hostId)?.display_name || "?";
+  }
+
+  // All-day items per dag
+  const allDayByDay = useMemo(() => {
+    const map = new Map<string, CalendarItem[]>();
+    for (const it of items) {
+      if (!it.allDay) continue;
+      const dStr = format(it.start, "yyyy-MM-dd");
+      const arr = map.get(dStr) || [];
+      arr.push(it);
+      map.set(dStr, arr);
+    }
+    return map;
+  }, [items]);
 
   return (
     <div className="rounded-2xl bg-white border border-slate-200 overflow-hidden">
@@ -178,8 +243,34 @@ export function WeekView({
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-[60px_repeat(7,1fr)]" style={{ height: totalSlots * slotPx }}>
-        {/* time axis */}
+
+      {/* All-day strip */}
+      {Array.from(allDayByDay.entries()).length > 0 && (
+        <div className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-slate-200">
+          <div className="bg-slate-50 px-2 py-1 text-[10px] text-slate-500 self-center">Hele dagen</div>
+          {days.map((d, di) => {
+            const all = allDayByDay.get(format(d, "yyyy-MM-dd")) || [];
+            return (
+              <div key={di} className="border-l border-slate-100 p-1 space-y-1 min-h-[28px]">
+                {all.map((it) => (
+                  <button
+                    key={it.id}
+                    data-event
+                    onClick={() => it.editable && onEventClick && onEventClick(it.rawId)}
+                    className="w-full text-left rounded text-white text-xs px-1.5 py-0.5 truncate"
+                    style={{ background: it.color }}
+                    title={`${it.title} • ${it.member}`}
+                  >
+                    {it.title}
+                  </button>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="grid grid-cols-[60px_repeat(7,1fr)] relative" style={{ height: totalSlots * slotPx }}>
         <div className="relative">
           {Array.from({ length: totalHours + 1 }, (_, i) => (
             <div
@@ -191,57 +282,102 @@ export function WeekView({
             </div>
           ))}
         </div>
-        {days.map((d, di) => (
-          <div
-            key={di}
-            className="relative border-l border-slate-100 bg-[linear-gradient(to_bottom,transparent_55px,rgb(241,245,249)_56px,transparent_57px)] cursor-pointer hover:bg-slate-50/40"
-            style={{
-              backgroundSize: `100% ${4 * slotPx}px`,
-            }}
-            onClick={(e) => {
-              if (!onSlotClick) return;
-              // Bare reagér hvis klikk var på selve kolonnen, ikke på en hendelse
-              if ((e.target as HTMLElement).closest("[data-event]")) return;
-              const rect = e.currentTarget.getBoundingClientRect();
-              const y = e.clientY - rect.top;
-              const slot = Math.floor(y / slotPx);
-              const minutes = slot * 15;
-              const start = new Date(d);
-              start.setHours(hour.from, 0, 0, 0);
-              start.setMinutes(start.getMinutes() + minutes);
-              const end = new Date(start.getTime() + 60 * 60 * 1000); // 1 time
-              onSlotClick(start, end);
-            }}
-          >
-            {items
-              .filter((it) => isSameDay(it.start, d))
-              .map((it) => {
-                const startMin =
-                  it.start.getHours() * 60 + it.start.getMinutes() - hour.from * 60;
-                const endMin = it.end.getHours() * 60 + it.end.getMinutes() - hour.from * 60;
-                const top = (startMin / 15) * slotPx;
-                const height = Math.max(((endMin - startMin) / 15) * slotPx - 2, 22);
-                return (
-                  <div
-                    key={it.id}
-                    data-event
-                    className="absolute left-1 right-1 rounded-md text-white text-xs px-1.5 py-1 overflow-hidden shadow-sm"
-                    style={{
-                      top,
-                      height,
-                      background: it.color,
-                    }}
-                    title={`${it.title} • ${format(it.start, "HH:mm")}–${format(it.end, "HH:mm")} • ${it.member}`}
+        {days.map((d, di) => {
+          const dStr = format(d, "yyyy-MM-dd");
+          const dayCustody = custodyByDay.get(dStr) || [];
+          return (
+            <div
+              key={di}
+              className="relative border-l border-slate-100 bg-[linear-gradient(to_bottom,transparent_55px,rgb(241,245,249)_56px,transparent_57px)] cursor-pointer hover:bg-slate-50/40"
+              style={{ backgroundSize: `100% ${4 * slotPx}px` }}
+              onClick={(e) => {
+                if (!onSlotClick) return;
+                if ((e.target as HTMLElement).closest("[data-event]")) return;
+                const rect = e.currentTarget.getBoundingClientRect();
+                const y = e.clientY - rect.top;
+                const slot = Math.floor(y / slotPx);
+                const minutes = slot * 15;
+                const start = new Date(d);
+                start.setHours(hour.from, 0, 0, 0);
+                start.setMinutes(start.getMinutes() + minutes);
+                const end = new Date(start.getTime() + 60 * 60 * 1000);
+                onSlotClick(start, end);
+              }}
+              onDragOver={(e) => {
+                if (dragInfo) e.preventDefault();
+              }}
+              onDrop={(e) => {
+                if (!dragInfo || !onEventMove) return;
+                e.preventDefault();
+                const rect = e.currentTarget.getBoundingClientRect();
+                const y = e.clientY - rect.top;
+                const slot = Math.max(0, Math.floor(y / slotPx));
+                const minutes = slot * 15;
+                const newStart = new Date(d);
+                newStart.setHours(hour.from, 0, 0, 0);
+                newStart.setMinutes(newStart.getMinutes() + minutes);
+                const newEnd = new Date(newStart.getTime() + dragInfo.durationMs);
+                onEventMove(dragInfo.id, newStart, newEnd);
+                setDragInfo(null);
+              }}
+            >
+              {/* Custody-bakgrunn (under alt annet) */}
+              {dayCustody.map((cp) => (
+                <div
+                  key={cp.id}
+                  className="absolute inset-0 pointer-events-none flex items-end justify-center pb-2"
+                  style={{
+                    background: cp.color_hex,
+                    opacity: cp.opacity,
+                  }}
+                >
+                  <span
+                    className="text-[10px] font-medium uppercase tracking-wide text-white drop-shadow"
+                    style={{ opacity: 0.7 }}
                   >
-                    <div className="font-semibold truncate">{it.title}</div>
-                    <div className="opacity-80 truncate">
-                      {format(it.start, "HH:mm")} • {it.member}
-                    </div>
-                  </div>
-                );
-              })}
-          </div>
-        ))}
+                    {cp.label || `Hos ${nameOfHost(cp.host_parent_id)}`}
+                  </span>
+                </div>
+              ))}
+
+              {items
+                .filter((it) => !it.allDay && isSameDay(it.start, d))
+                .map((it) => {
+                  const startMin = it.start.getHours() * 60 + it.start.getMinutes() - hour.from * 60;
+                  const endMin = it.end.getHours() * 60 + it.end.getMinutes() - hour.from * 60;
+                  const top = (startMin / 15) * slotPx;
+                  const height = Math.max(((endMin - startMin) / 15) * slotPx - 2, 22);
+                  return (
+                    <button
+                      key={it.id}
+                      data-event
+                      draggable={!!it.editable && !!onEventMove}
+                      onDragStart={(e) => {
+                        if (!it.editable) return;
+                        e.dataTransfer.effectAllowed = "move";
+                        setDragInfo({ id: it.rawId, durationMs: it.end.getTime() - it.start.getTime() });
+                      }}
+                      onDragEnd={() => setDragInfo(null)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (it.editable && onEventClick) onEventClick(it.rawId);
+                      }}
+                      className={`absolute left-1 right-1 rounded-md text-white text-xs px-1.5 py-1 overflow-hidden shadow-sm text-left ${
+                        it.editable ? "hover:ring-2 hover:ring-white" : ""
+                      }`}
+                      style={{ top, height, background: it.color, cursor: it.editable ? "grab" : "pointer" }}
+                      title={`${it.title} • ${format(it.start, "HH:mm")}–${format(it.end, "HH:mm")} • ${it.member}${it.editable ? " (klikk for å redigere)" : ""}`}
+                    >
+                      <div className="font-semibold truncate">{it.title}</div>
+                      <div className="opacity-80 truncate">
+                        {format(it.start, "HH:mm")} • {it.member}
+                      </div>
+                    </button>
+                  );
+                })}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -259,7 +395,6 @@ function isWithin(d: Date, from: Date, to: Date): boolean {
 }
 
 function formatRRuleDate(d: Date): string {
-  // RRULE expects YYYYMMDDTHHmmssZ
   const pad = (n: number) => String(n).padStart(2, "0");
   return (
     d.getUTCFullYear().toString() +

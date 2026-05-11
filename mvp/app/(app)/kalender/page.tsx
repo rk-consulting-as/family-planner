@@ -1,7 +1,7 @@
 import { getActiveContext } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import KalenderShell from "./KalenderShell";
-import type { RawEvent, ScheduledChore } from "@/components/calendar/WeekView";
+import type { RawEvent, ScheduledChore, CustodyPeriod } from "@/components/calendar/WeekView";
 
 export default async function KalenderPage() {
   const ctx = await getActiveContext();
@@ -19,17 +19,22 @@ export default async function KalenderPage() {
 
   const { data: events } = await supabase
     .from("events")
-    .select("id, title, starts_at, ends_at, participant_ids, recurrence_rule, kind")
+    .select("id, title, starts_at, ends_at, participant_ids, recurrence_rule, kind, all_day, icon, color_hex")
     .eq("group_id", ctx.group.id)
     .is("deleted_at", null);
 
-  // Planlagte gjøremål med tid
   const { data: chores } = await supabase
     .from("chores")
     .select("id, title, icon, scheduled_start, scheduled_end, assignee_ids")
     .eq("group_id", ctx.group.id)
     .is("deleted_at", null)
     .not("scheduled_start", "is", null);
+
+  const { data: custody } = await supabase
+    .from("custody_periods")
+    .select("id, host_parent_id, child_ids, starts_on, ends_on, label, color_hex, opacity")
+    .eq("group_id", ctx.group.id)
+    .order("starts_on", { ascending: true });
 
   const isAdmin = ctx.role === "owner" || ctx.role === "admin";
 
@@ -45,6 +50,7 @@ export default async function KalenderPage() {
         timetable={timetable || []}
         events={(events || []) as RawEvent[]}
         scheduledChores={(chores || []) as ScheduledChore[]}
+        custodyPeriods={(custody || []) as CustodyPeriod[]}
         currentUserId={ctx.user.id}
         isAdmin={isAdmin}
       />
