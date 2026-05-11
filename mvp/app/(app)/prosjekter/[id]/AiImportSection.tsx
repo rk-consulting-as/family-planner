@@ -1,17 +1,18 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { Card, CardBody, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
+import { useRef, useState, useTransition } from "react";
+import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Field, Input, Textarea } from "@/components/ui/Input";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Upload } from "lucide-react";
 import {
   extractFromText,
   applyExtractedSuggestions,
   addPastedDocument,
   type ExtractedSuggestion,
 } from "@/lib/actions/projects";
+import { extractTextFromFile } from "@/lib/ai/extract-file-text";
 
 const KIND_LABELS: Record<string, { icon: string; label: string }> = {
   past_event: { icon: "📌", label: "Hendelse" },
@@ -29,9 +30,39 @@ export default function AiImportSection({ projectId }: { projectId: string }) {
   const [title, setTitle] = useState("");
   const [pending, startTransition] = useTransition();
   const [err, setErr] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const [result, setResult] = useState<ExtractedSuggestion | null>(null);
   const [selectedParties, setSelectedParties] = useState<Set<number>>(new Set());
   const [selectedMs, setSelectedMs] = useState<Set<number>>(new Set());
+  const [extracting, setExtracting] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setErr(null);
+    setInfo(null);
+    if (file.size > 15 * 1024 * 1024) {
+      setErr("Filen er for stor (maks 15 MB)");
+      return;
+    }
+    setExtracting(true);
+    try {
+      const res = await extractTextFromFile(file);
+      setText((cur) => (cur ? cur + "\n\n--- " + file.name + " ---\n" + res.text : res.text));
+      if (!title) setTitle(file.name.replace(/\.[^.]+$/, ""));
+      if (res.warning) {
+        setInfo(res.warning);
+      } else {
+        setInfo(`Lest ${res.pages} side(r) fra ${file.name}. Tekst lagt i feltet under — du kan redigere før AI kjører.`);
+      }
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : "Klarte ikke å lese filen");
+    } finally {
+      setExtracting(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
 
   function handleExtract() {
     setErr(null);
@@ -126,31 +157,73 @@ export default function AiImportSection({ projectId }: { projectId: string }) {
                 placeholder="F.eks. Epost fra BUP — april 2026"
               />
             </Field>
+
+            {/* Fil-opplasting */}
+            <div className="rounded-xl border-2 border-dashed border-violet-200 bg-violet-50/40 p-4">
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".pdf,.txt,.md,application/pdf,text/plain,text/markdown"
+                onChange={handleFile}
+                className="hidden"
+              />
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <Upload className="w-5 h-5 text-violet-600" />
+                  <div>
+                    <div className="font-medium text-sm">Last opp dokument</div>
+                    <div className="text-xs text-slate-600">
+                      PDF, TXT eller MD. Maks 15 MB. Tekst trekkes ut og legges i feltet under.
+                    </div>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={extracting}
+                >
+                  {extracting ? "Leser…" : "📄 Velg fil"}
+                </Button>
+              </div>
+              {info && (
+                <div className="mt-3 text-xs text-slate-700 bg-white border border-slate-200 rounded-lg p-2">
+                  ℹ {info}
+                </div>
+              )}
+            </div>
+
             <Field
-              label="Lim inn epost, brev eller notat"
-              hint="Maks 50 000 tegn. Ikke send sensitive personnumre du ikke vil dele."
+              label="Tekst som skal analyseres"
+              hint="Bruk fil-knappen over for PDF/tekst, eller lim inn manuelt. Maks 50 000 tegn."
             >
               <Textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 rows={10}
-                placeholder="Lim inn hele epost-teksten her..."
+                placeholder="Lim inn epost-tekst her — eller last opp en fil over..."
               />
             </Field>
+
+            <div className="text-xs text-slate-500">
+              <strong>Tegn:</strong> {text.length.toLocaleString("nb-NO")} / 50 000
+            </div>
+
             {err && (
               <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
                 {err}
               </div>
             )}
             <div className="flex gap-2">
-              <Button onClick={handleExtract} disabled={pending}>
+              <Button onClick={handleExtract} disabled={pending || extracting}>
                 {pending ? "Analyserer…" : "🤖 Kjør AI-uttrekk"}
               </Button>
               <Button variant="ghost" onClick={() => setOpen(false)}>Avbryt</Button>
             </div>
             <p className="text-xs text-slate-500">
-              💡 AI sender teksten til Anthropic Claude for behandling. Lagres ikke utenfor
-              vårt system.
+              💡 AI sender teksten til Anthropic Claude for behandling. Originalteksten
+              lagres som dokument i prosjektet for fremtidig referanse.
             </p>
           </>
         ) : (

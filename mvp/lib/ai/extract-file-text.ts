@@ -1,0 +1,64 @@
+"use client";
+
+// Klient-utility for å trekke ut tekst fra opplastede filer.
+// PDF-er behandles via pdfjs-dist (kun tekst-baserte PDFer; skannede gir tom/lite tekst).
+// .txt og .md leses direkte.
+
+const PDFJS_VERSION = "4.7.76";
+const WORKER_URL = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.worker.min.mjs`;
+
+export type ExtractResult = {
+  text: string;
+  pages: number;
+  warning?: string;
+};
+
+export async function extractTextFromFile(file: File): Promise<ExtractResult> {
+  const lowerName = file.name.toLowerCase();
+  const isText = lowerName.endsWith(".txt") || lowerName.endsWith(".md") || file.type.startsWith("text/");
+  const isPdf = lowerName.endsWith(".pdf") || file.type === "application/pdf";
+
+  if (isText) {
+    const text = await file.text();
+    return { text, pages: 1 };
+  }
+
+  if (isPdf) {
+    return await extractFromPdf(file);
+  }
+
+  throw new Error("Filtype støttes ikke. Bruk .pdf, .txt eller .md.");
+}
+
+async function extractFromPdf(file: File): Promise<ExtractResult> {
+  // Dynamisk import for å unngå SSR-problemer og holde initial bundle liten
+  const pdfjs = await import("pdfjs-dist/build/pdf.mjs");
+  // Sett opp worker fra CDN
+  pdfjs.GlobalWorkerOptions.workerSrc = WORKER_URL;
+
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
+
+  const allText: string[] = [];
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    const pageText = content.items
+      .map((item) => ("str" in item ? (item as { str: string }).str : ""))
+      .join(" ");
+    allText.push(pageText.trim());
+  }
+
+  const text = allText.join("\n\n").trim();
+  const wordCount = text.split(/\s+/).filter(Boolean).length;
+
+  let warning: string | undefined;
+  if (wordCount < 30 && pdf.numPages > 0) {
+    warning =
+      `Lite tekst funnet (${wordCount} ord på ${pdf.numPages} sider). PDF-en er sannsynligvis skannet ` +
+      `som bilder. For skannede dokumenter må du bruke OCR-tjeneste først (f.eks. ` +
+      `https://www.onlineocr.net) og lime inn resultatet.`;
+  }
+
+  return { text, pages: pdf.numPages, warning };
+}
