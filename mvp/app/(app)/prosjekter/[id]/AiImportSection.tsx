@@ -8,6 +8,7 @@ import { Field, Input, Textarea } from "@/components/ui/Input";
 import { Sparkles, Upload } from "lucide-react";
 import {
   extractFromText,
+  extractFromPdfFile,
   applyExtractedSuggestions,
   addPastedDocument,
   type ExtractedSuggestion,
@@ -35,26 +36,56 @@ export default function AiImportSection({ projectId }: { projectId: string }) {
   const [selectedParties, setSelectedParties] = useState<Set<number>>(new Set());
   const [selectedMs, setSelectedMs] = useState<Set<number>>(new Set());
   const [extracting, setExtracting] = useState(false);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  function handlePdfDirect() {
+    if (!pdfFile) return;
+    setErr(null);
+    setResult(null);
+    startTransition(async () => {
+      const fd = new FormData();
+      fd.set("file", pdfFile);
+      fd.set("title", title || pdfFile.name.replace(/\.[^.]+$/, ""));
+      const res = await extractFromPdfFile(projectId, fd);
+      if (!res.ok || !res.data) {
+        setErr(res.error || "AI-kall feilet");
+        return;
+      }
+      setResult(res.data);
+      setSelectedParties(new Set(res.data.parties.map((_, i) => i)));
+      setSelectedMs(new Set(res.data.milestones.map((_, i) => i)));
+    });
+  }
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setErr(null);
     setInfo(null);
+    setPdfFile(null);
     if (file.size > 15 * 1024 * 1024) {
       setErr("Filen er for stor (maks 15 MB)");
       return;
     }
     setExtracting(true);
+    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
     try {
       const res = await extractTextFromFile(file);
       setText((cur) => (cur ? cur + "\n\n--- " + file.name + " ---\n" + res.text : res.text));
       if (!title) setTitle(file.name.replace(/\.[^.]+$/, ""));
       if (res.warning) {
         setInfo(res.warning);
+        // For skannede PDFer: tilby direkte AI-prosessering (OCR via Claude)
+        if (isPdf && file.size <= 4 * 1024 * 1024) {
+          setPdfFile(file);
+        }
       } else {
         setInfo(`Lest ${res.pages} side(r) fra ${file.name}. Tekst lagt i feltet under — du kan redigere før AI kjører.`);
+        // Selv ved vellykket tekstuttrekk kan vi tilby PDF-direkte for bedre kvalitet
+        if (isPdf && file.size <= 4 * 1024 * 1024) {
+          setPdfFile(file);
+        }
       }
     } catch (ex) {
       setErr(ex instanceof Error ? ex.message : "Klarte ikke å lese filen");
@@ -190,6 +221,26 @@ export default function AiImportSection({ projectId }: { projectId: string }) {
               {info && (
                 <div className="mt-3 text-xs text-slate-700 bg-white border border-slate-200 rounded-lg p-2">
                   ℹ {info}
+                </div>
+              )}
+              {pdfFile && (
+                <div className="mt-3 p-3 rounded-lg bg-emerald-50 border border-emerald-200">
+                  <div className="text-sm font-medium text-emerald-900">
+                    🔍 Skannet PDF? Send hele filen direkte til AI
+                  </div>
+                  <p className="text-xs text-emerald-800 mt-1 mb-2">
+                    Claude leser PDF-en med innebygd OCR — funker på skannede dokumenter,
+                    håndskrift og bilder. Bruker kun ved behov da det er litt dyrere
+                    enn ren tekst (~0,10–0,30 kr per dokument).
+                  </p>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handlePdfDirect}
+                    disabled={pending}
+                  >
+                    {pending ? "AI leser PDF…" : "🤖 Send hele PDF til AI"}
+                  </Button>
                 </div>
               )}
             </div>

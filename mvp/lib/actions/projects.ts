@@ -333,6 +333,125 @@ Returner JSON.`;
   return { ok: true, data: parsed };
 }
 
+// Send PDF direkte til Claude — håndterer både tekst-PDF og skannede sider via OCR
+export async function extractFromPdfFile(
+  project_id: string,
+  formData: FormData
+): Promise<{ ok: boolean; error?: string; data?: ExtractedSuggestion }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Ikke innlogget" };
+
+  const file = formData.get("file") as File | null;
+  if (!file) return { ok: false, error: "Ingen fil valgt" };
+  if (file.size > 4 * 1024 * 1024) {
+    return {
+      ok: false,
+      error:
+        "PDF for stor (maks 4 MB for direkte AI-prosessering). Del opp PDF-en, eller bruk OCR-tjeneste først.",
+    };
+  }
+  if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+    return { ok: false, error: "Kun PDF støttes for denne metoden" };
+  }
+
+  // Konverter til base64
+  const arrayBuffer = await file.arrayBuffer();
+  const base64 = Buffer.from(arrayBuffer).toString("base64");
+
+  // Lagre PDF-en som dokument (med metadata, uten den tunge teksten)
+  const title = String(formData.get("title") || file.name).trim();
+  await supabase.from("project_documents").insert({
+    project_id,
+    title,
+    kind: "pdf",
+    source_text: `[PDF, ${file.size} bytes — sendt direkte til AI for OCR/lesning]`,
+    uploaded_by: user.id,
+  });
+
+  // Hent kontekst
+  const { data: project } = await supabase
+    .from("projects")
+    .select("title, description, context_subject")
+    .eq("id", project_id)
+    .single();
+  type P = { title?: string; description?: string; context_subject?: string } | null;
+  const p = project as P;
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  const system = `Du er en assistent som hjelper foreldre/admin å holde oversikt over et langvarig prosjekt rundt et barn (typisk utredning, behandling, søknader, utdanning).
+
+Du får tilsendt et PDF-dokument og skal trekke ut strukturert informasjon i JSON-format. PDF-en kan være skannet — les uansett.
+
+Fokus:
+- Identifiser EKSTERNE INSTANSER og personer (lege, lærer, BUP, NAV, advokat, saksbehandler, etc.)
+- Identifiser DATOER og hva som skjedde / skal skje
+- Identifiser ANSVARSPUNKTER ("vi må ...", "skolen vil ...", "frist ...")
+- IKKE finn på datoer eller navn — bare ta det som faktisk står i dokumentet
+- Datoer som "i går", "neste mandag" etc. skal regnes ut basert på dagens dato: ${today}
+
+Returner KUN JSON i nøyaktig dette formatet (ingen annet tekst):
+{
+  "summary": "1-2 setningers oppsummering på norsk",
+  "parties": [
+    { "name": "...", "role": "...", "organization": "...", "is_internal": false }
+  ],
+  "milestones": [
+    {
+      "title": "Kort tittel",
+      "description": "Mer detaljer",
+      "kind": "past_event" | "meeting" | "deadline" | "action_item" | "document" | "decision",
+      "occurred_at": "YYYY-MM-DD" eller null,
+      "due_at": "YYYY-MM-DD" eller null,
+      "responsible_party_name": "Hvem (matcher en av parties hvis mulig)",
+      "source_excerpt": "Direkte sitat fra dokumentet som støtter dette (maks 100 tegn)"
+    }
+  ]
+}`;
+
+  const userText = `Prosjektkontekst: ${p?.title || ""}${p?.context_subject ? ` (handler om ${p.context_subject})` : ""}${p?.description ? `\nBeskrivelse: ${p.description}` : ""}
+
+Analyser det vedlagte PDF-dokumentet og returner JSON.`;
+
+  let raw = "";
+  try {
+    raw = await callClaude({
+      system,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "document",
+              source: {
+                type: "base64",
+                media_type: "application/pdf",
+                data: base64,
+              },
+            },
+            {
+              type: "text",
+              text: userText,
+            },
+          ],
+        },
+      ],
+      max_tokens: 8192,
+    });
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "AI-kall feilet" };
+  }
+
+  const parsed = safeParseJson<ExtractedSuggestion>(raw);
+  if (!parsed) {
+    return { ok: false, error: "Klarte ikke å tolke AI-svaret. Prøv igjen." };
+  }
+  return { ok: true, data: parsed };
+}
+
 export async function applyExtractedSuggestions(
   project_id: string,
   formData: FormData

@@ -4,9 +4,20 @@
 const API_URL = "https://api.anthropic.com/v1/messages";
 const MODEL = "claude-haiku-4-5"; // raskt + billig — passer for ekstraksjon
 
+export type ClaudeBlock =
+  | { type: "text"; text: string }
+  | {
+      type: "document";
+      source: { type: "base64"; media_type: "application/pdf"; data: string };
+    }
+  | {
+      type: "image";
+      source: { type: "base64"; media_type: string; data: string };
+    };
+
 export type ClaudeMessage = {
   role: "user" | "assistant";
-  content: string;
+  content: string | ClaudeBlock[];
 };
 
 export async function callClaude({
@@ -57,13 +68,11 @@ export async function callClaude({
 
 // Sikker JSON-parse fra Claude (kan ha kodebloker rundt)
 export function safeParseJson<T = unknown>(text: string): T | null {
-  // Strip markdown code fences if present
   let s = text.trim();
   s = s.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/, "");
   try {
     return JSON.parse(s) as T;
   } catch {
-    // Try to find first { ... } block
     const m = s.match(/\{[\s\S]*\}/);
     if (m) {
       try {
