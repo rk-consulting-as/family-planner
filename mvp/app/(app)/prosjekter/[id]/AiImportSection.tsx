@@ -113,7 +113,14 @@ export default function AiImportSection({ projectId }: { projectId: string }) {
       setText((cur) => (cur ? cur + "\n\n--- " + file.name + " ---\n" + res.text : res.text));
       if (!title) setTitle(file.name.replace(/\.[^.]+$/, ""));
       if (res.warning) {
-        setInfo(res.warning);
+        if (isPdf && file.size > 4 * 1024 * 1024) {
+          setInfo(
+            `${res.warning} MEN: PDF-en er ${(file.size / 1024 / 1024).toFixed(1)} MB — for stor for direkte AI-prosessering (maks 4 MB). ` +
+              `Del opp PDF-en i mindre deler, eller komprimér med f.eks. https://www.ilovepdf.com/compress_pdf`
+          );
+        } else {
+          setInfo(res.warning);
+        }
         if (isPdf && file.size <= 4 * 1024 * 1024) {
           setPdfFile(file);
         }

@@ -72,9 +72,9 @@ async function extractFromPdf(file: File): Promise<ExtractResult> {
   let warning: string | undefined;
   if (wordCount < 30 && pdf.numPages > 0) {
     warning =
-      `Lite tekst funnet (${wordCount} ord på ${pdf.numPages} sider). PDF-en er sannsynligvis skannet ` +
-      `som bilder. For skannede dokumenter må du bruke OCR-tjeneste først (f.eks. ` +
-      `https://www.onlineocr.net) og lime inn resultatet.`;
+      `Lite tekst funnet (${wordCount} ord på ${pdf.numPages} sider) — PDF-en er sannsynligvis ` +
+      `skannet som bilder. Bruk den grønne knappen under for å la AI lese hele dokumentet ` +
+      `med innebygd OCR.`;
   }
 
   return { text, pages: pdf.numPages, warning };
