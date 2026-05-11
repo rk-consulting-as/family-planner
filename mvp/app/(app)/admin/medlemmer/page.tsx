@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { getActiveContext } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -88,6 +89,9 @@ export default async function MedlemmerPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     {m.role === "owner" && <Badge variant="info">Eier</Badge>}
+                    <Link href={`/medlem/${m.profile_id}/info`}>
+                      <Button size="sm" variant="ghost">📝 Info</Button>
+                    </Link>
                     {!isMe && ctx.role === "owner" && m.role !== "owner" && (
                       <>
                         {m.role === "admin" ? (
