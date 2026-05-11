@@ -40,6 +40,7 @@ export default function AiImportSection({ projectId }: { projectId: string }) {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [sourceDocId, setSourceDocId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   function handlePdfDirect() {
@@ -56,6 +57,7 @@ export default function AiImportSection({ projectId }: { projectId: string }) {
         return;
       }
       setResult(res.data);
+      setSourceDocId(res.source_document_id || null);
       setSelectedParties(new Set(res.data.parties.map((_, i) => i)));
       setSelectedMs(new Set(res.data.milestones.map((_, i) => i)));
     });
@@ -75,6 +77,7 @@ export default function AiImportSection({ projectId }: { projectId: string }) {
         return;
       }
       setResult(res.data);
+      setSourceDocId(res.source_document_id || null);
       setSelectedParties(new Set(res.data.parties.map((_, i) => i)));
       setSelectedMs(new Set(res.data.milestones.map((_, i) => i)));
     });
@@ -176,11 +179,13 @@ export default function AiImportSection({ projectId }: { projectId: string }) {
     };
     const fd = new FormData();
     fd.set("payload", JSON.stringify(filtered));
+    if (sourceDocId) fd.set("source_document_id", sourceDocId);
     startTransition(async () => {
       await applyExtractedSuggestions(projectId, fd);
       setResult(null);
       setText("");
       setTitle("");
+      setSourceDocId(null);
       setOpen(false);
     });
   }

@@ -8,17 +8,15 @@ import { Badge } from "@/components/ui/Badge";
 import { Linkify } from "@/components/ui/Linkify";
 import { Briefcase, Sparkles } from "lucide-react";
 import {
-  addParty,
-  deleteParty,
-  addMilestone,
   updateMilestoneStatus,
   deleteMilestone,
   addNote,
   deleteProject,
 } from "@/lib/actions/projects";
 import AddMilestoneForm from "./AddMilestoneForm";
-import AddPartyForm from "./AddPartyForm";
 import AiImportSection from "./AiImportSection";
+import PartiesSection from "./PartiesSection";
+import MilestoneComments from "./MilestoneComments";
 
 const KIND_LABELS: Record<string, { icon: string; label: string }> = {
   past_event: { icon: "📌", label: "Hendelse" },
@@ -61,6 +59,7 @@ export default async function ProsjektPage({ params }: { params: { id: string } 
     { data: milestones },
     { data: notes },
     { data: documents },
+    { data: msComments },
   ] = await Promise.all([
     supabase
       .from("project_members")
@@ -68,7 +67,7 @@ export default async function ProsjektPage({ params }: { params: { id: string } 
       .eq("project_id", p.id),
     supabase
       .from("project_parties")
-      .select("id, name, role, organization, contact_info, notes, is_internal")
+      .select("id, name, role, organization, contact_info, notes, is_internal, merged_into_id")
       .eq("project_id", p.id)
       .order("name"),
     supabase
@@ -76,7 +75,7 @@ export default async function ProsjektPage({ params }: { params: { id: string } 
       .select(
         "id, title, description, kind, status, occurred_at, due_at, " +
           "responsible_party_id, responsible_profile_ids, ai_extracted, ai_source_excerpt, " +
-          "reviewed_at, created_by"
+          "source_document_id, reviewed_at, created_by"
       )
       .eq("project_id", p.id)
       .order("occurred_at", { ascending: false, nullsFirst: false })
@@ -88,9 +87,15 @@ export default async function ProsjektPage({ params }: { params: { id: string } 
       .order("created_at", { ascending: false }),
     supabase
       .from("project_documents")
-      .select("id, title, kind, source_text, source_date, created_at, uploaded_by")
+      .select("id, title, kind, source_text, source_date, public_url, mime_type, created_at, uploaded_by")
       .eq("project_id", p.id)
       .order("created_at", { ascending: false }),
+    supabase
+      .from("project_milestone_comments")
+      .select("id, milestone_id, body, author_id, created_at")
+      .eq("project_id", p.id)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: true }),
   ]);
 
   type MemberRow = {
@@ -105,6 +110,7 @@ export default async function ProsjektPage({ params }: { params: { id: string } 
     contact_info: string | null;
     notes: string | null;
     is_internal: boolean;
+    merged_into_id: string | null;
   };
   type Milestone = {
     id: string;
@@ -118,6 +124,7 @@ export default async function ProsjektPage({ params }: { params: { id: string } 
     responsible_profile_ids: string[] | null;
     ai_extracted: boolean;
     ai_source_excerpt: string | null;
+    source_document_id: string | null;
     reviewed_at: string | null;
     created_by: string | null;
   };
@@ -128,8 +135,17 @@ export default async function ProsjektPage({ params }: { params: { id: string } 
     kind: string;
     source_text: string | null;
     source_date: string | null;
+    public_url: string | null;
+    mime_type: string | null;
     created_at: string;
     uploaded_by: string | null;
+  };
+  type MsComment = {
+    id: string;
+    milestone_id: string;
+    body: string;
+    author_id: string | null;
+    created_at: string;
   };
 
   const memberList = ((members || []) as MemberRow[]).filter((m) => m.profile);
@@ -137,8 +153,19 @@ export default async function ProsjektPage({ params }: { params: { id: string } 
   const milestoneList = (milestones || []) as Milestone[];
   const noteList = (notes || []) as Note[];
   const docList = (documents || []) as Doc[];
+  const commentList = (msComments || []) as MsComment[];
 
   const partyById = new Map(partyList.map((pt) => [pt.id, pt] as const));
+  const docById = new Map(docList.map((d) => [d.id, d] as const));
+  const commentsByMs = new Map<string, MsComment[]>();
+  commentList.forEach((c) => {
+    const arr = commentsByMs.get(c.milestone_id) || [];
+    arr.push(c);
+    commentsByMs.set(c.milestone_id, arr);
+  });
+  const memberShort = memberList
+    .filter((m): m is MemberRow & { profile: NonNullable<MemberRow["profile"]> } => !!m.profile)
+    .map((m) => m.profile);
 
   // Splitt tidslinje i fortid og fremtid
   const now = new Date();
@@ -212,6 +239,14 @@ export default async function ProsjektPage({ params }: { params: { id: string } 
                   key={m.id}
                   m={m}
                   partyById={partyById}
+                  docById={docById}
+                  comments={commentsByMs.get(m.id) || []}
+                  members={memberShort.map((m) => ({
+                    profile_id: m.id,
+                    display_name: m.display_name,
+                    color_hex: m.color_hex,
+                  }))}
+                  currentUserId={ctx.user.id}
                   projectId={p.id}
                   highlight
                 />
@@ -232,7 +267,20 @@ export default async function ProsjektPage({ params }: { params: { id: string } 
           ) : (
             <ul className="space-y-2">
               {past.map((m) => (
-                <MilestoneRow key={m.id} m={m} partyById={partyById} projectId={p.id} />
+                <MilestoneRow
+                  key={m.id}
+                  m={m}
+                  partyById={partyById}
+                  docById={docById}
+                  comments={commentsByMs.get(m.id) || []}
+                  members={memberShort.map((m) => ({
+                    profile_id: m.id,
+                    display_name: m.display_name,
+                    color_hex: m.color_hex,
+                  }))}
+                  currentUserId={ctx.user.id}
+                  projectId={p.id}
+                />
               ))}
             </ul>
           )}
@@ -243,44 +291,7 @@ export default async function ProsjektPage({ params }: { params: { id: string } 
       <AddMilestoneForm projectId={p.id} parties={partyList} members={memberList.map((m) => m.profile!)} />
 
       {/* Eksterne instanser */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Instanser & personer ({partyList.length})</CardTitle>
-        </CardHeader>
-        <CardBody>
-          {partyList.length === 0 ? (
-            <p className="text-sm text-slate-500 mb-3">Ingen lagt til ennå.</p>
-          ) : (
-            <ul className="divide-y divide-slate-100 mb-4">
-              {partyList.map((pt) => (
-                <li key={pt.id} className="py-2 flex items-center justify-between">
-                  <div>
-                    <div className="font-medium flex items-center gap-2">
-                      {pt.name}
-                      {pt.is_internal && <Badge>Internt</Badge>}
-                    </div>
-                    <div className="text-xs text-slate-500">
-                      {[pt.role, pt.organization].filter(Boolean).join(" • ")}
-                      {pt.contact_info && ` • ${pt.contact_info}`}
-                    </div>
-                  </div>
-                  <form
-                    action={async () => {
-                      "use server";
-                      await deleteParty(pt.id, p.id);
-                    }}
-                  >
-                    <button className="text-xs text-slate-400 hover:text-red-600">
-                      Slett
-                    </button>
-                  </form>
-                </li>
-              ))}
-            </ul>
-          )}
-          <AddPartyForm projectId={p.id} />
-        </CardBody>
-      </Card>
+      <PartiesSection projectId={p.id} parties={partyList} />
 
       {/* Notater */}
       <Card>
@@ -330,14 +341,35 @@ export default async function ProsjektPage({ params }: { params: { id: string } 
           </CardHeader>
           <CardBody>
             <ul className="divide-y divide-slate-100">
-              {docList.map((d) => (
-                <li key={d.id} className="py-2">
-                  <div className="font-medium">{d.title}</div>
-                  <div className="text-xs text-slate-500">
-                    {d.kind} • {d.source_date || d.created_at.slice(0, 10)}
-                  </div>
-                </li>
-              ))}
+              {docList.map((d) => {
+                const linked = milestoneList.filter(
+                  (m) => m.source_document_id === d.id
+                ).length;
+                return (
+                  <li key={d.id} className="py-2 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="font-medium">
+                        {d.public_url ? (
+                          <a
+                            href={d.public_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-brand-700 hover:underline"
+                          >
+                            📎 {d.title}
+                          </a>
+                        ) : (
+                          <>{d.title}</>
+                        )}
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        {d.kind} • {d.source_date || d.created_at.slice(0, 10)}
+                        {linked > 0 && ` • ${linked} hendelser knyttet`}
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           </CardBody>
         </Card>
@@ -349,6 +381,10 @@ export default async function ProsjektPage({ params }: { params: { id: string } 
 function MilestoneRow({
   m,
   partyById,
+  docById,
+  comments,
+  members,
+  currentUserId,
   projectId,
   highlight = false,
 }: {
@@ -361,10 +397,15 @@ function MilestoneRow({
     occurred_at: string | null;
     due_at: string | null;
     responsible_party_id: string | null;
+    source_document_id: string | null;
     ai_extracted: boolean;
     ai_source_excerpt: string | null;
   };
   partyById: Map<string, { name: string }>;
+  docById: Map<string, { id: string; title: string; public_url: string | null; mime_type: string | null }>;
+  comments: Array<{ id: string; body: string; author_id: string | null; created_at: string }>;
+  members: Array<{ profile_id: string; display_name: string; color_hex: string | null }>;
+  currentUserId: string;
   projectId: string;
   highlight?: boolean;
 }) {
@@ -372,6 +413,7 @@ function MilestoneRow({
   const date = m.due_at || m.occurred_at;
   const dateLabel = date ? new Date(date).toLocaleDateString("nb-NO") : null;
   const party = m.responsible_party_id ? partyById.get(m.responsible_party_id) : null;
+  const sourceDoc = m.source_document_id ? docById.get(m.source_document_id) : null;
 
   return (
     <li
@@ -391,6 +433,17 @@ function MilestoneRow({
             <Badge>{k.label}</Badge>
             {m.status === "completed" && <Badge variant="success">Fullført</Badge>}
             {m.ai_extracted && <Badge variant="info">🤖 AI-uttrekk</Badge>}
+            {sourceDoc?.public_url && (
+              <a
+                href={sourceDoc.public_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-brand-700 hover:underline"
+                title={sourceDoc.title}
+              >
+                📎 Se kilde
+              </a>
+            )}
           </div>
           <div className="text-xs text-slate-500 mt-0.5">
             {dateLabel && (m.due_at ? `Frist: ${dateLabel}` : dateLabel)}
@@ -404,6 +457,13 @@ function MilestoneRow({
               Kildesitat: «{m.ai_source_excerpt}»
             </p>
           )}
+          <MilestoneComments
+            milestoneId={m.id}
+            projectId={projectId}
+            comments={comments}
+            members={members}
+            currentUserId={currentUserId}
+          />
         </div>
         <div className="flex flex-col gap-1 flex-shrink-0">
           {m.status !== "completed" && (

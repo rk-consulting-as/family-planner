@@ -116,6 +116,66 @@ export async function deleteParty(party_id: string, project_id: string) {
   return { ok: true };
 }
 
+export async function mergeParties(
+  project_id: string,
+  canonical_id: string,
+  merge_ids: string[]
+) {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("merge_parties", {
+    p_project: project_id,
+    p_canonical: canonical_id,
+    p_to_merge: merge_ids,
+  });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/prosjekter/${project_id}`);
+  return { ok: true };
+}
+
+export async function unmergeParty(party_id: string, project_id: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("unmerge_party", { p_party: party_id });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/prosjekter/${project_id}`);
+  return { ok: true };
+}
+
+// ----- Milestone-kommentarer -----------------------------------------
+
+export async function addMilestoneComment(
+  milestone_id: string,
+  project_id: string,
+  formData: FormData
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Ikke innlogget" };
+  const body = String(formData.get("body") || "").trim();
+  if (!body) return { ok: false, error: "Skriv noe" };
+  const { error } = await supabase
+    .from("project_milestone_comments")
+    .insert({ milestone_id, project_id, author_id: user.id, body });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/prosjekter/${project_id}`);
+  return { ok: true };
+}
+
+export async function deleteMilestoneComment(
+  comment_id: string,
+  project_id: string
+) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("project_milestone_comments")
+    .delete()
+    .eq("id", comment_id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/prosjekter/${project_id}`);
+  return { ok: true };
+}
+
 // ----- Milestones -----------------------------------------------------
 
 export async function addMilestone(project_id: string, formData: FormData) {
@@ -333,11 +393,37 @@ Returner JSON.`;
   return { ok: true, data: parsed };
 }
 
+async function uploadProjectFile(
+  project_id: string,
+  file: File,
+  user_id: string
+): Promise<{ storage_path: string; public_url: string }> {
+  const supabase = await createClient();
+  const ext = (file.name.split(".").pop() || "bin").toLowerCase();
+  const safeName = file.name.replace(/[^a-z0-9._-]+/gi, "_");
+  const path = `${user_id}/projects/${project_id}/${Date.now()}-${safeName}`;
+  const { error } = await supabase.storage
+    .from("attachments")
+    .upload(path, file, { contentType: file.type, upsert: false });
+  if (error) throw new Error("Kunne ikke laste opp filen: " + error.message);
+  const { data: pub } = supabase.storage.from("attachments").getPublicUrl(path);
+  void ext;
+  return { storage_path: path, public_url: pub.publicUrl };
+}
+
+// Returnerer document_id slik at milestones kan kobles til kilden
+export type ExtractResultWithSource = {
+  ok: boolean;
+  error?: string;
+  data?: ExtractedSuggestion;
+  source_document_id?: string;
+};
+
 // Send bilde (JPG/PNG/WEBP) til Claude med vision
 export async function extractFromImageFile(
   project_id: string,
   formData: FormData
-): Promise<{ ok: boolean; error?: string; data?: ExtractedSuggestion }> {
+): Promise<ExtractResultWithSource> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -368,13 +454,30 @@ export async function extractFromImageFile(
   const base64 = Buffer.from(arrayBuffer).toString("base64");
 
   const title = String(formData.get("title") || file.name).trim();
-  await supabase.from("project_documents").insert({
-    project_id,
-    title,
-    kind: "image",
-    source_text: `[Bilde, ${file.size} bytes — sendt til AI for analyse]`,
-    uploaded_by: user.id,
-  });
+
+  // Last opp til Storage og lagre dokument-rad med URL
+  let docId: string | undefined;
+  try {
+    const { storage_path, public_url } = await uploadProjectFile(project_id, file, user.id);
+    const { data: docRow } = await supabase
+      .from("project_documents")
+      .insert({
+        project_id,
+        title,
+        kind: "image",
+        storage_path,
+        public_url,
+        mime_type: mediaType,
+        size_bytes: file.size,
+        source_text: `[Bilde, ${file.size} bytes — analysert av AI]`,
+        uploaded_by: user.id,
+      })
+      .select("id")
+      .single();
+    docId = (docRow as { id?: string } | null)?.id;
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Opplasting feilet" };
+  }
 
   const { data: project } = await supabase
     .from("projects")
@@ -450,14 +553,14 @@ Analyser det vedlagte bildet og returner JSON.`;
   if (!parsed) {
     return { ok: false, error: "Klarte ikke å tolke AI-svaret. Prøv igjen." };
   }
-  return { ok: true, data: parsed };
+  return { ok: true, data: parsed, source_document_id: docId };
 }
 
 // Send PDF direkte til Claude — håndterer både tekst-PDF og skannede sider via OCR
 export async function extractFromPdfFile(
   project_id: string,
   formData: FormData
-): Promise<{ ok: boolean; error?: string; data?: ExtractedSuggestion }> {
+): Promise<ExtractResultWithSource> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -481,15 +584,30 @@ export async function extractFromPdfFile(
   const arrayBuffer = await file.arrayBuffer();
   const base64 = Buffer.from(arrayBuffer).toString("base64");
 
-  // Lagre PDF-en som dokument (med metadata, uten den tunge teksten)
+  // Last opp PDF til Storage og lagre dokument-rad
   const title = String(formData.get("title") || file.name).trim();
-  await supabase.from("project_documents").insert({
-    project_id,
-    title,
-    kind: "pdf",
-    source_text: `[PDF, ${file.size} bytes — sendt direkte til AI for OCR/lesning]`,
-    uploaded_by: user.id,
-  });
+  let docId: string | undefined;
+  try {
+    const { storage_path, public_url } = await uploadProjectFile(project_id, file, user.id);
+    const { data: docRow } = await supabase
+      .from("project_documents")
+      .insert({
+        project_id,
+        title,
+        kind: "pdf",
+        storage_path,
+        public_url,
+        mime_type: "application/pdf",
+        size_bytes: file.size,
+        source_text: `[PDF, ${file.size} bytes — analysert av AI med OCR]`,
+        uploaded_by: user.id,
+      })
+      .select("id")
+      .single();
+    docId = (docRow as { id?: string } | null)?.id;
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Opplasting feilet" };
+  }
 
   // Hent kontekst
   const { data: project } = await supabase
@@ -569,7 +687,7 @@ Analyser det vedlagte PDF-dokumentet og returner JSON.`;
   if (!parsed) {
     return { ok: false, error: "Klarte ikke å tolke AI-svaret. Prøv igjen." };
   }
-  return { ok: true, data: parsed };
+  return { ok: true, data: parsed, source_document_id: docId };
 }
 
 export async function applyExtractedSuggestions(
@@ -583,6 +701,7 @@ export async function applyExtractedSuggestions(
   if (!user) return { ok: false, error: "Ikke innlogget" };
 
   const payloadRaw = String(formData.get("payload") || "");
+  const sourceDocId = String(formData.get("source_document_id") || "") || null;
   let parsed: { parties: ExtractedSuggestion["parties"]; milestones: ExtractedSuggestion["milestones"] };
   try {
     parsed = JSON.parse(payloadRaw);
@@ -626,6 +745,7 @@ export async function applyExtractedSuggestions(
       occurred_at,
       due_at,
       responsible_party_id,
+      source_document_id: sourceDocId,
       ai_extracted: true,
       ai_source_excerpt: m.source_excerpt || null,
       reviewed_at: new Date().toISOString(),
