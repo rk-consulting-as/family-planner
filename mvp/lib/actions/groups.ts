@@ -66,7 +66,11 @@ export async function joinGroupByCode(formData: FormData) {
   redirect(`/dashboard?group=${groupId}`);
 }
 
-export async function updateMemberRole(groupId: string, profileId: string, role: "admin" | "member") {
+export async function updateMemberRole(
+  groupId: string,
+  profileId: string,
+  role: "admin" | "parent" | "member"
+) {
   const supabase = await createClient();
   const { error } = await supabase
     .from("group_members")

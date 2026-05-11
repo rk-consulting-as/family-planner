@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getActiveContext } from "@/lib/queries";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/Card";
-import { Users, CheckSquare, Calendar, Trophy } from "lucide-react";
+import { Users, CheckSquare, Calendar, Trophy, Shield } from "lucide-react";
 
 export default async function AdminPage() {
   const ctx = await getActiveContext();
@@ -21,6 +21,7 @@ export default async function AdminPage() {
         <AdminLink href="/admin/gjoremal" icon={<CheckSquare />} label="Gjøremål" />
         <AdminLink href="/admin/godkjenninger" icon={<Trophy />} label="Godkjenninger" />
         <AdminLink href="/timeplan" icon={<Calendar />} label="Timeplan" />
+        <AdminLink href="/admin/roller" icon={<Shield />} label="Rolletillatelser" />
       </div>
 
       <Card>
