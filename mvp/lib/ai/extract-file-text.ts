@@ -4,9 +4,6 @@
 // PDF-er behandles via pdfjs-dist (kun tekst-baserte PDFer; skannede gir tom/lite tekst).
 // .txt og .md leses direkte.
 
-const PDFJS_VERSION = "4.7.76";
-const WORKER_URL = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.worker.min.mjs`;
-
 export type ExtractResult = {
   text: string;
   pages: number;
@@ -33,8 +30,10 @@ export async function extractTextFromFile(file: File): Promise<ExtractResult> {
 async function extractFromPdf(file: File): Promise<ExtractResult> {
   // Dynamisk import for å unngå SSR-problemer og holde initial bundle liten
   const pdfjs = await import("pdfjs-dist/build/pdf.mjs");
-  // Sett opp worker fra CDN
-  pdfjs.GlobalWorkerOptions.workerSrc = WORKER_URL;
+  // Bruk samme versjon som biblioteket — unngår API/Worker-mismatch
+  const version = (pdfjs as { version?: string }).version || "4.7.76";
+  pdfjs.GlobalWorkerOptions.workerSrc =
+    `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.mjs`;
 
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
