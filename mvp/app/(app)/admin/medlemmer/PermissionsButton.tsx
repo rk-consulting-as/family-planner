@@ -21,6 +21,8 @@ export default function PermissionsButton({
   const [perms, setPerms] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -51,10 +53,19 @@ export default function PermissionsButton({
   }, [open, groupId, memberId]);
 
   function toggle(key: string) {
-    const newVal = !perms[key];
+    const oldVal = perms[key];
+    const newVal = !oldVal;
     setPerms({ ...perms, [key]: newVal });
+    setError(null);
+    setSaving(key);
     startTransition(async () => {
-      await setMemberModuleAccess(groupId, memberId, key, newVal);
+      const res = await setMemberModuleAccess(groupId, memberId, key, newVal);
+      setSaving(null);
+      if (res && !res.ok) {
+        // Rull tilbake
+        setPerms((cur) => ({ ...cur, [key]: oldVal }));
+        setError(res.error || "Klarte ikke å lagre");
+      }
     });
   }
 
@@ -89,6 +100,15 @@ export default function PermissionsButton({
         <p className="text-sm text-slate-600 mb-4">
           Skru av/på modulene dette medlemmet skal se. Endringer lagres umiddelbart.
         </p>
+
+        {error && (
+          <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3 mb-3">
+            <strong>Feil:</strong> {error}
+            <div className="text-xs mt-1">
+              Sjekk at SQL-migrasjon 0026 er kjørt i Supabase.
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <p className="text-sm text-slate-500">Laster…</p>
