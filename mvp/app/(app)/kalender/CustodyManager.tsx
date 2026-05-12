@@ -98,8 +98,11 @@ export default function CustodyManager({
               <Field label="Til dato">
                 <Input name="ends_on" type="date" required />
               </Field>
-              <Field label="Farge">
+              <Field label="Bakgrunnsfarge">
                 <Input name="color_hex" type="color" defaultValue="#3b82f6" />
+              </Field>
+              <Field label="Tekstfarge (valgfri — auto-mørkere ellers)">
+                <Input name="text_color_hex" type="color" />
               </Field>
               <Field label="Synlighet (5-50%)">
                 <Input
