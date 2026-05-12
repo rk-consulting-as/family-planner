@@ -101,25 +101,30 @@ export default async function MedlemmerPage() {
                     />
                     {!isMe && ctx.role === "owner" && m.role !== "owner" && (
                       <>
-                        {m.role === "admin" ? (
-                          <form
-                            action={async () => {
-                              "use server";
-                              await updateMemberRole(ctx.group.id, m.profile_id, "member");
-                            }}
-                          >
-                            <Button size="sm" variant="ghost">Gjør til medlem</Button>
-                          </form>
-                        ) : (
-                          <form
-                            action={async () => {
-                              "use server";
-                              await updateMemberRole(ctx.group.id, m.profile_id, "admin");
-                            }}
-                          >
-                            <Button size="sm" variant="secondary">Gjør til admin</Button>
-                          </form>
-                        )}
+                        <div className="inline-flex rounded-lg border border-slate-300 overflow-hidden">
+                          {(["admin", "parent", "member"] as const).map((r) => (
+                            <form
+                              key={r}
+                              action={async () => {
+                                "use server";
+                                await updateMemberRole(ctx.group.id, m.profile_id, r);
+                              }}
+                            >
+                              <button
+                                type="submit"
+                                disabled={m.role === r}
+                                className={`px-2.5 py-1 text-xs font-medium border-r last:border-r-0 border-slate-300 transition ${
+                                  m.role === r
+                                    ? "bg-brand-600 text-white cursor-default"
+                                    : "bg-white text-slate-700 hover:bg-slate-50"
+                                }`}
+                                title={roleDescription(r)}
+                              >
+                                {r === "admin" ? "🛡️ Admin" : r === "parent" ? "🌟 Forelder" : "👤 Medlem"}
+                              </button>
+                            </form>
+                          ))}
+                        </div>
                         <form
                           action={async () => {
                             "use server";
@@ -142,5 +147,13 @@ export default async function MedlemmerPage() {
 }
 
 function roleLabel(r: string) {
-  return { owner: "Eier", admin: "Admin", member: "Medlem" }[r] || r;
+  return { owner: "👑 Eier", admin: "🛡️ Admin", parent: "🌟 Forelder/Leder", member: "👤 Medlem" }[r] || r;
+}
+
+function roleDescription(r: string) {
+  return {
+    admin: "Full tilgang som standard. Kan styres i Rolletillatelser.",
+    parent: "Mellomrolle: kan styre kalender, gjøremål og utlegg, men ikke endre medlemskap.",
+    member: "Begrenset til egne ting. Kan styres i Rolletillatelser.",
+  }[r] || "";
 }
