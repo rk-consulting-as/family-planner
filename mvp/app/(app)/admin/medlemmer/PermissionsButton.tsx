@@ -71,8 +71,13 @@ export default function PermissionsButton({
 
   if (memberRole !== "member") {
     return (
-      <Button size="sm" variant="ghost" disabled title="Admins/eiere har full tilgang">
-        🔒 Full tilgang
+      <Button
+        size="sm"
+        variant="ghost"
+        disabled
+        title="Admin/parent/eier styres via Rolletillatelser, ikke per-medlem her"
+      >
+        🔒 Via roller
       </Button>
     );
   }
