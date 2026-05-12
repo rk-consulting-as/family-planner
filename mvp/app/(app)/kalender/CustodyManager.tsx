@@ -25,6 +25,7 @@ export type CustodyPeriod = {
   label: string | null;
   color_hex: string;
   opacity: number;
+  text_color_hex?: string | null;
 };
 
 export default function CustodyManager({

@@ -18,6 +18,7 @@ export async function createCustodyPeriod(group_id: string, formData: FormData) 
   if (!starts_on || !ends_on) return { ok: false, error: "Velg start- og sluttdato" };
   const label = String(formData.get("label") || "").trim() || null;
   const color_hex = String(formData.get("color_hex") || "#3b82f6");
+  const text_color_hex = String(formData.get("text_color_hex") || "").trim() || null;
   const opacity = Math.max(0.05, Math.min(0.5, Number(formData.get("opacity") || 0.15)));
 
   const { error } = await supabase.from("custody_periods").insert({
@@ -28,6 +29,7 @@ export async function createCustodyPeriod(group_id: string, formData: FormData) 
     ends_on,
     label,
     color_hex,
+    text_color_hex,
     opacity,
     created_by: user.id,
   });
