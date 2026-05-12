@@ -67,6 +67,7 @@ export type CustodyPeriod = {
   label: string | null;
   color_hex: string;
   opacity: number;
+  text_color_hex?: string | null;
 };
 
 export function WeekView({
@@ -323,20 +324,21 @@ export function WeekView({
             >
               {/* Custody-bakgrunn (under alt annet) */}
               {dayCustody.map((cp) => (
-                <div
-                  key={cp.id}
-                  className="absolute inset-0 pointer-events-none flex items-end justify-center pb-2"
-                  style={{
-                    background: cp.color_hex,
-                    opacity: cp.opacity,
-                  }}
-                >
-                  <span
-                    className="text-[10px] font-medium uppercase tracking-wide text-white drop-shadow"
-                    style={{ opacity: 0.7 }}
-                  >
-                    {cp.label || `Hos ${nameOfHost(cp.host_parent_id)}`}
-                  </span>
+                <div key={cp.id} className="absolute inset-0 pointer-events-none">
+                  {/* Fargelagt overlay — opacity dimmer kun fargen, ikke teksten */}
+                  <div
+                    className="absolute inset-0"
+                    style={{ background: cp.color_hex, opacity: cp.opacity }}
+                  />
+                  {/* Tekst — bruker mettet farge for kontrast mot lys bakgrunn */}
+                  <div className="absolute inset-0 flex items-end justify-center pb-2">
+                    <span
+                      className="text-[11px] font-semibold uppercase tracking-wide"
+                      style={{ color: cp.text_color_hex || darken(cp.color_hex, 0.4) }}
+                    >
+                      {cp.label || `Hos ${nameOfHost(cp.host_parent_id)}`}
+                    </span>
+                  </div>
                 </div>
               ))}
 
@@ -381,6 +383,20 @@ export function WeekView({
       </div>
     </div>
   );
+}
+
+function darken(hex: string, amount: number): string {
+  const m = hex.replace("#", "");
+  if (m.length !== 6) return hex;
+  const r = parseInt(m.substring(0, 2), 16);
+  const g = parseInt(m.substring(2, 4), 16);
+  const b = parseInt(m.substring(4, 6), 16);
+  const k = Math.max(0, 1 - amount);
+  const nr = Math.round(r * k);
+  const ng = Math.round(g * k);
+  const nb = Math.round(b * k);
+  const hh = (n: number) => n.toString(16).padStart(2, "0");
+  return `#${hh(nr)}${hh(ng)}${hh(nb)}`;
 }
 
 function combineDateTime(date: Date, time: string): Date {
