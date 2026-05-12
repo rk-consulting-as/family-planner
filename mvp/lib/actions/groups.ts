@@ -77,7 +77,10 @@ export async function updateMemberRole(
     .update({ role })
     .eq("group_id", groupId)
     .eq("profile_id", profileId);
-  if (error) return { ok: false, error: error.message };
+  if (error) {
+    console.error("updateMemberRole error:", error);
+    return { ok: false, error: error.message };
+  }
   revalidatePath("/admin/medlemmer");
   return { ok: true };
 }
