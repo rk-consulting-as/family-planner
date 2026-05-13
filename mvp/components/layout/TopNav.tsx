@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
-import { Calendar, CheckSquare, Trophy, Footprints, Home, Settings, LogOut, Shield, CheckCheck, ShoppingBag, User, Bell, Wallet, MessageSquare, UtensilsCrossed, ShoppingCart, Gift, Briefcase } from "lucide-react";
+import { Calendar, CheckSquare, Trophy, Footprints, Home, Settings, LogOut, Shield, CheckCheck, ShoppingBag, User, Bell, Wallet, MessageSquare, UtensilsCrossed, ShoppingCart, Gift, Briefcase, Mail } from "lucide-react";
 
 type NavItem = {
   href: string;
@@ -24,6 +24,7 @@ const NAV: NavItem[] = [
   { href: "/maltidsplan", label: "Måltider", icon: UtensilsCrossed, module: "meals" },
   { href: "/handleliste", label: "Handleliste", icon: ShoppingCart, module: "shopping" },
   { href: "/prosjekter", label: "Prosjekter", icon: Briefcase, module: "projects" },
+  { href: "/invitasjoner", label: "Invitasjoner", icon: Mail, module: "invitations" },
   { href: "/utlegg", label: "Utlegg", icon: Wallet, module: "expenses" },
   { href: "/belonninger", label: "Belønninger", icon: Trophy, module: "rewards" },
   { href: "/ga-tracker", label: "Gå-tracker", icon: Footprints, module: "walking" },

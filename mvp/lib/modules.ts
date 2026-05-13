@@ -13,6 +13,7 @@ export const MODULES = [
   { key: "walking", label: "Gå-tracker", icon: "👟", default_member: true },
   { key: "expenses", label: "Utlegg", icon: "💰", default_member: false },
   { key: "projects", label: "Prosjekter", icon: "📁", default_member: false },
+  { key: "invitations", label: "Invitasjoner", icon: "✉️", default_member: true },
   { key: "member_info", label: "Andres medlemsinfo", icon: "👤", default_member: false },
 ] as const;
 
