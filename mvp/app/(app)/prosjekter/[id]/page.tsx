@@ -17,8 +17,19 @@ import AddMilestoneForm from "./AddMilestoneForm";
 import AiImportSection from "./AiImportSection";
 import PartiesSection from "./PartiesSection";
 import MilestoneComments from "./MilestoneComments";
+import EditMilestoneDialog from "./EditMilestoneDialog";
+import PushToCalendarButton from "./PushToCalendarButton";
 
-const KIND_LABELS: Record<string, { icon: string; label: string }> = {
+type MilestoneKind =
+  | "past_event"
+  | "meeting"
+  | "deadline"
+  | "action_item"
+  | "document"
+  | "decision"
+  | "note";
+
+const KIND_LABELS: Record<MilestoneKind, { icon: string; label: string }> = {
   past_event: { icon: "📌", label: "Hendelse" },
   meeting: { icon: "🤝", label: "Møte" },
   deadline: { icon: "⏰", label: "Frist" },
@@ -240,11 +251,12 @@ export default async function ProsjektPage({ params }: { params: { id: string } 
                   m={m}
                   partyById={partyById}
                   docById={docById}
+                  parties={partyList.map((pp) => ({ id: pp.id, name: pp.name }))}
                   comments={commentsByMs.get(m.id) || []}
-                  members={memberShort.map((m) => ({
-                    profile_id: m.id,
-                    display_name: m.display_name,
-                    color_hex: m.color_hex,
+                  members={memberShort.map((mm) => ({
+                    profile_id: mm.id,
+                    display_name: mm.display_name,
+                    color_hex: mm.color_hex,
                   }))}
                   currentUserId={ctx.user.id}
                   projectId={p.id}
@@ -272,11 +284,12 @@ export default async function ProsjektPage({ params }: { params: { id: string } 
                   m={m}
                   partyById={partyById}
                   docById={docById}
+                  parties={partyList.map((pp) => ({ id: pp.id, name: pp.name }))}
                   comments={commentsByMs.get(m.id) || []}
-                  members={memberShort.map((m) => ({
-                    profile_id: m.id,
-                    display_name: m.display_name,
-                    color_hex: m.color_hex,
+                  members={memberShort.map((mm) => ({
+                    profile_id: mm.id,
+                    display_name: mm.display_name,
+                    color_hex: mm.color_hex,
                   }))}
                   currentUserId={ctx.user.id}
                   projectId={p.id}
@@ -382,6 +395,7 @@ function MilestoneRow({
   m,
   partyById,
   docById,
+  parties,
   comments,
   members,
   currentUserId,
@@ -393,16 +407,18 @@ function MilestoneRow({
     title: string;
     description: string | null;
     kind: keyof typeof KIND_LABELS;
-    status: string;
+    status: "planned" | "completed" | "cancelled" | "overdue";
     occurred_at: string | null;
     due_at: string | null;
     responsible_party_id: string | null;
+    responsible_profile_ids: string[] | null;
     source_document_id: string | null;
     ai_extracted: boolean;
     ai_source_excerpt: string | null;
   };
   partyById: Map<string, { name: string }>;
   docById: Map<string, { id: string; title: string; public_url: string | null; mime_type: string | null }>;
+  parties: Array<{ id: string; name: string }>;
   comments: Array<{ id: string; body: string; author_id: string | null; created_at: string }>;
   members: Array<{ profile_id: string; display_name: string; color_hex: string | null }>;
   currentUserId: string;
@@ -465,7 +481,36 @@ function MilestoneRow({
             currentUserId={currentUserId}
           />
         </div>
-        <div className="flex flex-col gap-1 flex-shrink-0">
+        <div className="flex flex-col gap-1 flex-shrink-0 items-end">
+          <EditMilestoneDialog
+            milestone={{
+              id: m.id,
+              title: m.title,
+              description: m.description,
+              kind: m.kind,
+              status: m.status,
+              occurred_at: m.occurred_at,
+              due_at: m.due_at,
+              responsible_party_id: m.responsible_party_id,
+              responsible_profile_ids: m.responsible_profile_ids,
+            }}
+            projectId={projectId}
+            parties={parties}
+            members={members}
+          />
+          <PushToCalendarButton
+            milestoneId={m.id}
+            projectId={projectId}
+            milestoneTitle={m.title}
+            baseDateIso={m.due_at || m.occurred_at}
+            members={members}
+            currentUserId={currentUserId}
+            defaultParticipantIds={
+              m.responsible_profile_ids && m.responsible_profile_ids.length > 0
+                ? m.responsible_profile_ids
+                : [currentUserId]
+            }
+          />
           {m.status !== "completed" && (
             <form
               action={async () => {
@@ -483,6 +528,13 @@ function MilestoneRow({
             }}
           >
             <button className="text-xs text-slate-400 hover:text-red-600">Slett</button>
+          </form>
+        </div>
+      </div>
+    </li>
+  );
+}
+on className="text-xs text-slate-400 hover:text-red-600">Slett</button>
           </form>
         </div>
       </div>

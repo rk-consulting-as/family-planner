@@ -231,6 +231,186 @@ export async function updateMilestoneStatus(
   return { ok: true };
 }
 
+export async function updateMilestone(
+  milestone_id: string,
+  project_id: string,
+  formData: FormData
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Ikke innlogget" };
+
+  const update: Record<string, unknown> = {};
+  const title = String(formData.get("title") || "").trim();
+  const description = String(formData.get("description") || "").trim();
+  const kind = String(formData.get("kind") || "").trim();
+  const status = String(formData.get("status") || "").trim();
+  const occurred_at_raw = String(formData.get("occurred_at") || "").trim();
+  const due_at_raw = String(formData.get("due_at") || "").trim();
+  const responsible_party_id = String(formData.get("responsible_party_id") || "").trim();
+  const responsiblesRaw = formData.getAll("responsible_profile_ids") as string[];
+
+  if (title) update.title = title;
+  // Beskrivelse kan tømmes med vilje
+  if (formData.has("description")) update.description = description || null;
+  if (kind) update.kind = kind;
+  if (status) update.status = status;
+  if (formData.has("occurred_at")) {
+    update.occurred_at = occurred_at_raw ? new Date(occurred_at_raw).toISOString() : null;
+  }
+  if (formData.has("due_at")) {
+    update.due_at = due_at_raw ? new Date(due_at_raw).toISOString() : null;
+  }
+  if (formData.has("responsible_party_id")) {
+    update.responsible_party_id = responsible_party_id || null;
+  }
+  if (formData.has("responsible_profile_ids")) {
+    update.responsible_profile_ids = responsiblesRaw.filter(Boolean);
+  }
+
+  if (Object.keys(update).length === 0) {
+    return { ok: false, error: "Ingen endringer" };
+  }
+
+  const { error } = await supabase
+    .from("project_milestones")
+    .update(update)
+    .eq("id", milestone_id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/prosjekter/${project_id}`);
+  return { ok: true };
+}
+
+// Pusher en milestone som hendelse i gruppe-kalenderen.
+// Velg deltakere (profile_ids) som skal se hendelsen.
+export async function pushMilestoneToCalendar(
+  milestone_id: string,
+  project_id: string,
+  formData: FormData
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Ikke innlogget" };
+
+  // Hent prosjekt + milestone
+  const { data: ms } = await supabase
+    .from("project_milestones")
+    .select("id, project_id, title, description, kind, occurred_at, due_at")
+    .eq("id", milestone_id)
+    .single();
+  if (!ms) return { ok: false, error: "Fant ikke milestone" };
+
+  const { data: project } = await supabase
+    .from("projects")
+    .select("group_id, title")
+    .eq("id", (ms as { project_id: string }).project_id)
+    .single();
+  if (!project) return { ok: false, error: "Fant ikke prosjekt" };
+  const proj = project as { group_id: string; title: string };
+
+  type MS = {
+    title: string;
+    description: string | null;
+    kind: string;
+    occurred_at: string | null;
+    due_at: string | null;
+  };
+  const m = ms as MS;
+
+  // Deltakere — minst én må være valgt; ellers default til opprettende bruker
+  const participantsRaw = (formData.getAll("participant_ids") as string[]).filter(Boolean);
+  const participant_ids = participantsRaw.length > 0 ? participantsRaw : [user.id];
+
+  const all_day = formData.get("all_day") === "on";
+
+  // Tid: ta fra formData hvis satt, ellers fra milestone selv
+  const starts_at_raw = String(formData.get("starts_at") || "").trim();
+  const ends_at_raw = String(formData.get("ends_at") || "").trim();
+
+  let starts_at: Date | null = null;
+  let ends_at: Date | null = null;
+
+  if (starts_at_raw) {
+    starts_at = new Date(starts_at_raw);
+  } else {
+    const base = m.due_at || m.occurred_at;
+    if (!base) {
+      return {
+        ok: false,
+        error: "Milestone har ingen dato — sett dato først eller velg starttidspunkt",
+      };
+    }
+    starts_at = new Date(base);
+  }
+
+  if (ends_at_raw) {
+    ends_at = new Date(ends_at_raw);
+  } else {
+    // Default: 1 time etter start, eller hele dagen hvis all_day
+    ends_at = new Date(starts_at.getTime() + 60 * 60 * 1000);
+  }
+
+  if (all_day) {
+    // Sett til midnatt → midnatt neste dag
+    const d = new Date(starts_at);
+    d.setHours(0, 0, 0, 0);
+    starts_at = d;
+    const e = new Date(d);
+    e.setDate(e.getDate() + 1);
+    ends_at = e;
+  }
+
+  // Title: bruk milestone-tittel, evt. prefix med ikon basert på kind
+  const kindIcon: Record<string, string> = {
+    past_event: "📌",
+    meeting: "🤝",
+    deadline: "⏰",
+    action_item: "✅",
+    document: "📄",
+    decision: "⚖️",
+    note: "📝",
+  };
+  const icon = kindIcon[m.kind] || "📌";
+
+  const customTitle = String(formData.get("title") || "").trim();
+  const eventTitle = customTitle || m.title;
+
+  const description =
+    `Fra prosjekt: ${proj.title}` +
+    (m.description ? `\n\n${m.description}` : "");
+
+  const reminderMinutes: number[] = [];
+  const reminderRaw = String(formData.get("reminder_minutes") || "");
+  if (reminderRaw && reminderRaw !== "none") {
+    const n = Number(reminderRaw);
+    if (!Number.isNaN(n)) reminderMinutes.push(n);
+  }
+
+  const { error } = await supabase.from("events").insert({
+    group_id: proj.group_id,
+    kind: "custom",
+    title: eventTitle,
+    description,
+    starts_at: starts_at.toISOString(),
+    ends_at: ends_at.toISOString(),
+    all_day,
+    participant_ids,
+    created_by: user.id,
+    reminder_minutes: reminderMinutes,
+    icon,
+    category: "project",
+  });
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/prosjekter/${project_id}`);
+  revalidatePath("/kalender");
+  return { ok: true };
+}
+
 export async function deleteMilestone(milestone_id: string, project_id: string) {
   const supabase = await createClient();
   const { error } = await supabase
