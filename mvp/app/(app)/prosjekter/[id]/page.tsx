@@ -19,6 +19,7 @@ import PartiesSection from "./PartiesSection";
 import MilestoneComments from "./MilestoneComments";
 import EditMilestoneDialog from "./EditMilestoneDialog";
 import PushToCalendarButton from "./PushToCalendarButton";
+import ProjectMembersSection from "./ProjectMembersSection";
 
 type MilestoneKind =
   | "past_event"
@@ -302,6 +303,26 @@ export default async function ProsjektPage({ params }: { params: { id: string } 
 
       {/* Legg til hendelse */}
       <AddMilestoneForm projectId={p.id} parties={partyList} members={memberList.map((m) => m.profile!)} />
+
+      {/* Prosjektmedlemmer (interne) */}
+      <ProjectMembersSection
+        projectId={p.id}
+        members={memberList
+          .filter((m) => m.profile)
+          .map((m) => ({
+            profile_id: m.profile!.id,
+            display_name: m.profile!.display_name,
+            color_hex: m.profile!.color_hex,
+            role: m.role,
+          }))}
+        groupMembers={ctx.members.map((gm) => ({
+          profile_id: gm.profile_id,
+          display_name: gm.display_name,
+          color_hex: gm.color_hex,
+        }))}
+        isCreator={isCreator}
+        currentUserId={ctx.user.id}
+      />
 
       {/* Eksterne instanser */}
       <PartiesSection projectId={p.id} parties={partyList} />
