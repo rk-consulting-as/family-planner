@@ -147,51 +147,67 @@ export async function deleteInvitation(invitation_id: string) {
 export async function uploadInvitationAsset(
   invitation_id: string,
   formData: FormData
-) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "Ikke innlogget" };
+): Promise<{ ok: boolean; error?: string; url?: string }> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { ok: false, error: "Ikke innlogget" };
 
-  const file = formData.get("file") as File | null;
-  if (!file) return { ok: false, error: "Ingen fil valgt" };
-  if (file.size > 5 * 1024 * 1024) {
-    return { ok: false, error: "Bilde for stort (maks 5 MB)" };
+    const file = formData.get("file") as File | null;
+    if (!file) return { ok: false, error: "Ingen fil valgt" };
+    if (file.size > 5 * 1024 * 1024) {
+      return { ok: false, error: "Bilde for stort (maks 5 MB)" };
+    }
+
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    const mime = file.type || "image/jpeg";
+    if (!allowed.includes(mime)) {
+      return { ok: false, error: "Bildet må være JPG, PNG eller WEBP" };
+    }
+
+    const kind = (String(formData.get("kind") || "extra") as
+      | "host_photo" | "venue_photo" | "logo" | "extra");
+    const caption = String(formData.get("caption") || "").trim() || null;
+
+    const safeName = file.name.replace(/[^a-z0-9._-]+/gi, "_");
+    const path = `${user.id}/invitations/${invitation_id}/${Date.now()}-${safeName}`;
+
+    // Storage upload — vanligste feil: bucketen "attachments" mangler
+    const { error: upErr } = await supabase.storage
+      .from("attachments")
+      .upload(path, file, { contentType: mime, upsert: false });
+    if (upErr) {
+      const hint = upErr.message.toLowerCase().includes("bucket")
+        ? " (Sjekk at storage-bucketen 'attachments' finnes i Supabase Dashboard → Storage)"
+        : "";
+      return { ok: false, error: "Storage-opplasting feilet: " + upErr.message + hint };
+    }
+
+    const { data: pub } = supabase.storage.from("attachments").getPublicUrl(path);
+
+    const { error } = await supabase.from("event_invitation_attachments").insert({
+      invitation_id,
+      kind,
+      storage_path: path,
+      public_url: pub.publicUrl,
+      mime_type: mime,
+      size_bytes: file.size,
+      caption,
+    });
+    if (error) {
+      return { ok: false, error: "Databasen avviste insert: " + error.message };
+    }
+
+    revalidatePath(`/invitasjoner/${invitation_id}`);
+    return { ok: true, url: pub.publicUrl };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "Uventet serverfeil",
+    };
   }
-
-  const allowed = ["image/jpeg", "image/png", "image/webp"];
-  const mime = file.type || "image/jpeg";
-  if (!allowed.includes(mime)) {
-    return { ok: false, error: "Bildet må være JPG, PNG eller WEBP" };
-  }
-
-  const kind = (String(formData.get("kind") || "extra") as
-    | "host_photo" | "venue_photo" | "logo" | "extra");
-  const caption = String(formData.get("caption") || "").trim() || null;
-
-  const safeName = file.name.replace(/[^a-z0-9._-]+/gi, "_");
-  const path = `${user.id}/invitations/${invitation_id}/${Date.now()}-${safeName}`;
-  const { error: upErr } = await supabase.storage
-    .from("attachments")
-    .upload(path, file, { contentType: mime, upsert: false });
-  if (upErr) return { ok: false, error: "Opplasting feilet: " + upErr.message };
-
-  const { data: pub } = supabase.storage.from("attachments").getPublicUrl(path);
-
-  const { error } = await supabase.from("event_invitation_attachments").insert({
-    invitation_id,
-    kind,
-    storage_path: path,
-    public_url: pub.publicUrl,
-    mime_type: mime,
-    size_bytes: file.size,
-    caption,
-  });
-  if (error) return { ok: false, error: error.message };
-
-  revalidatePath(`/invitasjoner/${invitation_id}`);
-  return { ok: true, url: pub.publicUrl };
 }
 
 export async function deleteInvitationAsset(asset_id: string, invitation_id: string) {

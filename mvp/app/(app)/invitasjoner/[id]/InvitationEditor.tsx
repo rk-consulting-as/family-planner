@@ -154,13 +154,29 @@ export default function InvitationEditor({
   }
 
   async function uploadAsset(kind: string, file: File) {
+    setError(null);
+    setInfo("Laster opp…");
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Bildet er for stort (maks 5 MB). Komprimer det først.");
+      setInfo(null);
+      return;
+    }
     const fd = new FormData();
     fd.set("kind", kind);
     fd.set("file", file);
     startTransition(async () => {
-      const res = await uploadInvitationAsset(invitation.id, fd);
-      if (!res.ok) setError(res.error || "Opplasting feilet");
-      else setInfo("Bilde lastet opp — last siden på nytt for forhåndsvisning");
+      try {
+        const res = await uploadInvitationAsset(invitation.id, fd);
+        if (!res.ok) {
+          setError(res.error || "Opplasting feilet");
+          setInfo(null);
+          return;
+        }
+        setInfo("Bilde lastet opp ✓ — Trykk «Lagre» for å oppdatere preview");
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Uventet feil ved opplasting");
+        setInfo(null);
+      }
     });
   }
 
