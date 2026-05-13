@@ -93,7 +93,7 @@ export function WeekView({
   onEventClick?: (eventId: string) => void;
   onEventMove?: (eventId: string, newStart: Date, newEnd: Date) => void;
 }) {
-  const [hour] = useState({ from: 7, to: 21 });
+  const [hour, setHour] = useState({ from: 7, to: 23 });
   const [dragInfo, setDragInfo] = useState<{ id: string; durationMs: number } | null>(null);
 
   const days = useMemo(
@@ -230,6 +230,47 @@ export function WeekView({
 
   return (
     <div className="rounded-2xl bg-white border border-slate-200 overflow-hidden">
+      <div className="flex items-center justify-end gap-2 px-3 py-2 border-b border-slate-100 bg-slate-50/50">
+        <span className="text-xs text-slate-500">Tidsvindu</span>
+        <div className="inline-flex rounded-lg border border-slate-200 bg-white text-xs overflow-hidden">
+          <button
+            onClick={() => setHour({ from: 7, to: 18 })}
+            className={`px-2 py-1 ${
+              hour.from === 7 && hour.to === 18 ? "bg-brand-100 text-brand-800" : "hover:bg-slate-50"
+            }`}
+            title="07-18"
+          >
+            Dag
+          </button>
+          <button
+            onClick={() => setHour({ from: 7, to: 23 })}
+            className={`px-2 py-1 border-l border-slate-200 ${
+              hour.from === 7 && hour.to === 23 ? "bg-brand-100 text-brand-800" : "hover:bg-slate-50"
+            }`}
+            title="07-23"
+          >
+            Standard
+          </button>
+          <button
+            onClick={() => setHour({ from: 6, to: 24 })}
+            className={`px-2 py-1 border-l border-slate-200 ${
+              hour.from === 6 && hour.to === 24 ? "bg-brand-100 text-brand-800" : "hover:bg-slate-50"
+            }`}
+            title="06-24"
+          >
+            Utvidet
+          </button>
+          <button
+            onClick={() => setHour({ from: 0, to: 24 })}
+            className={`px-2 py-1 border-l border-slate-200 ${
+              hour.from === 0 && hour.to === 24 ? "bg-brand-100 text-brand-800" : "hover:bg-slate-50"
+            }`}
+            title="00-24"
+          >
+            Hele døgnet
+          </button>
+        </div>
+      </div>
       <div className="grid grid-cols-[60px_repeat(7,1fr)]">
         <div className="bg-slate-50 border-b border-slate-200 h-12" />
         {days.map((d, i) => (
