@@ -534,10 +534,3 @@ function MilestoneRow({
     </li>
   );
 }
-on className="text-xs text-slate-400 hover:text-red-600">Slett</button>
-          </form>
-        </div>
-      </div>
-    </li>
-  );
-}
