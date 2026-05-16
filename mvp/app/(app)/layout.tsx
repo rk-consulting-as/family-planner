@@ -22,6 +22,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           groupName={ctx.group.name}
           isAdmin={isAdmin}
           displayName={ctx.profile.display_name}
+          avatarUrl={ctx.profile.avatar_url}
+          colorHex={ctx.profile.color_hex}
           isSystemAdmin={ctx.profile.is_system_admin}
           permissions={ctx.permissions as unknown as Record<string, boolean>}
         />

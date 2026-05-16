@@ -5,6 +5,9 @@ import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { UserAvatar } from "@/components/ui/Avatar";
+import Next3Days, { DashEvent } from "@/components/dashboard/Next3Days";
+import QuickGrid from "@/components/dashboard/QuickGrid";
 import { formatCurrency, formatMinutes } from "@/lib/utils";
 import { CheckSquare, Calendar, Footprints, Trophy, Users, Flame, ShoppingBag } from "lucide-react";
 import { markHabitDone } from "@/lib/actions/habits";
@@ -17,6 +20,55 @@ export default async function DashboardPage() {
 
   // Today's chores for this user
   const today = new Date().toISOString().slice(0, 10);
+
+  // Hendelser for i dag + 2 dager fram (for mini-kalenderen)
+  const dashStart = new Date();
+  dashStart.setHours(0, 0, 0, 0);
+  const dashEnd = new Date(dashStart);
+  dashEnd.setDate(dashEnd.getDate() + 3);
+  const { data: dashEventsRaw } = await supabase
+    .from("events")
+    .select("id, title, starts_at, ends_at, all_day, icon, color_hex, category, participant_ids")
+    .eq("group_id", ctx.group.id)
+    .is("deleted_at", null)
+    .gte("starts_at", dashStart.toISOString())
+    .lt("starts_at", dashEnd.toISOString())
+    .order("starts_at", { ascending: true });
+  type EvRow = {
+    id: string;
+    title: string;
+    starts_at: string;
+    ends_at: string;
+    all_day: boolean | null;
+    icon: string | null;
+    color_hex: string | null;
+    category: string | null;
+    participant_ids: string[];
+  };
+  const memberById = new Map(
+    ctx.members.map((m) => [
+      m.profile_id,
+      {
+        profile_id: m.profile_id,
+        display_name: m.display_name,
+        avatar_url: m.avatar_url,
+        color_hex: m.color_hex,
+      },
+    ])
+  );
+  const dashEvents: DashEvent[] = ((dashEventsRaw || []) as EvRow[]).map((e) => ({
+    id: e.id,
+    title: e.title,
+    starts_at: e.starts_at,
+    ends_at: e.ends_at,
+    all_day: e.all_day,
+    icon: e.icon,
+    color_hex: e.color_hex,
+    category: e.category,
+    participants: (e.participant_ids || [])
+      .map((id) => memberById.get(id))
+      .filter((p): p is NonNullable<typeof p> => !!p),
+  }));
 
   const { data: myAssignments } = await supabase
     .from("chore_assignments")
@@ -93,12 +145,33 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Hei, {ctx.profile.display_name}! 👋</h1>
-        <p className="text-slate-600">
-          {today} • {ctx.group.name}
-        </p>
+      <div className="flex items-center gap-3">
+        <UserAvatar
+          name={ctx.profile.display_name}
+          avatarUrl={ctx.profile.avatar_url}
+          colorHex={ctx.profile.color_hex}
+          size="xl"
+        />
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">
+            Hei, {ctx.profile.display_name.split(" ")[0]}! 👋
+          </h1>
+          <p className="text-sm text-slate-600">
+            {new Date().toLocaleDateString("nb-NO", {
+              weekday: "long",
+              day: "numeric",
+              month: "long",
+            })}{" "}
+            • {ctx.group.name}
+          </p>
+        </div>
       </div>
+
+      {/* Snarvei-grid */}
+      <QuickGrid permissions={ctx.permissions as unknown as Record<string, boolean>} />
+
+      {/* Neste 3 dager — rask planlegging */}
+      <Next3Days events={dashEvents} />
 
       {/* Belønningssaldo-rad */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
