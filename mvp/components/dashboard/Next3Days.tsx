@@ -50,13 +50,17 @@ function formatTime(iso: string): string {
 export default function Next3Days({
   events,
   startDate,
+  skipToday = true,
 }: {
   events: DashEvent[];
   startDate?: Date;
+  /** Hopp over i dag (vises i TodayActivities-kortet) */
+  skipToday?: boolean;
 }) {
   const today = startDate || new Date();
   const days: Date[] = [];
-  for (let i = 0; i < 3; i++) {
+  const offset = skipToday ? 1 : 0;
+  for (let i = offset; i < offset + 2; i++) {
     const d = new Date(today);
     d.setDate(d.getDate() + i);
     d.setHours(0, 0, 0, 0);
@@ -76,21 +80,23 @@ export default function Next3Days({
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+    <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/30 overflow-hidden shadow-soft">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-outline-variant/20">
         <div>
-          <h2 className="font-semibold text-slate-900">Neste 3 dager</h2>
-          <p className="text-xs text-slate-500">Rask planlegging</p>
+          <h2 className="font-display font-semibold text-on-surface">
+            Senere denne uka
+          </h2>
+          <p className="text-label-sm text-on-surface-variant">Rask planlegging</p>
         </div>
         <Link
           href="/kalender"
-          className="text-xs text-brand-700 hover:underline font-medium"
+          className="text-label-lg text-primary hover:underline font-bold"
         >
           Hele kalenderen →
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
+      <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-outline-variant/20">
         {days.map((d, i) => {
           const head = formatDayHeader(d, today);
           const list = byDay.get(d.toDateString()) || [];

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { UserAvatar } from "@/components/ui/Avatar";
 import Next3Days, { DashEvent } from "@/components/dashboard/Next3Days";
+import TodayActivities from "@/components/dashboard/TodayActivities";
 import QuickGrid from "@/components/dashboard/QuickGrid";
 import Birthdays, { BirthdayMember } from "@/components/dashboard/Birthdays";
 import { formatCurrency, formatMinutes } from "@/lib/utils";
@@ -190,14 +191,17 @@ export default async function DashboardPage() {
         </div>
       </header>
 
-      {/* Snarvei-grid */}
-      <QuickGrid permissions={ctx.permissions as unknown as Record<string, boolean>} />
-
-      {/* Neste 3 dager + bursdager i bento-grid */}
+      {/* Bento: Dagens aktiviteter (stort) + Bursdager (sidekolonne) */}
       <div className="grid lg:grid-cols-[2fr,1fr] gap-md items-start">
-        <Next3Days events={dashEvents} />
+        <TodayActivities events={dashEvents} />
         <Birthdays members={birthdayMembers} />
       </div>
+
+      {/* Snarvei-grid (kompakt — 6 viktigste) */}
+      <QuickGrid permissions={ctx.permissions as unknown as Record<string, boolean>} />
+
+      {/* Neste 2 dager fram */}
+      <Next3Days events={dashEvents} />
 
       {/* Belønningssaldo-rad i bento-stil */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -461,8 +465,12 @@ function BentoStat({
       className={`rounded-2xl bg-gradient-to-br ${bg} p-4 shadow-soft border border-outline-variant/20`}
     >
       <div className="text-2xl">{icon}</div>
-      <div className="text-label-sm text-on-surface-variant mt-2">{label}</div>
-      <div className="font-display text-lg font-bold text-on-surface">{value}</div>
+      <div className="text-label-sm font-semibold text-on-surface/70 mt-2">
+        {label}
+      </div>
+      <div className="font-display text-lg font-bold text-on-surface">
+        {value}
+      </div>
     </div>
   );
 }

@@ -66,10 +66,10 @@ export default function Birthdays({
   if (withBirthdays.length === 0) return null;
 
   return (
-    <div className="rounded-2xl bg-primary-container/30 p-md space-y-sm">
+    <div className="rounded-2xl bg-gradient-to-br from-primary-container/40 to-primary-fixed/40 p-md space-y-sm border border-primary/10">
       <div className="flex items-center gap-2">
         <Cake className="w-5 h-5 text-primary" style={{ fontVariationSettings: "'FILL' 1" }} />
-        <h3 className="font-display text-headline-md">Bursdager</h3>
+        <h3 className="font-display text-headline-md text-on-primary-fixed">Bursdager</h3>
       </div>
       <div className="space-y-2">
         {withBirthdays.map((m, i) => (

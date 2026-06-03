@@ -43,6 +43,22 @@ html.dark .border-outline-variant\/50 { border-color: rgba(168, 179, 187, 0.3) !
 html.dark h1, html.dark h2, html.dark h3, html.dark h4, html.dark h5, html.dark h6 {
   color: #d8e4f0;
 }
+/* Legacy slate-overrides — sørger for at gamle komponenter ikke ser ødelagte ut */
+html.dark .bg-slate-50 { background-color: #131b21 !important; }
+html.dark .bg-slate-100 { background-color: #18222a !important; }
+html.dark .bg-white { background-color: #0a1216 !important; }
+html.dark .border-slate-100 { border-color: rgba(168,179,187,0.15) !important; }
+html.dark .border-slate-200 { border-color: rgba(168,179,187,0.2) !important; }
+html.dark .border-slate-300 { border-color: rgba(168,179,187,0.25) !important; }
+html.dark .text-slate-400 { color: #8b96a0 !important; }
+html.dark .text-slate-500 { color: #a8b3bb !important; }
+html.dark .text-slate-600 { color: #c0c7cf !important; }
+html.dark .text-slate-700 { color: #d8e4f0 !important; }
+html.dark .text-slate-800 { color: #e6f2fe !important; }
+html.dark .text-slate-900 { color: #ffffff !important; }
+html.dark .divide-slate-100 > * + * { border-color: rgba(168,179,187,0.15) !important; }
+html.dark .hover\\:bg-slate-50:hover { background-color: #18222a !important; }
+html.dark .hover\\:bg-slate-100:hover { background-color: #1f2a32 !important; }
 
 html, body {
   height: 100%;
