@@ -143,29 +143,34 @@ export default async function DashboardPage() {
 
   const isAdmin = ctx.role !== "member";
 
+  // Tidsbasert hilsen
+  const nowH = new Date().getHours();
+  const greeting =
+    nowH < 5 ? "God natt" :
+    nowH < 10 ? "God morgen" :
+    nowH < 17 ? "God dag" :
+    nowH < 22 ? "God kveld" : "God natt";
+  const firstName = ctx.profile.display_name.split(" ")[0];
+  const weekday = new Date().toLocaleDateString("nb-NO", { weekday: "long" });
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
+    <div className="space-y-md">
+      <header className="flex items-center gap-sm">
         <UserAvatar
           name={ctx.profile.display_name}
           avatarUrl={ctx.profile.avatar_url}
           colorHex={ctx.profile.color_hex}
           size="xl"
         />
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">
-            Hei, {ctx.profile.display_name.split(" ")[0]}! 👋
+        <div className="min-w-0">
+          <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background">
+            {greeting}, {firstName}!
           </h1>
-          <p className="text-sm text-slate-600">
-            {new Date().toLocaleDateString("nb-NO", {
-              weekday: "long",
-              day: "numeric",
-              month: "long",
-            })}{" "}
-            • {ctx.group.name}
+          <p className="text-body-md text-on-surface-variant">
+            Her er oversikten for en rolig og organisert {weekday}.
           </p>
         </div>
-      </div>
+      </header>
 
       {/* Snarvei-grid */}
       <QuickGrid permissions={ctx.permissions as unknown as Record<string, boolean>} />

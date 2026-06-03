@@ -2,8 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---- Kinship & Co fonter ---- */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Nunito+Sans:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+
 :root {
   color-scheme: light;
+  --surface: #f6faff;
+  --on-surface: #111d25;
+  --primary: #1c648e;
+  --secondary: #2c6956;
+  --tertiary: #765b06;
 }
 
 html, body {
@@ -11,11 +20,34 @@ html, body {
 }
 
 body {
-  background: #f8fafc;
-  color: #0f172a;
-  font-family: Inter, system-ui, -apple-system, sans-serif;
+  background: var(--surface);
+  color: var(--on-surface);
+  font-family: "Nunito Sans", system-ui, -apple-system, sans-serif;
+  font-size: 16px;
+  line-height: 24px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Headings bruker Plus Jakarta Sans som default */
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #111d25;
+}
+
+/* Material Symbols rendering */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+.material-symbols-outlined.filled {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Lifted-paper effekt for kort */
+.task-card-glow {
+  box-shadow: 0 4px 20px -4px rgba(28, 100, 142, 0.08);
 }
 
 /* Slim scrollbars */
@@ -24,9 +56,17 @@ body {
   height: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #cfdce7;
   border-radius: 6px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #71787f;
+}
+
+/* Skjul scrollbar på smale flater (mobile horisontale ruller) */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
 }
