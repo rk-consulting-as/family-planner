@@ -34,6 +34,11 @@ export default function AddWishClient({
       const res = await fetchWishFromUrl(sourceUrl);
       if (!res.ok) {
         setError(res.error || "Kunne ikke hente");
+        // Hvis siden blokkerer oss, gå direkte til manuelt skjema
+        // med URL bevart, så brukeren ikke mister fremgangen
+        if (res.fallback_url) {
+          setMode("manual");
+        }
         return;
       }
       if (res.data) setFetched(res.data);
@@ -50,8 +55,9 @@ export default function AddWishClient({
         formData.set("original_price", String(fetched.original_price));
       if (fetched.brand) formData.set("brand", fetched.brand);
       if (fetched.category) formData.set("category", fetched.category);
-      if (sourceUrl) formData.set("product_url", sourceUrl);
     }
+    // Bevar URL også når brukeren fyller inn manuelt etter en mislykket fetch
+    if (sourceUrl) formData.set("product_url", sourceUrl);
     startTransition(async () => {
       const res = await createAuraWish(formData);
       if (!res.ok) {

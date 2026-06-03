@@ -203,25 +203,92 @@ export type FetchedProduct = {
   currency?: string;
 };
 
+// Enkelt fallback: les Open Graph meta-tagger uten AI
+function extractOgMeta(html: string): Partial<FetchedProduct> {
+  function pick(re: RegExp): string | undefined {
+    const m = html.match(re);
+    return m?.[1]?.trim();
+  }
+  return {
+    title:
+      pick(/<meta\s+property=["']og:title["']\s+content=["']([^"']+)["']/i) ||
+      pick(/<meta\s+name=["']twitter:title["']\s+content=["']([^"']+)["']/i) ||
+      pick(/<title>([^<]+)<\/title>/i),
+    description:
+      pick(/<meta\s+property=["']og:description["']\s+content=["']([^"']+)["']/i) ||
+      pick(/<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i),
+    hero_image_url:
+      pick(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i) ||
+      pick(/<meta\s+name=["']twitter:image["']\s+content=["']([^"']+)["']/i),
+    brand: pick(/<meta\s+property=["']og:site_name["']\s+content=["']([^"']+)["']/i),
+    price: (() => {
+      const p = pick(/<meta\s+property=["']product:price:amount["']\s+content=["']([^"']+)["']/i);
+      return p ? Number(p) : undefined;
+    })(),
+  };
+}
+
 export async function fetchWishFromUrl(
   url: string
-): Promise<{ ok: boolean; error?: string; data?: FetchedProduct }> {
+): Promise<{ ok: boolean; error?: string; data?: FetchedProduct; fallback_url?: string }> {
   if (!url || !/^https?:\/\//i.test(url)) {
     return { ok: false, error: "Ugyldig URL" };
   }
 
   try {
+    // Bedre headers — etterligner en ekte Chrome-bruker så vi unngår 403
     const res = await fetch(url, {
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
-          "(KHTML, like Gecko) Chrome/119.0 Safari/537.36",
-        Accept: "text/html",
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+          "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "nb-NO,nb;q=0.9,no;q=0.8,en;q=0.7",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Cache-Control": "no-cache",
+        Pragma: "no-cache",
+        "Sec-Ch-Ua":
+          '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+        "Sec-Ch-Ua-Mobile": "?0",
+        "Sec-Ch-Ua-Platform": '"Windows"',
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1",
+        "Upgrade-Insecure-Requests": "1",
       },
       redirect: "follow",
     });
-    if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
+    if (!res.ok) {
+      const hint =
+        res.status === 403 || res.status === 401
+          ? "Siden blokkerer automatiske oppslag. Fyll inn detaljene manuelt — lenken er bevart."
+          : res.status === 404
+          ? "Siden ble ikke funnet."
+          : `HTTP ${res.status}`;
+      return { ok: false, error: hint, fallback_url: url };
+    }
     const html = await res.text();
+
+    // Steg 1: prøv enkel Open Graph-extraction først (gratis, raskt)
+    const og = extractOgMeta(html);
+    const hasGoodData = !!og.title && (!!og.hero_image_url || !!og.description);
+
+    // Hvis OG-data er rikt nok, returner uten å spørre AI
+    if (hasGoodData && og.title && og.hero_image_url) {
+      return {
+        ok: true,
+        data: {
+          title: og.title,
+          description: og.description,
+          brand: og.brand,
+          hero_image_url: og.hero_image_url,
+          price: og.price,
+          currency: "NOK",
+        },
+      };
+    }
 
     // Begrens lengde for AI-call
     const trimmed = html.slice(0, 60000);
@@ -273,6 +340,7 @@ Regler:
         e instanceof Error
           ? "Klarte ikke laste siden: " + e.message
           : "Ukjent feil",
+      fallback_url: url,
     };
   }
 }
