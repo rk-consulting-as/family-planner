@@ -6,6 +6,7 @@ import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Textarea, Select } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
+import { UserAvatar } from "@/components/ui/Avatar";
 import { THEMES } from "@/lib/invitations/themes";
 import { FORMATS, getFormat } from "@/lib/invitations/formats";
 import {
@@ -523,7 +524,7 @@ export default function InvitationEditor({
                   {groupMembers.map((m) => (
                     <label
                       key={m.profile_id}
-                      className="flex items-center gap-2 text-sm"
+                      className="flex items-center gap-2.5 text-body-md px-2 py-1.5 rounded-lg hover:bg-surface-container-low cursor-pointer"
                     >
                       <input
                         type="checkbox"
@@ -531,15 +532,15 @@ export default function InvitationEditor({
                         value={m.profile_id}
                         defaultChecked={m.profile_id === currentUserId}
                       />
-                      {m.color_hex && (
-                        <span
-                          className="w-2.5 h-2.5 rounded-full"
-                          style={{ background: m.color_hex }}
-                        />
-                      )}
-                      {m.display_name}
+                      <UserAvatar
+                        name={m.display_name}
+                        avatarUrl={(m as { avatar_url?: string | null }).avatar_url || null}
+                        colorHex={m.color_hex}
+                        size="sm"
+                      />
+                      <span className="flex-1">{m.display_name}</span>
                       {m.profile_id === currentUserId && (
-                        <span className="text-xs text-slate-400">(meg)</span>
+                        <span className="text-label-sm text-on-surface-variant">(meg)</span>
                       )}
                     </label>
                   ))}

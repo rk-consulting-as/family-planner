@@ -15,6 +15,35 @@
   --tertiary: #765b06;
 }
 
+html.dark {
+  color-scheme: dark;
+  --surface: #0c1419;
+  --on-surface: #d8e4f0;
+  --primary: #90cdfd;
+  --secondary: #96d3bd;
+  --tertiary: #e7c269;
+}
+html.dark body {
+  background: var(--surface);
+  color: var(--on-surface);
+}
+/* Overrides for Tailwind-token-klassene i dark mode */
+html.dark .bg-surface { background-color: #0c1419 !important; }
+html.dark .bg-surface-container-lowest { background-color: #0a1216 !important; }
+html.dark .bg-surface-container-low { background-color: #131b21 !important; }
+html.dark .bg-surface-container { background-color: #18222a !important; }
+html.dark .bg-surface-container-high { background-color: #1f2a32 !important; }
+html.dark .bg-surface-container-highest { background-color: #2a3640 !important; }
+html.dark .text-on-surface { color: #d8e4f0 !important; }
+html.dark .text-on-surface-variant { color: #a8b3bb !important; }
+html.dark .text-on-background { color: #d8e4f0 !important; }
+html.dark .border-outline-variant\/30 { border-color: rgba(168, 179, 187, 0.18) !important; }
+html.dark .border-outline-variant\/40 { border-color: rgba(168, 179, 187, 0.22) !important; }
+html.dark .border-outline-variant\/50 { border-color: rgba(168, 179, 187, 0.3) !important; }
+html.dark h1, html.dark h2, html.dark h3, html.dark h4, html.dark h5, html.dark h6 {
+  color: #d8e4f0;
+}
+
 html, body {
   height: 100%;
 }

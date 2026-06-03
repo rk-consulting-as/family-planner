@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Textarea, Select } from "@/components/ui/Input";
+import HeroPhotoPicker from "@/components/ui/HeroPhotoPicker";
 import { addGiftItem } from "@/lib/actions/gifts";
 
 export default function AddGiftItemForm({
@@ -16,15 +17,19 @@ export default function AddGiftItemForm({
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [err, setErr] = useState<string | null>(null);
+  const [heroUrl, setHeroUrl] = useState<string | null>(null);
 
   function handle(formData: FormData) {
     setErr(null);
+    // Sett image_url fra picker
+    if (heroUrl) formData.set("image_url", heroUrl);
     startTransition(async () => {
       const res = await addGiftItem(listId, groupId, formData);
       if (res && !res.ok) {
         setErr(res.error || "Klarte ikke å lagre");
         return;
       }
+      setHeroUrl(null);
       setOpen(false);
     });
   }
@@ -72,15 +77,19 @@ export default function AddGiftItemForm({
             <Field label="Lenke til produkt">
               <Input name="url" type="url" placeholder="https://komplett.no/..." />
             </Field>
-            <Field label="Bildelenke (valgfri)">
-              <Input name="image_url" type="url" placeholder="https://..." />
-            </Field>
             <div className="sm:col-span-2">
               <Field label="Kategori (valgfri)">
                 <Input name="category" placeholder="Lego, klær, bok..." />
               </Field>
             </div>
           </div>
+
+          <HeroPhotoPicker
+            groupId={groupId}
+            value={heroUrl}
+            onChange={setHeroUrl}
+            label="Bilde av ønsket (valgfri)"
+          />
 
           <Field label="Detaljer (valgfri)">
             <Textarea name="description" rows={2} placeholder="Farge, størrelse..." />

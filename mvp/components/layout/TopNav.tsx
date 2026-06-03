@@ -10,7 +10,7 @@ import {
   Calendar, CheckSquare, Trophy, Footprints, Home, Settings, LogOut, Shield,
   CheckCheck, ShoppingBag, Bell, Wallet, MessageSquare, UtensilsCrossed,
   ShoppingCart, Gift, Briefcase, Mail, ChevronDown, Menu, X, Sparkles,
-  BookOpen, Camera,
+  BookOpen, Camera, Sun, Moon,
 } from "lucide-react";
 
 type LeafItem = {
@@ -169,7 +169,19 @@ function UserMenu({
   onSignOut: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [isDark, setIsDark] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setIsDark(document.documentElement.classList.contains("dark"));
+  }, [open]);
+
+  function toggleTheme() {
+    const next = !isDark;
+    document.documentElement.classList.toggle("dark", next);
+    localStorage.setItem("kinship-theme", next ? "dark" : "light");
+    setIsDark(next);
+  }
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
@@ -215,6 +227,13 @@ function UserMenu({
             <Bell className="w-4 h-4" />
             Varsler
           </Link>
+          <button
+            onClick={toggleTheme}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+          >
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            {isDark ? "Lyst tema" : "Mørkt tema"}
+          </button>
           <hr className="my-1 border-slate-100" />
           <button
             onClick={() => {

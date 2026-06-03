@@ -3,9 +3,15 @@
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Select } from "@/components/ui/Input";
+import { UserAvatar } from "@/components/ui/Avatar";
 import { pushMilestoneToCalendar } from "@/lib/actions/projects";
 
-type Member = { profile_id: string; display_name: string; color_hex: string | null };
+type Member = {
+  profile_id: string;
+  display_name: string;
+  color_hex: string | null;
+  avatar_url?: string | null;
+};
 
 function isoToDatetimeLocal(iso: string | null): string {
   if (!iso) return "";
@@ -168,7 +174,7 @@ export default function PushToCalendarButton({
               {members.map((m) => (
                 <label
                   key={m.profile_id}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-50 text-sm"
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-lg border border-outline-variant/30 cursor-pointer hover:bg-surface-container-low text-body-md"
                 >
                   <input
                     type="checkbox"
@@ -176,15 +182,15 @@ export default function PushToCalendarButton({
                     value={m.profile_id}
                     defaultChecked={initialParticipants.has(m.profile_id)}
                   />
-                  {m.color_hex && (
-                    <span
-                      className="w-2.5 h-2.5 rounded-full"
-                      style={{ background: m.color_hex }}
-                    />
-                  )}
-                  <span>{m.display_name}</span>
+                  <UserAvatar
+                    name={m.display_name}
+                    avatarUrl={m.avatar_url}
+                    colorHex={m.color_hex}
+                    size="sm"
+                  />
+                  <span className="flex-1">{m.display_name}</span>
                   {m.profile_id === currentUserId && (
-                    <span className="text-xs text-slate-400">(meg)</span>
+                    <span className="text-label-sm text-on-surface-variant">(meg)</span>
                   )}
                 </label>
               ))}
