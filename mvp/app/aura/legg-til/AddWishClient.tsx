@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Link as LinkIcon, Sparkles, Pencil } from "lucide-react";
+import { Link as LinkIcon, Sparkles, Pencil, Camera } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import { fetchWishFromUrl, createAuraWish } from "@/lib/actions/aura";
 
 type List = { id: string; title: string };
@@ -26,6 +27,37 @@ export default function AddWishClient({
     original_price?: number;
   } | null>(null);
   const [sourceUrl, setSourceUrl] = useState("");
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  async function uploadImage(file: File) {
+    setError(null);
+    setUploading(true);
+    try {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Ikke innlogget");
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error("Bildet er for stort (maks 5 MB)");
+      }
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${user.id}/aura-wishes/${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("attachments")
+        .upload(path, file, { contentType: file.type, upsert: false });
+      if (upErr) throw new Error(upErr.message);
+      const { data: pub } = supabase.storage
+        .from("attachments")
+        .getPublicUrl(path);
+      setUploadedImage(pub.publicUrl);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Opplasting feilet");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   function handleFetch() {
     setError(null);
@@ -57,7 +89,6 @@ export default function AddWishClient({
   function handleSave(formData: FormData) {
     setError(null);
     if (fetched) {
-      formData.set("hero_image_url", fetched.hero_image_url || "");
       if (fetched.price !== undefined)
         formData.set("price", String(fetched.price));
       if (fetched.original_price !== undefined)
@@ -65,6 +96,9 @@ export default function AddWishClient({
       if (fetched.brand) formData.set("brand", fetched.brand);
       if (fetched.category) formData.set("category", fetched.category);
     }
+    // Bilde-prioritet: opplastet > AI-fetched > tom
+    const finalImage = uploadedImage || fetched?.hero_image_url || "";
+    if (finalImage) formData.set("hero_image_url", finalImage);
     // Bevar URL også når brukeren fyller inn manuelt etter en mislykket fetch
     if (sourceUrl) formData.set("product_url", sourceUrl);
     startTransition(async () => {
@@ -156,19 +190,84 @@ export default function AddWishClient({
       {/* Form (vises både for manual og etter URL-fetch) */}
       {(mode === "manual" || fetched) && (
         <form action={handleSave} className="space-y-3">
-          {fetched?.hero_image_url && (
-            <div
-              className="rounded-2xl overflow-hidden aspect-[4/3]"
-              style={{ background: "var(--aura-surface-low)" }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={fetched.hero_image_url}
-                alt=""
-                className="w-full h-full object-cover"
-              />
-            </div>
-          )}
+          {/* Bilde-velger / opplaster */}
+          <div>
+            {uploadedImage || fetched?.hero_image_url ? (
+              <div className="relative group rounded-2xl overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={uploadedImage || fetched?.hero_image_url || ""}
+                  alt=""
+                  className="w-full aspect-[4/3] object-cover"
+                />
+                <div
+                  className="absolute inset-0 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition"
+                  style={{ background: "rgba(0,0,0,0.4)" }}
+                >
+                  <label
+                    className="aura-label-lg px-3 py-2 rounded-full cursor-pointer"
+                    style={{
+                      background: "var(--aura-primary-container)",
+                      color: "var(--aura-on-primary-container)",
+                    }}
+                  >
+                    Bytt
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) uploadImage(f);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+            ) : (
+              <label
+                className="block aspect-[4/3] rounded-2xl flex flex-col items-center justify-center cursor-pointer"
+                style={{
+                  background: "var(--aura-surface-low)",
+                  border: "2px dashed var(--aura-outline-variant)",
+                }}
+              >
+                {uploading ? (
+                  <span
+                    className="aura-body-md"
+                    style={{ color: "var(--aura-on-surface-variant)" }}
+                  >
+                    Laster opp…
+                  </span>
+                ) : (
+                  <>
+                    <Camera
+                      className="w-8 h-8 mb-2"
+                      style={{ color: "var(--aura-on-surface-variant)" }}
+                    />
+                    <span
+                      className="aura-label-lg"
+                      style={{ color: "var(--aura-on-surface)" }}
+                    >
+                      Last opp bilde
+                    </span>
+                  </>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploading}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) uploadImage(f);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            )}
+          </div>
           {fetched && (
             <div
               className="aura-body-md p-2 rounded-xl text-center"
