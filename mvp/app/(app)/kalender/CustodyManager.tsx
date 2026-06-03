@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Select } from "@/components/ui/Input";
+import { UserAvatar } from "@/components/ui/Avatar";
 import {
   createCustodyPeriod,
   deleteCustodyPeriod,
@@ -13,6 +14,7 @@ type Member = {
   profile_id: string;
   display_name: string;
   color_hex: string | null;
+  avatar_url?: string | null;
   role: "owner" | "admin" | "member";
 };
 
@@ -124,12 +126,14 @@ export default function CustodyManager({
                 {kids.map((m) => (
                   <label
                     key={m.profile_id}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-300 cursor-pointer hover:bg-slate-50 text-sm"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-outline-variant/40 cursor-pointer hover:bg-surface-container-low text-body-md"
                   >
                     <input type="checkbox" name="child_ids" value={m.profile_id} />
-                    <span
-                      className="w-2 h-2 rounded-full"
-                      style={{ background: m.color_hex || "#7C3AED" }}
+                    <UserAvatar
+                      name={m.display_name}
+                      avatarUrl={m.avatar_url}
+                      colorHex={m.color_hex}
+                      size="xs"
                     />
                     {m.display_name}
                   </label>

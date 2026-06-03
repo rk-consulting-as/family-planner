@@ -3,10 +3,16 @@
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Textarea, Select } from "@/components/ui/Input";
+import { UserAvatar } from "@/components/ui/Avatar";
 import { updateMilestone } from "@/lib/actions/projects";
 
 type Party = { id: string; name: string };
-type Member = { profile_id: string; display_name: string };
+type Member = {
+  profile_id: string;
+  display_name: string;
+  avatar_url?: string | null;
+  color_hex?: string | null;
+};
 
 export type EditableMilestone = {
   id: string;
@@ -160,13 +166,19 @@ export default function EditMilestoneDialog({
                 {members.map((m) => (
                   <label
                     key={m.profile_id}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-300 cursor-pointer hover:bg-slate-50 text-sm"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-outline-variant/40 cursor-pointer hover:bg-surface-container-low text-body-md"
                   >
                     <input
                       type="checkbox"
                       name="responsible_profile_ids"
                       value={m.profile_id}
                       defaultChecked={responsibles.has(m.profile_id)}
+                    />
+                    <UserAvatar
+                      name={m.display_name}
+                      avatarUrl={m.avatar_url}
+                      colorHex={m.color_hex}
+                      size="xs"
                     />
                     {m.display_name}
                   </label>

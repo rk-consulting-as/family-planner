@@ -4,10 +4,16 @@ import { useState, useTransition } from "react";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Textarea, Select } from "@/components/ui/Input";
+import { UserAvatar } from "@/components/ui/Avatar";
 import { addMilestone } from "@/lib/actions/projects";
 
 type Party = { id: string; name: string };
-type Member = { id: string; display_name: string };
+type Member = {
+  id: string;
+  display_name: string;
+  avatar_url?: string | null;
+  color_hex?: string | null;
+};
 
 export default function AddMilestoneForm({
   projectId,
@@ -108,9 +114,15 @@ export default function AddMilestoneForm({
                 {members.map((m) => (
                   <label
                     key={m.id}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-300 cursor-pointer hover:bg-slate-50 text-sm"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-outline-variant/40 cursor-pointer hover:bg-surface-container-low text-body-md"
                   >
                     <input type="checkbox" name="responsible_profile_ids" value={m.id} />
+                    <UserAvatar
+                      name={m.display_name}
+                      avatarUrl={m.avatar_url}
+                      colorHex={m.color_hex}
+                      size="xs"
+                    />
                     {m.display_name}
                   </label>
                 ))}

@@ -56,6 +56,7 @@ export type Member = {
   profile_id: string;
   display_name: string;
   color_hex: string | null;
+  avatar_url?: string | null;
 };
 
 export type CustodyPeriod = {
