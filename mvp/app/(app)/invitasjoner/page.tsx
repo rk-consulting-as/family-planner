@@ -48,12 +48,12 @@ export default async function InvitasjonerPage() {
   const finalized = list.filter((i) => i.status !== "draft");
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-md max-w-5xl">
       <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Mail className="w-6 h-6" /> Invitasjoner
+        <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background flex items-center gap-2">
+          <Mail className="w-7 h-7 text-primary" /> Invitasjoner
         </h1>
-        <p className="text-sm text-slate-600 mt-1">
+        <p className="text-body-md text-on-surface-variant">
           Lag bursdagsinvitasjoner, klassefest-invitasjoner og lignende med AI-hjelp.
           Velg tema, last opp bilder, og få ferdig tekst + delbar invitasjon.
         </p>
@@ -180,11 +180,11 @@ function InvitationCard({
     <li>
       <Link
         href={`/invitasjoner/${i.id}`}
-        className="block p-3 rounded-xl border border-slate-200 bg-white hover:border-brand-300 hover:shadow-sm transition"
+        className="block rounded-2xl overflow-hidden bg-surface-container-lowest border border-outline-variant/30 hover:shadow-soft transition-all group"
       >
         {preview ? (
           <div
-            className="w-full aspect-[4/5] rounded-lg bg-slate-100 mb-2"
+            className="w-full aspect-[4/5] bg-surface-container"
             style={{
               backgroundImage: `url(${preview})`,
               backgroundSize: "cover",
@@ -192,16 +192,20 @@ function InvitationCard({
             }}
           />
         ) : (
-          <div className="w-full aspect-[4/5] rounded-lg bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center mb-2 text-3xl text-slate-300">
+          <div className="w-full aspect-[4/5] bg-gradient-to-br from-primary-container/40 to-tertiary-fixed/30 flex items-center justify-center text-5xl">
             ✉️
           </div>
         )}
-        <div className="font-semibold text-sm truncate">{i.title}</div>
-        <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
-          <Badge>{i.theme}</Badge>
-          {i.event_date && <span>{i.event_date}</span>}
-          {i.status === "draft" && <Badge variant="warning">Utkast</Badge>}
-          {i.status === "finalized" && <Badge variant="success">Ferdig</Badge>}
+        <div className="p-3">
+          <div className="font-display font-semibold text-on-surface truncate group-hover:text-primary transition">
+            {i.title}
+          </div>
+          <div className="flex items-center gap-2 mt-1 text-label-sm text-on-surface-variant">
+            <Badge>{i.theme}</Badge>
+            {i.event_date && <span>{i.event_date}</span>}
+            {i.status === "draft" && <Badge variant="warning">Utkast</Badge>}
+            {i.status === "finalized" && <Badge variant="success">Ferdig</Badge>}
+          </div>
         </div>
       </Link>
     </li>

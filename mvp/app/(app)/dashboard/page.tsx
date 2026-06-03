@@ -245,7 +245,7 @@ export default async function DashboardPage() {
 
       {/* Dagens vaner — vises øverst hvis det er noen */}
       {todaysHabits.length > 0 && (
-        <Card>
+        <Card data-section="habits">
           <CardHeader className="flex items-center justify-between">
             <CardTitle>Dagens vaner</CardTitle>
             <Link href="/vaner">
@@ -298,7 +298,7 @@ export default async function DashboardPage() {
 
       {/* Åpne ønsker som denne brukeren skal se */}
       {openNeeds.length > 0 && (
-        <Card>
+        <Card data-section="needs">
           <CardHeader className="flex items-center justify-between">
             <CardTitle>
               <ShoppingBag className="w-4 h-4 inline mr-1" /> Åpne ønsker
@@ -335,7 +335,7 @@ export default async function DashboardPage() {
         </Card>
       )}
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div data-section="chores" className="grid lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader className="flex items-center justify-between">
             <CardTitle>Dine oppgaver</CardTitle>

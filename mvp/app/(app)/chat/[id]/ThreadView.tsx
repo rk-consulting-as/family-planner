@@ -115,25 +115,29 @@ export default function ThreadView({
           messages.map((m) => {
             const mine = m.sender_id === currentUserId;
             return (
-              <div key={m.id} className={`flex gap-2 ${mine ? "flex-row-reverse" : ""}`}>
+              <div key={m.id} className={`flex gap-2 items-end ${mine ? "flex-row-reverse" : ""}`}>
                 {!mine && (
                   <span
-                    className="w-7 h-7 rounded-full grid place-items-center text-white text-xs font-semibold flex-shrink-0"
+                    className="w-8 h-8 rounded-full grid place-items-center text-white text-label-sm font-bold flex-shrink-0 ring-2 ring-surface-container-lowest shadow-sm"
                     style={{ background: colorOf(m.sender_id) }}
                   >
                     {nameOf(m.sender_id).slice(0, 1).toUpperCase()}
                   </span>
                 )}
-                <div className={`max-w-[75%] ${mine ? "items-end" : ""} flex flex-col`}>
+                <div className={`max-w-[75%] flex flex-col ${mine ? "items-end" : "items-start"}`}>
                   <div
-                    className={`rounded-2xl px-3 py-2 text-sm break-words ${
-                      mine ? "bg-brand-600 text-white" : "bg-slate-100 text-slate-900"
+                    className={`px-3 py-2 text-body-md break-words shadow-soft ${
+                      mine
+                        ? "bg-primary text-on-primary rounded-2xl rounded-br-md"
+                        : "bg-surface-container text-on-surface rounded-2xl rounded-bl-md"
                     }`}
                   >
                     <Linkify text={m.body} />
                   </div>
-                  <div className="text-xs text-slate-500 mt-0.5 px-1">
-                    {!mine && nameOf(m.sender_id) + " • "}
+                  <div className="text-label-sm text-on-surface-variant mt-1 px-1">
+                    {!mine && (
+                      <span className="font-bold">{nameOf(m.sender_id)} • </span>
+                    )}
                     {new Date(m.created_at).toLocaleString("nb-NO", {
                       hour: "2-digit",
                       minute: "2-digit",
