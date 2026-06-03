@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Textarea, Select } from "@/components/ui/Input";
+import HeroPhotoPicker from "@/components/ui/HeroPhotoPicker";
 import { createRecipe } from "@/lib/actions/recipes";
 
 export default function NewRecipeForm({ groupId }: { groupId: string }) {
@@ -17,6 +18,7 @@ export default function NewRecipeForm({ groupId }: { groupId: string }) {
     Array<{ name: string; quantity: string; unit: string; category: string }>
   >([{ name: "", quantity: "", unit: "", category: "Annet" }]);
   const [steps, setSteps] = useState<string[]>([""]);
+  const [heroUrl, setHeroUrl] = useState<string | null>(null);
 
   function handle(formData: FormData) {
     setError(null);
@@ -27,7 +29,7 @@ export default function NewRecipeForm({ groupId }: { groupId: string }) {
       servings: Number(formData.get("servings") || 4),
       prep_minutes: Number(formData.get("prep_minutes") || 0) || null,
       cook_minutes: Number(formData.get("cook_minutes") || 0) || null,
-      hero_image_url: String(formData.get("hero_image_url") || "") || null,
+      hero_image_url: heroUrl,
       ingredients: ingredients
         .filter((i) => i.name.trim())
         .map((i) => ({
@@ -59,17 +61,20 @@ export default function NewRecipeForm({ groupId }: { groupId: string }) {
           <Field label="Beskrivelse">
             <Textarea name="description" rows={2} placeholder="Kort beskrivelse" />
           </Field>
-          <div className="grid sm:grid-cols-3 gap-3">
+          <div className="grid sm:grid-cols-2 gap-3">
             <Field label="Kategori">
               <Input name="category" placeholder="F.eks. Rask middag" />
             </Field>
             <Field label="Porsjoner">
               <Input name="servings" type="number" defaultValue={4} />
             </Field>
-            <Field label="Hovedbilde-URL (valgfri)">
-              <Input name="hero_image_url" placeholder="https://..." />
-            </Field>
           </div>
+          <HeroPhotoPicker
+            groupId={groupId}
+            value={heroUrl}
+            onChange={setHeroUrl}
+            label="Hovedbilde (valgfritt)"
+          />
           <div className="grid sm:grid-cols-2 gap-3">
             <Field label="Forberedelse (min)">
               <Input name="prep_minutes" type="number" placeholder="15" />

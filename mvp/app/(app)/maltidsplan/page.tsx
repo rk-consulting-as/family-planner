@@ -47,14 +47,17 @@ export default async function MaltidsPlanPage({
   const meals = (mealsRaw || []) as Meal[];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-md">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
+          <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background flex items-center gap-2">
             🍽️ Måltidsplan
           </h1>
-          <p className="text-slate-600 text-sm">
-            Uke {weekNumber(monday)} • {fmt(monday)} – {fmt(days[6])}
+          <p className="text-body-md text-on-surface-variant">
+            Planlegg uken og reduser matsvinn sammen.
+            <span className="block text-label-sm mt-0.5">
+              Uke {weekNumber(monday)} • {fmt(monday)} – {fmt(days[6])}
+            </span>
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -62,13 +65,16 @@ export default async function MaltidsPlanPage({
             <Button size="sm" variant="ghost">←</Button>
           </Link>
           <Link href="/maltidsplan">
-            <Button size="sm" variant="secondary">I dag</Button>
+            <Button size="sm" variant="tonal">I dag</Button>
           </Link>
           <Link href={`/maltidsplan?uke=${offset + 1}`}>
             <Button size="sm" variant="ghost">→</Button>
           </Link>
+          <Link href="/oppskrifter">
+            <Button size="sm" variant="ghost">📖 Oppskrifter</Button>
+          </Link>
           <Link href="/handleliste">
-            <Button size="sm">🛒 Handleliste</Button>
+            <Button size="sm">🛒 Overfør til handleliste</Button>
           </Link>
         </div>
       </div>

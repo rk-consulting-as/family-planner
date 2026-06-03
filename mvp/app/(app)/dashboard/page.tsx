@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { UserAvatar } from "@/components/ui/Avatar";
 import Next3Days, { DashEvent } from "@/components/dashboard/Next3Days";
 import QuickGrid from "@/components/dashboard/QuickGrid";
+import Birthdays, { BirthdayMember } from "@/components/dashboard/Birthdays";
 import { formatCurrency, formatMinutes } from "@/lib/utils";
 import { CheckSquare, Calendar, Footprints, Trophy, Users, Flame, ShoppingBag } from "lucide-react";
 import { markHabitDone } from "@/lib/actions/habits";
@@ -20,6 +21,23 @@ export default async function DashboardPage() {
 
   // Today's chores for this user
   const today = new Date().toISOString().slice(0, 10);
+
+  // Bursdager (kommende) — henter birth_date for hvert gruppemedlem
+  const { data: birthRows } = await supabase
+    .from("profiles")
+    .select("id, birth_date")
+    .in("id", ctx.members.map((m) => m.profile_id));
+  type BirthRow = { id: string; birth_date: string | null };
+  const birthMap = new Map(
+    ((birthRows || []) as BirthRow[]).map((b) => [b.id, b.birth_date])
+  );
+  const birthdayMembers: BirthdayMember[] = ctx.members.map((m) => ({
+    profile_id: m.profile_id,
+    display_name: m.display_name,
+    birth_date: birthMap.get(m.profile_id) || null,
+    avatar_url: m.avatar_url,
+    color_hex: m.color_hex,
+  }));
 
   // Hendelser for i dag + 2 dager fram (for mini-kalenderen)
   const dashStart = new Date();
@@ -175,19 +193,38 @@ export default async function DashboardPage() {
       {/* Snarvei-grid */}
       <QuickGrid permissions={ctx.permissions as unknown as Record<string, boolean>} />
 
-      {/* Neste 3 dager — rask planlegging */}
-      <Next3Days events={dashEvents} />
+      {/* Neste 3 dager + bursdager i bento-grid */}
+      <div className="grid lg:grid-cols-[2fr,1fr] gap-md items-start">
+        <Next3Days events={dashEvents} />
+        <Birthdays members={birthdayMembers} />
+      </div>
 
-      {/* Belønningssaldo-rad */}
+      {/* Belønningssaldo-rad i bento-stil */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <BalanceCard label="Lommepenger" value={formatCurrency(Number(moneyBalance))} icon="💰" />
-        <BalanceCard
+        <BentoStat
+          label="Lommepenger"
+          value={formatCurrency(Number(moneyBalance))}
+          icon="💰"
+          bg="from-tertiary-fixed/60 to-tertiary-fixed/30"
+        />
+        <BentoStat
           label="Skjermtid"
           value={formatMinutes(Number(screenBalance))}
           icon="📺"
+          bg="from-primary-container/60 to-primary-container/30"
         />
-        <BalanceCard label="Poeng" value={`${Number(pointsBalance)} stk`} icon="⭐" />
-        <BalanceCard label="Gå denne uka" value={`${weekKm.toFixed(1)} km`} icon="👟" />
+        <BentoStat
+          label="Poeng"
+          value={`${Number(pointsBalance)} ⭐`}
+          icon="⭐"
+          bg="from-secondary-container/60 to-secondary-container/30"
+        />
+        <BentoStat
+          label="Gå denne uka"
+          value={`${weekKm.toFixed(1)} km`}
+          icon="👟"
+          bg="from-primary-fixed/60 to-primary-fixed/30"
+        />
       </div>
 
       {/* Dagens vaner — vises øverst hvis det er noen */}
@@ -400,10 +437,32 @@ export default async function DashboardPage() {
 
 function BalanceCard({ label, value, icon }: { label: string; value: string; icon: string }) {
   return (
-    <div className="rounded-2xl bg-white border border-slate-200 p-4">
+    <div className="rounded-2xl bg-surface-container-lowest border border-outline-variant/30 p-4 shadow-soft">
       <div className="text-2xl">{icon}</div>
-      <div className="text-xs text-slate-500 mt-2">{label}</div>
-      <div className="text-lg font-semibold text-slate-900">{value}</div>
+      <div className="text-label-sm text-on-surface-variant mt-2">{label}</div>
+      <div className="text-lg font-display font-bold text-on-surface">{value}</div>
+    </div>
+  );
+}
+
+function BentoStat({
+  label,
+  value,
+  icon,
+  bg,
+}: {
+  label: string;
+  value: string;
+  icon: string;
+  bg: string;
+}) {
+  return (
+    <div
+      className={`rounded-2xl bg-gradient-to-br ${bg} p-4 shadow-soft border border-outline-variant/20`}
+    >
+      <div className="text-2xl">{icon}</div>
+      <div className="text-label-sm text-on-surface-variant mt-2">{label}</div>
+      <div className="font-display text-lg font-bold text-on-surface">{value}</div>
     </div>
   );
 }
