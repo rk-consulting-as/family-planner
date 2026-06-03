@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { callClaude, safeParseJson } from "@/lib/ai/anthropic";
 
 // =====================================================================
 // Wishlists
@@ -185,6 +186,95 @@ export async function deleteAuraWish(wish_id: string) {
   if (error) return { ok: false, error: error.message };
   revalidatePath("/aura");
   return { ok: true };
+}
+
+// =====================================================================
+// AI: Hent produktdetaljer fra URL
+// =====================================================================
+
+export type FetchedProduct = {
+  title: string;
+  description?: string;
+  brand?: string;
+  category?: string;
+  hero_image_url?: string;
+  price?: number;
+  original_price?: number;
+  currency?: string;
+};
+
+export async function fetchWishFromUrl(
+  url: string
+): Promise<{ ok: boolean; error?: string; data?: FetchedProduct }> {
+  if (!url || !/^https?:\/\//i.test(url)) {
+    return { ok: false, error: "Ugyldig URL" };
+  }
+
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
+          "(KHTML, like Gecko) Chrome/119.0 Safari/537.36",
+        Accept: "text/html",
+      },
+      redirect: "follow",
+    });
+    if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
+    const html = await res.text();
+
+    // Begrens lengde for AI-call
+    const trimmed = html.slice(0, 60000);
+
+    const system = `Du er en produktdata-uttrekker. Du får rå HTML fra en produktside og skal returnere strukturert JSON.
+
+Returner KUN JSON:
+{
+  "title": "Produktnavn",
+  "description": "Kort beskrivelse",
+  "brand": "Merke",
+  "category": "Sneakers / Smykker / Tech / Klær / Bok / Annet",
+  "hero_image_url": "https://...",
+  "price": 1299.00,
+  "original_price": 1499.00,
+  "currency": "NOK"
+}
+
+Regler:
+- Hent hovedbildet (helst Open Graph image fra <meta property="og:image">)
+- Pris som tall (uten kr/$/€)
+- IKKE finn på data — bruk null hvis ikke funnet
+- title er påkrevd`;
+
+    let raw = "";
+    try {
+      raw = await callClaude({
+        system,
+        messages: [{ role: "user", content: trimmed }],
+        max_tokens: 1024,
+      });
+    } catch (e) {
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : "AI feilet",
+      };
+    }
+
+    const parsed = safeParseJson<FetchedProduct>(raw);
+    if (!parsed || !parsed.title) {
+      return { ok: false, error: "Kunne ikke lese produktdetaljer fra siden" };
+    }
+
+    return { ok: true, data: parsed };
+  } catch (e) {
+    return {
+      ok: false,
+      error:
+        e instanceof Error
+          ? "Klarte ikke laste siden: " + e.message
+          : "Ukjent feil",
+    };
+  }
 }
 
 // =====================================================================
