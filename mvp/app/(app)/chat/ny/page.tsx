@@ -15,8 +15,8 @@ export default async function NyChatPage() {
         <Link href="/chat" className="text-sm text-brand-700 hover:underline">
           ← Tilbake
         </Link>
-        <h1 className="text-2xl font-bold mt-1">Ny gruppe-chat</h1>
-        <p className="text-slate-600 text-sm">
+        <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background mt-1">Ny gruppe-chat</h1>
+        <p className="text-body-md text-on-surface-variant">
           Velg navn og medlemmer. Du legges til automatisk.
         </p>
       </div>

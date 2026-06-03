@@ -40,8 +40,8 @@ export default async function AdminGjoremalPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Gjøremål (admin)</h1>
-        <p className="text-slate-600 text-sm">
+        <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background">Gjøremål (admin)</h1>
+        <p className="text-body-md text-on-surface-variant">
           Tildel til én eller flere personer, sett periode for gjentakelse.
           Første som hakker av i perioden «tar» oppgaven.
         </p>

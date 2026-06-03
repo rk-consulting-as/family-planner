@@ -205,10 +205,10 @@ export default async function ProsjektPage({ params }: { params: { id: string } 
         </Link>
         <div className="flex items-start justify-between gap-3 mt-1">
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
+            <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background flex items-center gap-2">
               <Briefcase className="w-6 h-6" /> {p.title}
             </h1>
-            <div className="text-sm text-slate-600 mt-1">
+            <div className="text-body-md text-on-surface-variant mt-1">
               {p.context_subject && <>Om: <strong>{p.context_subject}</strong> • </>}
               {p.started_at && <>Startet: {p.started_at} • </>}
               {memberList.length} {memberList.length === 1 ? "medlem" : "medlemmer"}

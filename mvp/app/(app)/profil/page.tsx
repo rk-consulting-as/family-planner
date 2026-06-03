@@ -87,10 +87,12 @@ export default async function ProfilPage() {
   const pendingRequests = (pendingRaw || []) as ReqRow[];
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-md max-w-3xl">
       <div>
-        <h1 className="text-2xl font-bold">Min profil</h1>
-        <p className="text-slate-600 text-sm">
+        <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background">
+          Min profil
+        </h1>
+        <p className="text-body-md text-on-surface-variant">
           Endringer av navn og fødselsdato må godkjennes av en admin.
         </p>
       </div>

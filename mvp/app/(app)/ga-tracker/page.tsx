@@ -34,8 +34,8 @@ export default async function GaTrackerPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Gå-tracker</h1>
-        <p className="text-slate-600 text-sm">Logg dine turer og se ukentlig fremdrift.</p>
+        <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background">Gå-tracker</h1>
+        <p className="text-body-md text-on-surface-variant">Logg dine turer og se ukentlig fremdrift.</p>
       </div>
 
       <div className="grid sm:grid-cols-3 gap-3">

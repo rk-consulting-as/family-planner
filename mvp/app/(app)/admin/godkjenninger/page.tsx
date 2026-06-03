@@ -73,8 +73,8 @@ export default async function GodkjenningerPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Godkjenninger</h1>
-        <p className="text-slate-600 text-sm">
+        <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background">Godkjenninger</h1>
+        <p className="text-body-md text-on-surface-variant">
           Fullførte gjøremål som venter på din godkjenning.
         </p>
       </div>

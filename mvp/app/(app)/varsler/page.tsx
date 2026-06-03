@@ -61,8 +61,8 @@ export default async function VarslerPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Varsler</h1>
-        <p className="text-slate-600 text-sm">Invitasjoner og meldinger til deg.</p>
+        <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background">Varsler</h1>
+        <p className="text-body-md text-on-surface-variant">Invitasjoner og meldinger til deg.</p>
       </div>
 
       <Card>

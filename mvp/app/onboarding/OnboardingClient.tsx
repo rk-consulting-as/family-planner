@@ -32,8 +32,8 @@ export default function OnboardingClient() {
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="container mx-auto max-w-2xl px-6 py-12">
-        <h1 className="text-3xl font-bold text-slate-900 mb-2">Velkommen!</h1>
-        <p className="text-slate-600 mb-8">
+        <h1 className="font-display text-headline-lg text-on-background mb-2">Velkommen!</h1>
+        <p className="text-body-md text-on-surface-variant mb-8">
           Opprett en ny familie/gruppe, eller bli med i en eksisterende.
         </p>
 

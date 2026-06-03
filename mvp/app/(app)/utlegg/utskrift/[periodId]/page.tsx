@@ -130,7 +130,7 @@ export default async function PrintPage({
 
       {/* Selve utskriften */}
       <header className="print-section">
-        <h1 className="text-2xl font-bold">{ctx.group.name} — Felles utlegg</h1>
+        <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background">{ctx.group.name} — Felles utlegg</h1>
         <p className="text-sm text-slate-700 mt-1">
           Periode: <strong>{period.name}</strong> ({period.started_on} →{" "}
           {period.closed_on || "pågår"})

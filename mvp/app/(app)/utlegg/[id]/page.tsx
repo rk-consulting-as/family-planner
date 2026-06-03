@@ -106,8 +106,8 @@ export default async function ExpenseDetailPage({ params }: { params: { id: stri
         </Link>
         <div className="flex items-start justify-between gap-3 mt-1">
           <div>
-            <h1 className="text-2xl font-bold">{e.description}</h1>
-            <div className="text-sm text-slate-600 mt-1">
+            <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background">{e.description}</h1>
+            <div className="text-body-md text-on-surface-variant mt-1">
               {e.expense_date} • Betalt av <strong>{payer?.display_name || "?"}</strong>
               {e.category && ` • ${e.category}`}
             </div>
@@ -158,7 +158,7 @@ export default async function ExpenseDetailPage({ params }: { params: { id: stri
 
       {e.split_kind === "only_paid_by" && (
         <Card>
-          <CardBody className="text-sm text-slate-600">
+          <CardBody className="text-body-md text-on-surface-variant">
             ℹ Dette utlegget er kun ført til informasjon — ingen skal dele kostnaden.
           </CardBody>
         </Card>

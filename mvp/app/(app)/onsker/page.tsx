@@ -50,8 +50,8 @@ export default async function OnskerPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Ønsker / Trenger</h1>
-        <p className="text-slate-600 text-sm">
+        <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background">Ønsker / Trenger</h1>
+        <p className="text-body-md text-on-surface-variant">
           Flagg ting du trenger. Velg hvilke voksne som skal se det — nyttig hvis du har to hjem.
         </p>
       </div>
@@ -238,7 +238,7 @@ function NeedItem({
             <Badge variant={statusVariant}>{statusLabel(need.status)}</Badge>
           </div>
           {need.description && (
-            <div className="text-sm text-slate-600 mt-1">
+            <div className="text-body-md text-on-surface-variant mt-1">
               <Linkify text={need.description} />
             </div>
           )}

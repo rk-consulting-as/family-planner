@@ -54,10 +54,10 @@ export default async function ProsjekterPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
+        <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background flex items-center gap-2">
           <Briefcase className="w-6 h-6" /> Prosjekter
         </h1>
-        <p className="text-slate-600 text-sm">
+        <p className="text-body-md text-on-surface-variant">
           Sensitive, langvarige saker — utredning, søknader, juridiske forhold.
           Kun eksplisitte medlemmer ser innholdet.
         </p>

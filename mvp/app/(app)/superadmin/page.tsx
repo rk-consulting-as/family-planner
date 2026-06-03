@@ -21,10 +21,10 @@ export default async function SuperAdminOverview() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
+        <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background flex items-center gap-2">
           <span>Backoffice — Oversikt</span>
         </h1>
-        <p className="text-slate-600 text-sm">Du er innlogget som system administrator.</p>
+        <p className="text-body-md text-on-surface-variant">Du er innlogget som system administrator.</p>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -85,7 +85,7 @@ function Stat({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-2xl bg-white border border-slate-200 p-4">
       <div className="text-xs text-slate-500">{label}</div>
-      <div className="text-2xl font-bold text-slate-900 mt-1">{value}</div>
+      <div className="font-display text-headline-md text-on-surface mt-1">{value}</div>
     </div>
   );
 }

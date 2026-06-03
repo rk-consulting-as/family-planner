@@ -70,8 +70,8 @@ export default async function GroupDetailsPage({ params }: { params: { id: strin
           <Link href="/superadmin/grupper" className="text-sm text-amber-700 hover:underline">
             ← Tilbake til alle grupper
           </Link>
-          <h1 className="text-2xl font-bold mt-1">{group.name}</h1>
-          <p className="text-slate-600 text-sm">
+          <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background mt-1">{group.name}</h1>
+          <p className="text-body-md text-on-surface-variant">
             {group.type} • Opprettet {group.created_at?.slice(0, 10)} • Kode:{" "}
             <span className="font-mono">{group.invite_code}</span>
           </p>
@@ -217,7 +217,7 @@ function Stat({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-2xl bg-white border border-slate-200 p-4">
       <div className="text-xs text-slate-500">{label}</div>
-      <div className="text-2xl font-bold mt-1">{value}</div>
+      <div className="font-display text-headline-md text-on-surface mt-1">{value}</div>
     </div>
   );
 }

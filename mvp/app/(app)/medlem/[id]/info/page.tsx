@@ -55,10 +55,10 @@ export default async function MedlemInfoPage({ params }: { params: { id: string 
         <Link href="/admin/medlemmer" className="text-sm text-brand-700 hover:underline">
           ← Tilbake til medlemmer
         </Link>
-        <h1 className="text-2xl font-bold mt-1">
+        <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background mt-1">
           Info om {member.display_name}
         </h1>
-        <p className="text-slate-600 text-sm">
+        <p className="text-body-md text-on-surface-variant">
           Viktig informasjon å huske: skostørrelse, allergier, favoritter osv.
         </p>
       </div>

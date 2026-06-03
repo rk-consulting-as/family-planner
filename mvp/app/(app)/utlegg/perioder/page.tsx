@@ -36,8 +36,8 @@ export default async function PerioderPage() {
         <Link href="/utlegg" className="text-sm text-brand-700 hover:underline">
           ← Tilbake til aktiv periode
         </Link>
-        <h1 className="text-2xl font-bold mt-1">Tidligere oppgjør</h1>
-        <p className="text-slate-600 text-sm">
+        <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background mt-1">Tidligere oppgjør</h1>
+        <p className="text-body-md text-on-surface-variant">
           Alle perioder — åpne og avsluttede.
         </p>
       </div>

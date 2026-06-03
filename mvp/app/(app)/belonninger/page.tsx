@@ -32,8 +32,8 @@ export default async function BelonningerPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Belønninger</h1>
-        <p className="text-slate-600 text-sm">Saldo og historikk.</p>
+        <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background">Belønninger</h1>
+        <p className="text-body-md text-on-surface-variant">Saldo og historikk.</p>
       </div>
 
       <div className="grid sm:grid-cols-3 gap-3">
@@ -87,7 +87,7 @@ function BigBalance({ label, value, icon }: { label: string; value: string; icon
     <div className="rounded-2xl bg-white border border-slate-200 p-6">
       <div className="text-3xl">{icon}</div>
       <div className="text-sm text-slate-500 mt-3">{label}</div>
-      <div className="text-2xl font-bold text-slate-900 mt-1">{value}</div>
+      <div className="font-display text-headline-md text-on-surface mt-1">{value}</div>
     </div>
   );
 }

@@ -17,8 +17,8 @@ export default async function NewGroupPage() {
         <Link href="/superadmin/grupper" className="text-sm text-amber-700 hover:underline">
           ← Tilbake til grupper
         </Link>
-        <h1 className="text-2xl font-bold mt-1">Opprett gruppe for bruker</h1>
-        <p className="text-slate-600 text-sm">
+        <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background mt-1">Opprett gruppe for bruker</h1>
+        <p className="text-body-md text-on-surface-variant">
           Opprett en familie/gruppe på vegne av en eksisterende bruker. De blir eier.
         </p>
       </div>

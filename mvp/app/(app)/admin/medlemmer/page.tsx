@@ -27,8 +27,8 @@ export default async function MedlemmerPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Medlemmer</h1>
-        <p className="text-slate-600 text-sm">
+        <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background">Medlemmer</h1>
+        <p className="text-body-md text-on-surface-variant">
           Administrer roller og tilganger. Du ser online-status for alle.
         </p>
       </div>
@@ -39,7 +39,7 @@ export default async function MedlemmerPage() {
         </CardHeader>
         <CardBody className="space-y-3">
           <div className="flex items-center justify-between gap-3 flex-wrap">
-            <p className="text-sm text-slate-600">
+            <p className="text-body-md text-on-surface-variant">
               Del invitasjonskoden{" "}
               <span className="font-mono font-bold">{ctx.group.invite_code}</span> — eller send en
               personlig lenke via epost/SMS.

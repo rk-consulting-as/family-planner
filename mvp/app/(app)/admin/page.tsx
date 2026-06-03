@@ -12,8 +12,8 @@ export default async function AdminPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Admin</h1>
-        <p className="text-slate-600 text-sm">Administrer {ctx.group.name}.</p>
+        <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background">Admin</h1>
+        <p className="text-body-md text-on-surface-variant">Administrer {ctx.group.name}.</p>
       </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">

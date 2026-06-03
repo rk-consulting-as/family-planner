@@ -113,8 +113,8 @@ export default async function NeedDetailPage({ params }: { params: { id: string 
         </Link>
         <div className="flex items-start justify-between gap-3 mt-1">
           <div>
-            <h1 className="text-2xl font-bold">{need.title}</h1>
-            <div className="text-sm text-slate-600 mt-1">
+            <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background">{need.title}</h1>
+            <div className="text-body-md text-on-surface-variant mt-1">
               Fra <strong>{requester?.display_name || "?"}</strong>
               {need.location_note && <> • Hvor: {need.location_note}</>} • Synlig for: {visibleNames}
             </div>

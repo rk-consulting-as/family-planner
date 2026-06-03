@@ -65,11 +65,11 @@ export default async function ChatPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
+          <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background flex items-center gap-2">
             <MessageSquare className="w-6 h-6" />
             Chat
           </h1>
-          <p className="text-slate-600 text-sm">Snakk med familien direkte eller i grupper.</p>
+          <p className="text-body-md text-on-surface-variant">Snakk med familien direkte eller i grupper.</p>
         </div>
         <Link href="/chat/ny">
           <Button>

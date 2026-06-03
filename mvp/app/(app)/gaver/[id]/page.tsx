@@ -104,8 +104,8 @@ export default async function GiftListPage({ params }: { params: { id: string } 
         </Link>
         <div className="flex items-start justify-between gap-3 mt-1">
           <div className="min-w-0">
-            <h1 className="text-2xl font-bold">{l.title}</h1>
-            <div className="text-sm text-slate-600 mt-1">
+            <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background">{l.title}</h1>
+            <div className="text-body-md text-on-surface-variant mt-1">
               For <strong>{isOwner ? "deg selv" : owner?.display_name || "?"}</strong>
               {l.occasion && ` • ${OCCASIONS[l.occasion as keyof typeof OCCASIONS] || l.occasion}`}
               {l.occasion_date && ` • ${l.occasion_date}`}
@@ -191,7 +191,7 @@ export default async function GiftListPage({ params }: { params: { id: string } 
                             </div>
                           )}
                           {it.description && (
-                            <div className="text-sm text-slate-600 mt-1">
+                            <div className="text-body-md text-on-surface-variant mt-1">
                               <Linkify text={it.description} />
                             </div>
                           )}

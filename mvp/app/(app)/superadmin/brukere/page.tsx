@@ -35,8 +35,8 @@ export default async function AllUsersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Alle brukere</h1>
-          <p className="text-slate-600 text-sm">{users.length} brukere registrert.</p>
+          <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background">Alle brukere</h1>
+          <p className="text-body-md text-on-surface-variant">{users.length} brukere registrert.</p>
         </div>
         <Link href="/superadmin/brukere/ny">
           <Button>+ Ny bruker</Button>

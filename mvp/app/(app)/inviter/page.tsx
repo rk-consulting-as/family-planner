@@ -41,8 +41,8 @@ export default async function InviterPage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <h1 className="text-2xl font-bold">Inviter til {ctx.group.name}</h1>
-        <p className="text-slate-600 text-sm">
+        <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background">Inviter til {ctx.group.name}</h1>
+        <p className="text-body-md text-on-surface-variant">
           Lag en delbar lenke og send via epost, SMS eller annen melding.
           {!isAdmin && (
             <> Admins godkjenner alle nye medlemmer du inviterer.</>

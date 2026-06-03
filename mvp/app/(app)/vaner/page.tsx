@@ -47,8 +47,8 @@ export default async function VanerPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Vaner</h1>
-        <p className="text-slate-600 text-sm">
+        <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background">Vaner</h1>
+        <p className="text-body-md text-on-surface-variant">
           Daglige rutiner som vitamin, p-pille, tannpuss. Hak av når du har gjort det.
         </p>
       </div>

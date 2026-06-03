@@ -34,8 +34,8 @@ export default async function TimeplanPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Timeplan</h1>
-        <p className="text-slate-600 text-sm">Skoletimer som gjentar seg ukentlig.</p>
+        <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background">Timeplan</h1>
+        <p className="text-body-md text-on-surface-variant">Skoletimer som gjentar seg ukentlig.</p>
       </div>
 
       <Card>

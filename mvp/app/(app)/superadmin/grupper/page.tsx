@@ -24,8 +24,8 @@ export default async function AllGroupsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Alle grupper</h1>
-          <p className="text-slate-600 text-sm">
+          <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background">Alle grupper</h1>
+          <p className="text-body-md text-on-surface-variant">
             Du ser alle {groups.length} aktive familier/grupper i systemet.
           </p>
         </div>

@@ -21,8 +21,8 @@ export default async function AuditPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Audit log</h1>
-        <p className="text-slate-600 text-sm">
+        <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background">Audit log</h1>
+        <p className="text-body-md text-on-surface-variant">
           De siste {rows.length} hendelsene i systemet.
         </p>
       </div>

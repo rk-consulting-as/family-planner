@@ -102,7 +102,7 @@ export default async function ChatThreadPage({ params }: { params: { id: string 
         </div>
       </div>
 
-      <h1 className="text-2xl font-bold flex items-center gap-2">
+      <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background flex items-center gap-2">
         <span>{t.kind === "group" ? "👥" : "💬"}</span>
         <span>{title}</span>
       </h1>

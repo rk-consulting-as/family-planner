@@ -11,8 +11,8 @@ export default function NewUserPage() {
         <Link href="/superadmin/brukere" className="text-sm text-amber-700 hover:underline">
           ← Tilbake til brukere
         </Link>
-        <h1 className="text-2xl font-bold mt-1">Opprett ny bruker</h1>
-        <p className="text-slate-600 text-sm">
+        <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background mt-1">Opprett ny bruker</h1>
+        <p className="text-body-md text-on-surface-variant">
           Bruker opprettes med epost + passord. Kryss av for å tvinge passordbytte
           ved første innlogging.
         </p>
