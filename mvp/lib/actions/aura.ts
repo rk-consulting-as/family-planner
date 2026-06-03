@@ -228,9 +228,69 @@ function extractOgMeta(html: string): Partial<FetchedProduct> {
   };
 }
 
+// Heuristikk: utled informasjon fra URL-en når siden ikke vil snakke med oss.
+// F.eks. https://komplett.no/product/1327396/mobil-tablets-klokker/nettbrett-ipad-...
+//   → category "Nettbrett", brand antas Apple (iPad i pathen)
+function guessFromUrl(url: string): Partial<FetchedProduct> {
+  try {
+    const u = new URL(url);
+    const host = u.hostname.replace(/^www\./, "");
+    const path = u.pathname.toLowerCase();
+    const slug = path.split("/").filter(Boolean).pop() || "";
+
+    // Tittel: gjør "iphone-15-pro-256gb-blue-titanium" → "Iphone 15 Pro 256gb Blue Titanium"
+    const title = slug
+      .replace(/[-_]+/g, " ")
+      .replace(/\.[a-z0-9]+$/, "")
+      .replace(/\b[a-z]/g, (c) => c.toUpperCase())
+      .trim();
+
+    // Merke: gjettet fra host eller slug
+    const brandFromHost: Record<string, string> = {
+      "komplett.no": "Komplett",
+      "elkjop.no": "Elkjøp",
+      "power.no": "Power",
+      "proshop.no": "Proshop",
+      "kjell.com": "Kjell & Company",
+      "zalando.no": "Zalando",
+      "boozt.com": "Boozt",
+      "adidas.no": "Adidas",
+      "nike.com": "Nike",
+      "apple.com": "Apple",
+    };
+    let brand = brandFromHost[host];
+    if (/iphone|ipad|macbook|airpods/i.test(slug)) brand = "Apple";
+    else if (/samsung|galaxy/i.test(slug)) brand = "Samsung";
+    else if (/playstation|ps5|sony/i.test(slug)) brand = "Sony";
+
+    // Kategori-heuristikk fra path
+    let category: string | undefined;
+    if (/nettbrett|ipad|tablet/i.test(path)) category = "Nettbrett";
+    else if (/mobil|smarttelefon/i.test(path)) category = "Mobiltelefon";
+    else if (/laptop|pc|macbook/i.test(path)) category = "Laptop / PC";
+    else if (/hodetelefon|headphone|airpod/i.test(path)) category = "Hodetelefoner";
+    else if (/sko|sneaker/i.test(path)) category = "Sko";
+    else if (/klokke|watch/i.test(path)) category = "Klokke";
+
+    return {
+      title: title.length > 3 ? title : undefined,
+      brand,
+      category,
+    };
+  } catch {
+    return {};
+  }
+}
+
 export async function fetchWishFromUrl(
   url: string
-): Promise<{ ok: boolean; error?: string; data?: FetchedProduct; fallback_url?: string }> {
+): Promise<{
+  ok: boolean;
+  error?: string;
+  data?: FetchedProduct;
+  fallback_url?: string;
+  partial?: Partial<FetchedProduct>;
+}> {
   if (!url || !/^https?:\/\//i.test(url)) {
     return { ok: false, error: "Ugyldig URL" };
   }
@@ -263,11 +323,16 @@ export async function fetchWishFromUrl(
     if (!res.ok) {
       const hint =
         res.status === 403 || res.status === 401
-          ? "Siden blokkerer automatiske oppslag. Fyll inn detaljene manuelt — lenken er bevart."
+          ? "Siden blokkerer automatiske oppslag (vanlig for store nettbutikker). Vi har gjettet litt fra URL-en — fyll inn det som mangler."
           : res.status === 404
           ? "Siden ble ikke funnet."
-          : `HTTP ${res.status}`;
-      return { ok: false, error: hint, fallback_url: url };
+          : `HTTP ${res.status} — siden ville ikke svare.`;
+      return {
+        ok: false,
+        error: hint,
+        fallback_url: url,
+        partial: guessFromUrl(url),
+      };
     }
     const html = await res.text();
 
@@ -334,13 +399,18 @@ Regler:
 
     return { ok: true, data: parsed };
   } catch (e) {
+    // Vanlig: TLS-feil, DNS, eller server som dropper forbindelsen helt.
+    // Brukervennlig melding + gjettet info fra URL-en.
+    const msg = e instanceof Error ? e.message : "ukjent feil";
+    const friendly =
+      msg.toLowerCase().includes("fetch failed") || msg.includes("ECONNREFUSED")
+        ? "Nettbutikken slipper oss ikke inn (typisk for større butikker som Komplett, Elkjøp). Vi har gjettet litt fra URL-en — fyll inn det som mangler. Lenken er bevart."
+        : "Klarte ikke laste siden: " + msg;
     return {
       ok: false,
-      error:
-        e instanceof Error
-          ? "Klarte ikke laste siden: " + e.message
-          : "Ukjent feil",
+      error: friendly,
       fallback_url: url,
+      partial: guessFromUrl(url),
     };
   }
 }

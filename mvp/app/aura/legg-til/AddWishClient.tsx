@@ -35,8 +35,17 @@ export default function AddWishClient({
       if (!res.ok) {
         setError(res.error || "Kunne ikke hente");
         // Hvis siden blokkerer oss, gå direkte til manuelt skjema
-        // med URL bevart, så brukeren ikke mister fremgangen
+        // med URL bevart + det vi klarte å gjette fra slug
         if (res.fallback_url) {
+          if (res.partial) {
+            setFetched({
+              title: res.partial.title || "",
+              brand: res.partial.brand,
+              category: res.partial.category,
+              hero_image_url: res.partial.hero_image_url,
+              price: res.partial.price,
+            });
+          }
           setMode("manual");
         }
         return;
@@ -168,7 +177,9 @@ export default function AddWishClient({
                 color: "var(--aura-on-primary-fixed, #001f23)",
               }}
             >
-              ✨ AI hentet detaljene. Sjekk og lagre.
+              {error
+                ? "💡 Sjekk og fyll ut det som mangler"
+                : "✨ AI hentet detaljene. Sjekk og lagre."}
             </div>
           )}
           <Field label="Tittel">
