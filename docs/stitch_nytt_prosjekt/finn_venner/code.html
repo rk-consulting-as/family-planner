@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>Connect - Aura Wish</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-bright": "#faf9fe",
+                    "primary-container": "#2fb2c1",
+                    "tertiary-container": "#a4a2a4",
+                    "on-secondary-fixed-variant": "#454748",
+                    "background": "#faf9fe",
+                    "on-secondary-container": "#626566",
+                    "primary-fixed-dim": "#5fd7e6",
+                    "on-primary-fixed": "#001f23",
+                    "surface-container-highest": "#e3e2e7",
+                    "on-primary-fixed-variant": "#004f57",
+                    "tertiary": "#5f5e60",
+                    "surface-dim": "#dad9df",
+                    "on-tertiary-fixed-variant": "#474649",
+                    "secondary-fixed-dim": "#c5c7c8",
+                    "secondary-fixed": "#e1e3e4",
+                    "surface-tint": "#006973",
+                    "surface": "#faf9fe",
+                    "on-surface": "#1a1b1f",
+                    "surface-container": "#eeedf3",
+                    "on-tertiary-container": "#39393b",
+                    "surface-container-low": "#f4f3f8",
+                    "primary-fixed": "#90f1ff",
+                    "on-primary": "#ffffff",
+                    "secondary-container": "#e1e3e4",
+                    "on-primary-container": "#003f46",
+                    "tertiary-fixed-dim": "#c8c6c8",
+                    "on-surface-variant": "#3d494b",
+                    "error": "#ba1a1a",
+                    "outline-variant": "#bcc9cb",
+                    "error-container": "#ffdad6",
+                    "on-tertiary": "#ffffff",
+                    "surface-variant": "#e3e2e7",
+                    "on-secondary-fixed": "#191c1d",
+                    "on-error-container": "#93000a",
+                    "on-secondary": "#ffffff",
+                    "secondary": "#5c5f60",
+                    "inverse-on-surface": "#f1f0f5",
+                    "inverse-surface": "#2f3034",
+                    "tertiary-fixed": "#e4e2e4",
+                    "outline": "#6d797b",
+                    "inverse-primary": "#5fd7e6",
+                    "on-error": "#ffffff",
+                    "surface-container-high": "#e9e7ed",
+                    "primary": "#006973",
+                    "on-tertiary-fixed": "#1b1b1d",
+                    "on-background": "#1a1b1f",
+                    "surface-container-lowest": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "base": "4px",
+                    "2xl": "48px",
+                    "xl": "32px",
+                    "md": "16px",
+                    "lg": "24px",
+                    "margin-mobile": "20px",
+                    "sm": "8px",
+                    "gutter": "16px",
+                    "xs": "4px",
+                    "margin-desktop": "64px"
+            },
+            "fontFamily": {
+                    "headline-md": ["Plus Jakarta Sans"],
+                    "headline-lg": ["Plus Jakarta Sans"],
+                    "label-sm": ["Plus Jakarta Sans"],
+                    "label-lg": ["Plus Jakarta Sans"],
+                    "headline-lg-mobile": ["Plus Jakarta Sans"],
+                    "body-md": ["Plus Jakarta Sans"],
+                    "body-lg": ["Plus Jakarta Sans"],
+                    "display-lg": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "label-lg": ["14px", {"lineHeight": "20px", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["22px", {"lineHeight": "28px", "fontWeight": "700"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        body {
+            -webkit-tap-highlight-color: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #bcc9cb;
+            border-radius: 10px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen font-body-lg overflow-x-hidden selection:bg-primary-container selection:text-white">
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-md">
+<div class="flex justify-between items-center px-margin-mobile md:px-margin-desktop h-16 w-full max-w-7xl mx-auto">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-container shadow-sm border border-outline-variant">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="A professional studio portrait of a young woman with a friendly expression, soft lighting, minimalist background. The photography style is modern and clean with high-key lighting to match a light-mode UI aesthetic. The color palette features soft neutrals and subtle teal accents that align with the Aura Wish brand identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA7dQJf0_-kAh5oRhCdY8kc6UCV5T0-NY5XItbD_jR-YcAoyBX0jceuwKkPfGMz8R0VXYXEfDgWvPlWCU9KFuNcircfPX87RfZIR7Pch7RJQ4SvCic9ee4lCtXJPbvtd77wELu2mZQblLCaRw0QVlcc-63_pCpKgZWVgVIBRPlIzx2ntIpHSmO3M1nWeBJ5BtI9ElTROtDTojLRBu-2o8-LQhrmIra8SfbOBBaOwW3PCtvM0CJgYBtEP71j78bjbhcW28asV_lNm14"/>
+</div>
+<h1 class="font-display-lg text-display-lg text-primary tracking-tight">Aura Wish</h1>
+</div>
+<button class="material-symbols-outlined text-primary hover:bg-surface-container-low transition-colors p-2 rounded-full active:scale-95 duration-200">
+                notifications
+            </button>
+</div>
+</header>
+<main class="pt-24 pb-32 px-margin-mobile md:px-margin-desktop max-w-7xl mx-auto">
+<!-- Search & Discovery Section -->
+<section class="mb-xl animate-in fade-in slide-in-from-bottom-4 duration-700">
+<div class="mb-lg">
+<h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-xs">Find Friends</h2>
+<p class="text-on-surface-variant font-body-md">Connect with people to see their wishlists and gift ideas.</p>
+</div>
+<!-- Search Bar -->
+<div class="relative max-w-2xl mb-lg">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full pl-12 pr-4 py-4 bg-surface-container-low border-none rounded-2xl focus:ring-2 focus:ring-primary transition-all duration-300 placeholder:text-outline font-body-lg shadow-sm" placeholder="Search name or @username" type="text"/>
+</div>
+<!-- Action Grid: Sync & Invite -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<div class="bg-primary-container/10 p-lg rounded-3xl flex items-center justify-between group cursor-pointer hover:bg-primary-container/20 transition-all duration-300 border border-primary-container/20">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">contact_page</span>
+</div>
+<div>
+<h3 class="font-label-lg text-label-lg text-on-primary-container">Sync Contacts</h3>
+<p class="text-sm text-on-primary-container/70">Find people you already know</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-primary">chevron_right</span>
+</div>
+<div class="bg-surface-container p-lg rounded-3xl flex items-center justify-between group cursor-pointer hover:bg-surface-container-high transition-all duration-300 border border-outline-variant/30">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-2xl bg-surface-container-highest text-secondary flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">share</span>
+</div>
+<div>
+<h3 class="font-label-lg text-label-lg text-on-surface">Invite Friends</h3>
+<p class="text-sm text-on-surface-variant">Share your wishlist link</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-secondary">chevron_right</span>
+</div>
+</div>
+</section>
+<!-- "People You May Know" Bento Grid -->
+<section class="animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-200">
+<div class="flex items-center justify-between mb-lg">
+<h2 class="font-headline-md text-headline-md text-on-surface">People you may know</h2>
+<button class="text-primary font-label-lg hover:underline transition-all">See all</button>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-lg">
+<!-- Profile Card 1 -->
+<div class="glass-card p-6 rounded-[24px] shadow-[0_4px_16px_rgba(0,0,0,0.05)] border border-white hover:shadow-lg transition-shadow duration-300 flex flex-col items-center text-center">
+<div class="relative mb-md">
+<div class="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-md">
+<img alt="Sarah Jenkins" class="w-full h-full object-cover" data-alt="A portrait of a cheerful woman with long wavy hair in a sunlit outdoor garden. The photo is airy, bright, and optimistic, capturing a natural and spontaneous moment. The lighting is warm and golden, reinforcing a joyful social media atmosphere suitable for a lifestyle application. The colors are vibrant yet harmonious with a soft-focus background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAqliF7TFsfJ8NpYhiz2nm2y9j7S4hYTOSSoF_NtmHwd2bdQAJJWkVQZKSQb1FvHDxY7gK9g29BlrgNJ_fb_EzKuqx_Tiw98i5Xxc_BcD7rJ6X5T6NWE5G29lTkfLbmfD_EsPxqWrapiHSLjAwewx9uaMBnhW975Y0mOeUBIuZnqE1PFuRS3JzPXfUseTw5TpMTt1vTtCF-9NMSIbGJ1_PouevH9U6bWWLt7S6ASL4EhJfHCk1umQckOYCg_ucVUq_aM8A_rRLpNRI"/>
+</div>
+<div class="absolute bottom-0 right-0 w-7 h-7 bg-primary rounded-full border-2 border-white flex items-center justify-center text-[12px] text-white">
+<span class="material-symbols-outlined text-[14px]">auto_awesome</span>
+</div>
+</div>
+<h4 class="font-headline-md text-headline-md text-on-surface">Sarah Jenkins</h4>
+<p class="text-on-surface-variant font-body-md mb-lg">Mutual: Alex, Chloe +4</p>
+<button class="w-full py-3 px-6 bg-primary text-white rounded-full font-label-lg hover:bg-primary/90 active:scale-95 transition-all shadow-sm">Follow</button>
+</div>
+<!-- Profile Card 2 -->
+<div class="glass-card p-6 rounded-[24px] shadow-[0_4px_16px_rgba(0,0,0,0.05)] border border-white hover:shadow-lg transition-shadow duration-300 flex flex-col items-center text-center">
+<div class="relative mb-md">
+<div class="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-md">
+<img alt="Marcus Chen" class="w-full h-full object-cover" data-alt="A modern studio headshot of a stylish man with a clean beard and glasses. He is wearing a crisp white shirt against a soft gray background. The lighting is editorial and sophisticated, creating a professional yet approachable aesthetic. The image is bright and clean, perfectly matching a high-end minimalist digital interface design." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBvSdG-yp2R10qEzazc42llJwJSpBP4LbKyAikCADMllR20wjnRJJ8HlmjJ1zGO4QQzzBX5OQn805GgIVwRcEc3yYKIbqIC1bEEKZQYAvnRgYBZqivKPjYX6zkkWRhWkqWYuA-OMjLi8E207z5AzjmgB02BJyqkUqmflzKumUZwXRukgco9f5AdwGC3uE4xU0rWgfPMqeWZ9oBNXooWW9VIhtd3zd65rwlFnsY8EfIic261b7emQaagizboO-91WFtZn99hBKuHF-k"/>
+</div>
+</div>
+<h4 class="font-headline-md text-headline-md text-on-surface">Marcus Chen</h4>
+<p class="text-on-surface-variant font-body-md mb-lg">In your contacts</p>
+<button class="w-full py-3 px-6 bg-primary text-white rounded-full font-label-lg hover:bg-primary/90 active:scale-95 transition-all shadow-sm">Follow</button>
+</div>
+<!-- Profile Card 3 -->
+<div class="glass-card p-6 rounded-[24px] shadow-[0_4px_16px_rgba(0,0,0,0.05)] border border-white hover:shadow-lg transition-shadow duration-300 flex flex-col items-center text-center">
+<div class="relative mb-md">
+<div class="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-md">
+<img alt="Elena Rodriguez" class="w-full h-full object-cover" data-alt="A lifestyle photograph of a smiling woman sitting in a modern, light-filled cafe. She is surrounded by plants and minimalist decor. The lighting is natural and bright, creating a serene and social mood. The visual style is premium and editorial, using a palette of soft greens, whites, and natural wood tones to evoke a sense of connection and wellness." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCmgFEMRPqQCzbINyo9M21T-QvXK14IIWK8jPyOEWiXr_d6NK7cbmyfq628wZdabvqVE5VogqiFTIl2EczQGcTXMkI6xe7rxBNljfBCg-PU8xe4QPx5sqp7SiTtWfk4I38VC0ehHu0g164XoEwlahUpc2YEoXIPrs8jeJoyeHXeq5iZwgv02CFuv_RMoN-O6q8eUSg4WfBP6jo95Nu2r-7KIT7BjxjOog73K_ta4qg_OGHCPjl_ptK0aD_wgeHWWQg6li7GW2wMVdE"/>
+</div>
+<div class="absolute bottom-0 right-0 w-7 h-7 bg-primary-container rounded-full border-2 border-white flex items-center justify-center text-[12px] text-white">
+<span class="material-symbols-outlined text-[14px]">star</span>
+</div>
+</div>
+<h4 class="font-headline-md text-headline-md text-on-surface">Elena Rodriguez</h4>
+<p class="text-on-surface-variant font-body-md mb-lg">Shared interests: Tech, Art</p>
+<button class="w-full py-3 px-6 bg-primary text-white rounded-full font-label-lg hover:bg-primary/90 active:scale-95 transition-all shadow-sm">Follow</button>
+</div>
+</div>
+</section>
+<!-- Trending Groups or Interests (Optional bonus for context) -->
+<section class="mt-xl animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300">
+<h2 class="font-headline-md text-headline-md text-on-surface mb-lg">Suggested Interests</h2>
+<div class="flex flex-wrap gap-md">
+<button class="px-5 py-2.5 rounded-full bg-surface-container-high border border-outline-variant/30 font-label-lg text-on-surface hover:bg-primary-container hover:text-white transition-all active:scale-95">#TechGifts</button>
+<button class="px-5 py-2.5 rounded-full bg-surface-container-high border border-outline-variant/30 font-label-lg text-on-surface hover:bg-primary-container hover:text-white transition-all active:scale-95">#HomeDecor</button>
+<button class="px-5 py-2.5 rounded-full bg-surface-container-high border border-outline-variant/30 font-label-lg text-on-surface hover:bg-primary-container hover:text-white transition-all active:scale-95">#Minimalism</button>
+<button class="px-5 py-2.5 rounded-full bg-surface-container-high border border-outline-variant/30 font-label-lg text-on-surface hover:bg-primary-container hover:text-white transition-all active:scale-95">#Adventure</button>
+<button class="px-5 py-2.5 rounded-full bg-surface-container-high border border-outline-variant/30 font-label-lg text-on-surface hover:bg-primary-container hover:text-white transition-all active:scale-95">#ReadingList</button>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full h-20 px-4 flex justify-around items-center pb-safe bg-surface/90 dark:bg-surface-container-lowest/90 backdrop-blur-xl z-50 rounded-t-xl shadow-[0_-4px_16px_rgba(0,0,0,0.05)]">
+<a class="flex flex-col items-center justify-center text-on-secondary-fixed-variant dark:text-on-surface-variant hover:bg-secondary-container/50 rounded-xl transition-all p-2" href="#">
+<span class="material-symbols-outlined">list_alt</span>
+<span class="font-label-sm text-label-sm">Wishlists</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-secondary-fixed-variant dark:text-on-surface-variant hover:bg-secondary-container/50 rounded-xl transition-all p-2" href="#">
+<span class="material-symbols-outlined">notifications</span>
+<span class="font-label-sm text-label-sm">Activity</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-secondary-fixed-variant dark:text-on-surface-variant hover:bg-secondary-container/50 rounded-xl transition-all p-2 active:scale-90 duration-300" href="#">
+<span class="material-symbols-outlined text-primary scale-125">add_circle</span>
+<span class="font-label-sm text-label-sm">Add</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-secondary-fixed-variant dark:text-on-surface-variant hover:bg-secondary-container/50 rounded-xl transition-all p-2" href="#">
+<span class="material-symbols-outlined">auto_awesome</span>
+<span class="font-label-sm text-label-sm">Inspiration</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed-dim font-bold after:content-[''] after:w-1 after:h-1 after:bg-primary after:rounded-full after:mt-1 p-2" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">card_giftcard</span>
+<span class="font-label-sm text-label-sm">Find Gift</span>
+</a>
+</nav>
+<script>
+        // Micro-interaction for follow buttons
+        document.querySelectorAll('button').forEach(button => {
+            if (button.innerText === 'Follow') {
+                button.addEventListener('click', function() {
+                    const isFollowing = this.innerText === 'Following';
+                    if (!isFollowing) {
+                        this.innerText = 'Following';
+                        this.classList.remove('bg-primary', 'text-white');
+                        this.classList.add('bg-surface-container-highest', 'text-on-surface');
+                        
+                        // Particle effect simulation
+                        createBurst(this);
+                    } else {
+                        this.innerText = 'Follow';
+                        this.classList.add('bg-primary', 'text-white');
+                        this.classList.remove('bg-surface-container-highest', 'text-on-surface');
+                    }
+                });
+            }
+        });
+
+        function createBurst(el) {
+            const rect = el.getBoundingClientRect();
+            for (let i = 0; i < 8; i++) {
+                const p = document.createElement('div');
+                p.style.position = 'fixed';
+                p.style.width = '6px';
+                p.style.height = '6px';
+                p.style.borderRadius = '50%';
+                p.style.backgroundColor = '#2fb2c1';
+                p.style.left = (rect.left + rect.width / 2) + 'px';
+                p.style.top = (rect.top + rect.height / 2) + 'px';
+                p.style.zIndex = '1000';
+                p.style.pointerEvents = 'none';
+                
+                document.body.appendChild(p);
+                
+                const angle = Math.random() * Math.PI * 2;
+                const distance = 40 + Math.random() * 40;
+                const tx = Math.cos(angle) * distance;
+                const ty = Math.sin(angle) * distance;
+                
+                p.animate([
+                    { transform: 'translate(0, 0) scale(1)', opacity: 1 },
+                    { transform: `translate(${tx}px, ${ty}px) scale(0)`, opacity: 0 }
+                ], {
+                    duration: 600,
+                    easing: 'cubic-bezier(0, .9, .57, 1)'
+                }).onfinish = () => p.remove();
+            }
+        }
+    </script>
+</body></html>

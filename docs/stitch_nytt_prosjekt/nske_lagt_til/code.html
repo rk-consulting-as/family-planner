@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Wish Added - Aura Wish</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow-x: hidden;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .confetti-particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10;
+        }
+        @keyframes float-up {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; }
+        }
+        .animate-float {
+            animation: float-up 3s ease-out forwards;
+        }
+        .glass-morphism {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-bright": "#faf9fe",
+                        "primary-container": "#2fb2c1",
+                        "tertiary-container": "#a4a2a4",
+                        "on-secondary-fixed-variant": "#454748",
+                        "background": "#faf9fe",
+                        "on-secondary-container": "#626566",
+                        "primary-fixed-dim": "#5fd7e6",
+                        "on-primary-fixed": "#001f23",
+                        "surface-container-highest": "#e3e2e7",
+                        "on-primary-fixed-variant": "#004f57",
+                        "tertiary": "#5f5e60",
+                        "surface-dim": "#dad9df",
+                        "on-tertiary-fixed-variant": "#474649",
+                        "secondary-fixed-dim": "#c5c7c8",
+                        "secondary-fixed": "#e1e3e4",
+                        "surface-tint": "#006973",
+                        "surface": "#faf9fe",
+                        "on-surface": "#1a1b1f",
+                        "surface-container": "#eeedf3",
+                        "on-tertiary-container": "#39393b",
+                        "surface-container-low": "#f4f3f8",
+                        "primary-fixed": "#90f1ff",
+                        "on-primary": "#ffffff",
+                        "secondary-container": "#e1e3e4",
+                        "on-primary-container": "#003f46",
+                        "tertiary-fixed-dim": "#c8c6c8",
+                        "on-surface-variant": "#3d494b",
+                        "error": "#ba1a1a",
+                        "outline-variant": "#bcc9cb",
+                        "error-container": "#ffdad6",
+                        "on-tertiary": "#ffffff",
+                        "surface-variant": "#e3e2e7",
+                        "on-secondary-fixed": "#191c1d",
+                        "on-error-container": "#93000a",
+                        "on-secondary": "#ffffff",
+                        "secondary": "#5c5f60",
+                        "inverse-on-surface": "#f1f0f5",
+                        "inverse-surface": "#2f3034",
+                        "tertiary-fixed": "#e4e2e4",
+                        "outline": "#6d797b",
+                        "inverse-primary": "#5fd7e6",
+                        "on-error": "#ffffff",
+                        "surface-container-high": "#e9e7ed",
+                        "primary": "#006973",
+                        "on-tertiary-fixed": "#1b1b1d",
+                        "on-background": "#1a1b1f",
+                        "surface-container-lowest": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "base": "4px",
+                        "2xl": "48px",
+                        "xl": "32px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "margin-mobile": "20px",
+                        "sm": "8px",
+                        "gutter": "16px",
+                        "xs": "4px",
+                        "margin-desktop": "64px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "display-lg": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["22px", { "lineHeight": "28px", "fontWeight": "700" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface-bright text-on-surface min-h-screen flex flex-col items-center">
+<!-- Top Navigation Anchor (Simulated context as back button only since it's a focus screen) -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-margin-mobile md:px-margin-desktop h-16 w-full max-w-7xl mx-auto bg-surface/80 backdrop-blur-md">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-low transition-colors" onclick="window.history.back()">
+<span class="material-symbols-outlined text-on-surface">close</span>
+</button>
+<div class="font-display-lg text-display-lg text-primary tracking-tight">Aura Wish</div>
+<div class="w-10"></div> <!-- Spacer for symmetry -->
+</header>
+<!-- Main Success Canvas -->
+<main class="flex-grow w-full flex flex-col items-center justify-center px-margin-mobile py-24 relative overflow-hidden max-w-2xl mx-auto" id="main-canvas">
+<!-- Background Atmospheric Element -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150%] h-[150%] opacity-20 pointer-events-none" style="background: radial-gradient(circle, #90f1ff 0%, transparent 70%);"></div>
+<!-- Success Animation & Icon -->
+<div class="relative mb-lg">
+<div class="w-24 h-24 bg-primary-container rounded-full flex items-center justify-center text-white shadow-lg animate-bounce duration-[2000ms]">
+<span class="material-symbols-outlined text-[48px]" style="font-variation-settings: 'wght' 600;">check</span>
+</div>
+<!-- Pulse Ring -->
+<div class="absolute inset-0 w-24 h-24 rounded-full border-4 border-primary-container/30 animate-ping"></div>
+</div>
+<h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-center mb-xs">Added to Wishlist!</h1>
+<p class="font-body-md text-body-md text-on-surface-variant text-center mb-xl">Your item has been securely tucked into your dreamy collection.</p>
+<!-- Product Confirmation Card -->
+<div class="w-full glass-morphism rounded-[24px] p-md shadow-sm border border-white/40 flex items-center gap-md mb-2xl transform transition-transform hover:scale-[1.02] duration-300">
+<div class="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-surface-container">
+<img alt="Product Thumbnail" class="w-full h-full object-cover" data-alt="A premium, minimalist ceramic designer watch with a clean white face and soft gray strap, photographed on a light marble surface with soft, diffused morning sunlight. The image is crisp and airy, following a high-end editorial lifestyle aesthetic with a focus on neutral tones and elegant simplicity. Soft shadows add a gentle depth to the clean, modern product composition." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAnsm9Cu5N8QI-GzseR4MPWodH9QM9rUtcxcTfmoz-UVGZgBhBdlCuODUn_tgcDl3wVlYqHs2yoNnTpqiLB8Qv5r0hPBVrTrtGJXAxbPYDh5tJaARXQlucamUPBJgLur528o9fqkSIfwd3xCSuZKNnswNgcZW7ttcIYkH3jOt_6beGlIKHPNV3y_ADW673mMNttbWZ4gJ3eUTMwD4J5icHqwa85EwgsH4hiU5IgDa1UOHa2Cnc2Gv1PVOpaiDV9uOw5vW8hMeWUR4Q"/>
+</div>
+<div class="flex-grow">
+<div class="font-label-lg text-label-lg text-on-surface">Minimalist Ceramic Watch</div>
+<div class="flex items-center gap-xs mt-1">
+<span class="material-symbols-outlined text-primary text-[16px]">cloud</span>
+<span class="font-body-md text-body-md text-on-surface-variant italic">Birthday Wishlist</span>
+</div>
+<div class="font-label-lg text-label-lg text-primary-container mt-1">$129.00</div>
+</div>
+</div>
+<!-- Action Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md w-full">
+<button class="h-14 flex items-center justify-center bg-primary text-on-primary rounded-full font-label-lg text-label-lg shadow-sm hover:opacity-90 active:scale-95 transition-all">
+                View Wishlist
+            </button>
+<button class="h-14 flex items-center justify-center bg-surface-container-lowest border border-outline-variant text-primary rounded-full font-label-lg text-label-lg hover:bg-surface-container-low active:scale-95 transition-all">
+<span class="material-symbols-outlined mr-2">share</span>
+                Share with Friends
+            </button>
+</div>
+<!-- Secondary Navigation -->
+<button class="mt-xl font-label-lg text-label-lg text-on-surface-variant hover:text-primary transition-colors py-2 px-4 rounded-lg">
+            Continue Browsing
+        </button>
+<!-- Contextual Recommendation Asymmetric Grid -->
+<section class="w-full mt-2xl">
+<div class="flex justify-between items-end mb-md px-2">
+<h3 class="font-headline-md text-headline-md">Similar Dream Finds</h3>
+<a class="font-label-sm text-label-sm text-primary uppercase tracking-wider" href="#">Explore More</a>
+</div>
+<div class="grid grid-cols-2 gap-md">
+<!-- Card 1 -->
+<div class="group cursor-pointer">
+<div class="aspect-square rounded-[24px] overflow-hidden mb-sm relative bg-white shadow-[0_4px_16px_rgba(0,0,0,0.05)] border border-transparent group-hover:border-primary-container transition-all">
+<img alt="Related Product" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="A sleek, classic analog wristwatch with a dark leather strap and a clean silver dial, positioned artistically on a light linen fabric. The lighting is soft and natural, emphasizing the textures of the leather and the polished metal. The overall mood is sophisticated, airy, and high-fashion, perfectly aligning with a premium wishlist lifestyle app interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBYfgD1yrMl2l7ZGnSvxJgfzHHnTPN9NBO7g6CajmCOITzUMqobzMVh7auAIs7j5QI8AvrOMDEnJq7qV81GwqiySk_VdACWNLwPnBzSuaYaK7h7XMD54DF7Ow2fkBtjG6OECB6tWgNegzPoCDVwODePeXAvm3Zc9iIa4BQiuIEtE6MrEs6mqwotprw1a1Fvdqf5erh0WVZ_h0vT7C10kUVl_nJb9-fFftAOcOdIEYibpLuGiOH4cvRVjAZn8PGBDIASDmJ9SUkq4pg"/>
+<button class="absolute top-3 right-3 w-8 h-8 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center text-on-surface hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">add</span>
+</button>
+</div>
+<div class="px-2">
+<div class="font-label-lg text-label-lg text-on-surface truncate">Classic Noir Watch</div>
+<div class="font-body-md text-body-md text-on-surface-variant">$185.00</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="group cursor-pointer mt-md">
+<div class="aspect-square rounded-[24px] overflow-hidden mb-sm relative bg-white shadow-[0_4px_16px_rgba(0,0,0,0.05)] border border-transparent group-hover:border-primary-container transition-all">
+<img alt="Related Product" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="A luxury beige leather handbag with gold hardware, presented against a soft, cream-colored architectural background. The scene is bathed in warm, diffused light, creating a serene and aspirational atmosphere. The visual style is minimal and high-end, focusing on high-quality materials and soft tonal color palettes typical of a modern fashion boutique experience." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3WbK8diqOi6fTo-AgFCrXJdhX_fBXLl1GkpeGrvKy8eUr8xkYik_1RYozOcmSirvHatjhY4z42FZVRDMOVBjpI60jl2XW7mwwlF1kOBedqxxlA9SGjIi1l9F3Sg_zmSJbjGNbAMzUW7BVv-O6ekm5ZvUL9lE5vunHCEGGNidp8DhOoi3TI6PPv4pm_GE8k7LCxjxiEXoR_KLOzfQCvcHIZCGG2zMiXo5INfI5XI92G12uMV3htHiHJXzjVob5XeeZKt4O6EHMK78"/>
+<button class="absolute top-3 right-3 w-8 h-8 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center text-on-surface hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">add</span>
+</button>
+</div>
+<div class="px-2">
+<div class="font-label-lg text-label-lg text-on-surface truncate">Sculptural Tapered Bag</div>
+<div class="font-body-md text-body-md text-on-surface-variant">$340.00</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Navigation suppressed per Transactional/Focus rule -->
+<script>
+        // Micro-interaction: Confetti celebration effect on load
+        function createConfetti() {
+            const container = document.getElementById('main-canvas');
+            const colors = ['#2fb2c1', '#90f1ff', '#006973', '#e1e3e4', '#ffffff'];
+            
+            for (let i = 0; i < 40; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'confetti-particle animate-float';
+                
+                // Random position and size
+                const size = Math.random() * 8 + 4;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.top = `${80 + Math.random() * 20}%`;
+                
+                // Random color and animation delay
+                particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                particle.style.animationDelay = `${Math.random() * 0.5}s`;
+                particle.style.animationDuration = `${2 + Math.random() * 2}s`;
+                
+                container.appendChild(particle);
+                
+                // Clean up
+                setTimeout(() => {
+                    particle.remove();
+                }, 4000);
+            }
+        }
+
+        // Trigger confetti shortly after page load
+        window.addEventListener('load', () => {
+            setTimeout(createConfetti, 300);
+        });
+
+        // Add a secondary burst when clicking a primary action
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                if(btn.classList.contains('bg-primary')) {
+                    // Visual feedback for primary button
+                }
+            });
+        });
+    </script>
+</body></html>

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+
+<html lang="nb"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-error": "#ffffff",
+                    "inverse-surface": "#2f3034",
+                    "surface-container-highest": "#e3e2e7",
+                    "on-tertiary-fixed": "#1b1b1d",
+                    "secondary": "#5c5f60",
+                    "on-tertiary": "#ffffff",
+                    "on-secondary-container": "#626566",
+                    "surface-container-lowest": "#ffffff",
+                    "on-primary-container": "#003f46",
+                    "surface-tint": "#006973",
+                    "secondary-fixed-dim": "#c5c7c8",
+                    "inverse-on-surface": "#f1f0f5",
+                    "outline-variant": "#bcc9cb",
+                    "surface-variant": "#e3e2e7",
+                    "primary-container": "#2fb2c1",
+                    "on-secondary-fixed": "#191c1d",
+                    "surface-bright": "#faf9fe",
+                    "on-background": "#1a1b1f",
+                    "background": "#faf9fe",
+                    "on-surface": "#1a1b1f",
+                    "secondary-container": "#e1e3e4",
+                    "on-secondary": "#ffffff",
+                    "secondary-fixed": "#e1e3e4",
+                    "primary": "#006973",
+                    "on-secondary-fixed-variant": "#454748",
+                    "inverse-primary": "#5fd7e6",
+                    "on-primary-fixed": "#001f23",
+                    "surface-container": "#eeedf3",
+                    "surface-dim": "#dad9df",
+                    "tertiary": "#5f5e60",
+                    "on-tertiary-container": "#39393b",
+                    "error": "#ba1a1a",
+                    "outline": "#6d797b",
+                    "primary-fixed": "#90f1ff",
+                    "surface-container-low": "#f4f3f8",
+                    "tertiary-fixed-dim": "#c8c6c8",
+                    "on-surface-variant": "#3d494b",
+                    "on-error-container": "#93000a",
+                    "on-primary-fixed-variant": "#004f57",
+                    "error-container": "#ffdad6",
+                    "tertiary-container": "#a4a2a4",
+                    "primary-fixed-dim": "#5fd7e6",
+                    "on-tertiary-fixed-variant": "#474649",
+                    "surface-container-high": "#e9e7ed",
+                    "on-primary": "#ffffff",
+                    "tertiary-fixed": "#e4e2e4",
+                    "surface": "#faf9fe"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin-mobile": "20px",
+                    "2xl": "48px",
+                    "xs": "4px",
+                    "gutter": "16px",
+                    "xl": "32px",
+                    "md": "16px",
+                    "lg": "24px",
+                    "margin-desktop": "64px",
+                    "base": "4px",
+                    "sm": "8px"
+            },
+            "fontFamily": {
+                    "headline-lg-mobile": ["Plus Jakarta Sans"],
+                    "headline-lg": ["Plus Jakarta Sans"],
+                    "body-lg": ["Plus Jakarta Sans"],
+                    "headline-md": ["Plus Jakarta Sans"],
+                    "body-md": ["Plus Jakarta Sans"],
+                    "label-sm": ["Plus Jakarta Sans"],
+                    "label-lg": ["Plus Jakarta Sans"],
+                    "display-lg": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "headline-lg-mobile": ["22px", {"lineHeight": "28px", "fontWeight": "700"}],
+                    "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "label-lg": ["14px", {"lineHeight": "20px", "fontWeight": "600"}],
+                    "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-tab-indicator {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        body {
+            background-color: #faf9fe;
+            -webkit-tap-highlight-color: transparent;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body-md text-on-surface">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-md">
+<div class="flex justify-between items-center px-margin-mobile md:px-margin-desktop h-16 w-full max-w-7xl mx-auto">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-container shadow-sm border-2 border-primary/10">
+<img class="w-full h-full object-cover" data-alt="A high-quality professional studio portrait of a young woman with a warm, friendly expression. The lighting is soft and airy, characteristic of a high-end lifestyle app interface. She has a natural look with a minimalist aesthetic, set against a clean, off-white background that complements the brand's primary teal and soft grey color palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvBaaqV-UkZ1DFXru0YM7NxsvchL3eBfYTOjCMfl958OQRk0dKWrvs926Ix2M8uLGHMqPlICgVO58MU5nY50nzf-ajVrVvxqCbmXcIK1JQmBFl7kQPwbSp1ZKabjyR5_0OONuz6FF4xP19OM-m8ccjcDnZqSxoSHFB6UXdnbVS3H2tDXLSqC6tz-AZWcmYUPG30TAkWsmtYpZ3hRVr-e27bKP1tzzBSXruCXzbwFPnyaWaCehrG1VgAo8urakdTPSz_J-8aSOVYJI"/>
+</div>
+<span class="font-display-lg text-display-lg text-primary tracking-tight">Aura Wish</span>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-low transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined text-primary">notifications</span>
+</button>
+</div>
+</header>
+<main class="pt-24 pb-32 px-margin-mobile md:px-margin-desktop max-w-7xl mx-auto">
+<!-- Profile Header Section -->
+<section class="flex flex-col items-center mb-10 text-center">
+<div class="relative group">
+<div class="w-32 h-32 md:w-40 md:h-40 rounded-full p-1 bg-gradient-to-tr from-primary to-primary-container shadow-xl transition-transform duration-500 hover:rotate-6">
+<div class="w-full h-full rounded-full border-4 border-white overflow-hidden bg-white">
+<img class="w-full h-full object-cover" data-alt="A professional and artistic portrait of a smiling woman in her late 20s, captured with a shallow depth of field in a bright, modern indoor setting. The image uses natural, soft directional lighting to create a clean and sophisticated look. Her clothing is a soft neutral tone, reinforcing the minimalist and premium identity of the Aura Wish design system." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBUUbtmtPSrdgXcFwuO2YE42Iz96sDTRAC2e6h3pk7qZz4DW0LgrQOrh5fNcXDOVM13n9VJztX2lddI2S3jfrNo54a7tCaK6tjE3QZzdG_cOKrkLaLIEyTTM9kgzFGsNcB7DLf8KJ6xL3VV9gMJxnymXVualL6eVRc-MMAo9TxGIXavGYVpOZCK8jlbLrgAOb2yrktvM0YY2QNaorCOUf-si7Z9dnmq1PGkugXUaAjgCa0uc-dXr-CQBIlQw0L_ZTPhq2kyY7qE__0"/>
+</div>
+</div>
+<div class="absolute bottom-1 right-1 bg-primary text-white p-2 rounded-full shadow-lg border-2 border-white">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+</div>
+</div>
+<h1 class="mt-6 font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface">Amalie Kristiansen</h1>
+<p class="text-on-surface-variant font-body-md mt-1">@amalie_wishes</p>
+<button class="mt-6 px-6 py-2.5 bg-surface-container-highest rounded-full font-label-lg text-on-surface-variant hover:bg-surface-container transition-all active:scale-95 flex items-center gap-2 border border-outline-variant/30">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+                Rediger profil
+            </button>
+<!-- Stats Bar -->
+<div class="flex gap-8 mt-8 py-4 px-10 glass-card rounded-3xl shadow-[0_4px_16px_rgba(0,0,0,0.03)]">
+<div class="flex flex-col items-center">
+<span class="font-headline-md text-headline-md text-primary">42</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Ønsker</span>
+</div>
+<div class="w-px h-8 bg-outline-variant/30 self-center"></div>
+<div class="flex flex-col items-center">
+<span class="font-headline-md text-headline-md text-primary">856</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Følgere</span>
+</div>
+<div class="w-px h-8 bg-outline-variant/30 self-center"></div>
+<div class="flex flex-col items-center">
+<span class="font-headline-md text-headline-md text-primary">124</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Følger</span>
+</div>
+</div>
+</section>
+<!-- Tabs Section -->
+<section class="mt-12">
+<div class="relative flex justify-center mb-8 border-b border-outline-variant/20">
+<div class="flex gap-12">
+<button class="pb-4 font-label-lg text-primary flex items-center gap-2 relative transition-colors" id="tab-lists" onclick="switchTab('lists')">
+<span class="material-symbols-outlined">auto_awesome_motion</span>
+                        Mine lister
+                        <div class="absolute bottom-0 left-0 w-full h-1 bg-primary rounded-t-full transition-all opacity-100" id="indicator-lists"></div>
+</button>
+<button class="pb-4 font-label-lg text-on-surface-variant flex items-center gap-2 relative transition-colors hover:text-primary" id="tab-settings" onclick="switchTab('settings')">
+<span class="material-symbols-outlined">settings</span>
+                        Innstillinger
+                        <div class="absolute bottom-0 left-0 w-full h-1 bg-primary rounded-t-full transition-all opacity-0" id="indicator-settings"></div>
+</button>
+</div>
+</div>
+<!-- Content Area: Mine Lister -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter" id="content-lists">
+<!-- Wishlist Card 1 -->
+<div class="bg-white p-4 rounded-[24px] shadow-[0_4px_12px_rgba(0,0,0,0.05)] group cursor-pointer hover:shadow-xl transition-all duration-300">
+<div class="grid grid-cols-2 grid-rows-2 gap-2 aspect-square rounded-[20px] overflow-hidden mb-4">
+<img class="w-full h-full object-cover" data-alt="A beautifully shot minimalist lifestyle photo of high-end home decor. A soft linen blanket draped over a Scandinavian style chair with a warm morning light coming through a window. The aesthetic is clean, sophisticated, and light-filled, perfectly matching the modern minimalism of the Aura Wish design philosophy." src="https://lh3.googleusercontent.com/aida-public/AB6AXuANzOv1DVDOhHAw3TPX_56REitaraWKg7zneb2pkWn-UNaNnCtkXr8AipazKD1h_cFay81XPow_Swyhj0hFbMWC1TPNfWUHJUmJyd9XLWODbJzOdHX9jhmwOiIQV94mya3kOex3lSZ2pJ_u3l7IiRfx9bziU6GW3A1bSt5BTA1JfrHT-yN-_JNv5BHB8lpN8ovlaf_ylDb3Tp7b_ttZ1V4DydSCFQkpfdClI1BVNqXDQdNdC1fVZgdVOjo6PJEGX91iAuc3GUY3cXg"/>
+<img class="w-full h-full object-cover" data-alt="Detail of a minimalist interior design scene featuring a sleek ceramic vase on a polished wooden surface. Soft, natural sunlight creates elegant shadows, highlighting the tactile edge and premium quality of the lifestyle objects. The overall mood is serene, optimistic, and airy, following the brand's visual identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBRWmvZUQbrz8_JrkeoWG3a-lKX9SEMOZjGfBKXRHMzg_94BJpS79H7WDmik6IQcPWA1LPnXAnbeujgEAqnTs3SvBiyLPra2TGH0-549QOnUk0JDqAcdjODlF-TreojyJFdP6sVW7lWbZx7w8-IGLBs2R4mcYVEOSfDC5S5qut_foduO30gRbzSj3iGtrbctJ-jZ7coB6MhiafVYj2Kel86w9kNWCi-EP8KD4JzNX_SsjAqK3OpSxNrBTPWqnf4na1jnNwERrJT1xA"/>
+<img class="w-full h-full object-cover" data-alt="A collection of luxury skincare products arranged in an editorial flat lay style on a clean white marble surface. The lighting is bright and soft, creating a sense of weightlessness and joy. The color palette consists of soft whites, pale greys, and a touch of the brand's signature teal." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD8uOn16dQphXX90NARXfOZG8jdZ2xUJIy2sUDOBXl-cc-k9xWkf3DAAKZQ03l54XZwZ1-w7IN2N98ZwZ-DbzAOuNtdUT0GR4OAYPTkMQUFZdxxCXxX6wVMRs95Oks8zMcEjjHkpWwtCkPsgDMXZ0PFov_L0t7hdr4xfOOLz9kUh4RKHOmnd9xLCnsk2_eZcTKHyYT-NJNDNFyxuqBQUxgNSWYaxsisyHogJRYrySp9eoUBGn8FbzCPDfb-pEitgMTr4nNC99Hfk4E"/>
+<div class="bg-primary-container flex items-center justify-center text-white">
+<span class="font-headline-md">+12</span>
+</div>
+</div>
+<div class="flex justify-between items-center">
+<div>
+<h3 class="font-label-lg text-on-surface">Bursdag 2024</h3>
+<p class="font-label-sm text-on-surface-variant">15 ønsker • Privat</p>
+</div>
+<span class="material-symbols-outlined text-outline">chevron_right</span>
+</div>
+</div>
+<!-- Wishlist Card 2 -->
+<div class="bg-white p-4 rounded-[24px] shadow-[0_4px_12px_rgba(0,0,0,0.05)] group cursor-pointer hover:shadow-xl transition-all duration-300">
+<div class="grid grid-cols-2 grid-rows-2 gap-2 aspect-square rounded-[20px] overflow-hidden mb-4">
+<img class="w-full h-full object-cover" data-alt="An artistic close-up of high-fashion accessories including a designer handbag and elegant sunglasses. The scene is bathed in warm, soft-focus sunlight, creating a high-end, aspirational atmosphere. The composition is clean and minimalist, using a bright and optimistic light-mode aesthetic for a premium digital experience." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDNObuXwphtPFzDn5rhPFf7mjtTjeu7BHi2ZEMLnG61jfk75qj0ILM8HEJHsGR8tOx6QI9Pj2r7fwcWXeaEwQIU5tOkokfdt-Nmf5s2fr1FHEpTD1hSS5c6RSAd2nz_LwppHMSEkeWNavCriGAe3_qymckz29WsM9rJo4WtsfO3AjLwER8TLyxPFsmYrA-G_-a0y3--BX3_EtBbSLMO3cDEMcai1vsykMbb9zf73TobSObqtzanj3Tsea15lmV5v6l-XDQN2qUF8vY"/>
+<img class="w-full h-full object-cover" data-alt="A studio photograph of a modern tech product, perhaps a minimalist smartwatch, displayed on a clean white pedestal. The lighting is diffused and professional, emphasizing soft shadows and layered depth. The palette is dominated by whites and soft greys with sharp, crisp detail." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCnHT0Ud2ayEVLVkacEHh_cNkBKSieV2EmiIu-Hn70vOhat_V9CgrNCTaruBkxJV3MfOtxeb_VGkMFuM9EU15WIu82CHXuynod_49t5dMR3TvQKvASMc8MfYrXtyC4wKbiWF3aFVLvZhqolbnCXlgka7v_yQ7NCUtbCgN1ZsodcRSfQ_2twH8DhvZvrNUZXAIdrwVdhgBXpDL9nqLXu2JBMmUmJnGJVcKMfZypC6mJuESImO2eammcbTPr6-xS8ZCjPjNIRG-GuqZI"/>
+<div class="col-span-2 bg-surface-container-low flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined text-4xl">inventory_2</span>
+</div>
+</div>
+<div class="flex justify-between items-center">
+<div>
+<h3 class="font-label-lg text-on-surface">Ny leilighet</h3>
+<p class="font-label-sm text-on-surface-variant">8 ønsker • Delt</p>
+</div>
+<span class="material-symbols-outlined text-outline">group</span>
+</div>
+</div>
+<!-- Create New List -->
+<div class="border-2 border-dashed border-outline-variant/50 p-4 rounded-[24px] flex flex-col items-center justify-center gap-3 h-full min-h-[300px] cursor-pointer hover:bg-surface-container-low transition-colors active:scale-95">
+<div class="w-12 h-12 rounded-full bg-primary-container/20 text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-3xl">add</span>
+</div>
+<span class="font-label-lg text-primary">Opprett ny liste</span>
+</div>
+</div>
+<!-- Content Area: Innstillinger (Hidden by default) -->
+<div class="hidden flex flex-col gap-2" id="content-settings">
+<div class="glass-card rounded-3xl overflow-hidden divide-y divide-outline-variant/10 shadow-sm">
+<button class="w-full flex items-center justify-between p-5 hover:bg-white/50 transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-secondary-container/50 flex items-center justify-center text-on-secondary-fixed-variant">
+<span class="material-symbols-outlined">person_outline</span>
+</div>
+<div class="text-left">
+<p class="font-label-lg text-on-surface">Kontoinformasjon</p>
+<p class="font-label-sm text-on-surface-variant">E-post, telefon, brukernavn</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline">chevron_right</span>
+</button>
+<button class="w-full flex items-center justify-between p-5 hover:bg-white/50 transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-secondary-container/50 flex items-center justify-center text-on-secondary-fixed-variant">
+<span class="material-symbols-outlined">notifications_active</span>
+</div>
+<div class="text-left">
+<p class="font-label-lg text-on-surface">Varslinger</p>
+<p class="font-label-sm text-on-surface-variant">Push-varsler, e-post</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline">chevron_right</span>
+</button>
+<button class="w-full flex items-center justify-between p-5 hover:bg-white/50 transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-secondary-container/50 flex items-center justify-center text-on-secondary-fixed-variant">
+<span class="material-symbols-outlined">lock_open</span>
+</div>
+<div class="text-left">
+<p class="font-label-lg text-on-surface">Personvern &amp; Sikkerhet</p>
+<p class="font-label-sm text-on-surface-variant">Passord, blokkerte brukere</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline">chevron_right</span>
+</button>
+<button class="w-full flex items-center justify-between p-5 hover:bg-white/50 transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-secondary-container/50 flex items-center justify-center text-on-secondary-fixed-variant">
+<span class="material-symbols-outlined">help_outline</span>
+</div>
+<div class="text-left">
+<p class="font-label-lg text-on-surface">Hjelpesenter</p>
+<p class="font-label-sm text-on-surface-variant">Få svar på det du lurer på</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline">chevron_right</span>
+</button>
+</div>
+<!-- Logout Button -->
+<button class="mt-8 w-full flex items-center justify-center gap-2 p-5 rounded-2xl bg-error/5 text-error hover:bg-error/10 transition-colors active:scale-95 group">
+<span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">logout</span>
+<span class="font-label-lg">Logg ut</span>
+</button>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full h-20 px-4 flex justify-around items-center pb-safe bg-surface/90 dark:bg-surface-container-lowest/90 backdrop-blur-xl z-50 rounded-t-xl shadow-[0_-4px_16px_rgba(0,0,0,0.05)]">
+<a class="flex flex-col items-center justify-center text-on-secondary-fixed-variant hover:bg-secondary-container/50 rounded-xl transition-all w-16 h-14" href="#">
+<span class="material-symbols-outlined">list_alt</span>
+<span class="font-label-sm text-label-sm">Wishlists</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-secondary-fixed-variant hover:bg-secondary-container/50 rounded-xl transition-all w-16 h-14" href="#">
+<span class="material-symbols-outlined">notifications</span>
+<span class="font-label-sm text-label-sm">Activity</span>
+</a>
+<button class="flex flex-col items-center justify-center text-primary-container active:scale-90 transition-all duration-300 w-16 h-14">
+<span class="material-symbols-outlined text-4xl">add_circle</span>
+<span class="font-label-sm text-label-sm">Add</span>
+</button>
+<a class="flex flex-col items-center justify-center text-on-secondary-fixed-variant hover:bg-secondary-container/50 rounded-xl transition-all w-16 h-14" href="#">
+<span class="material-symbols-outlined">auto_awesome</span>
+<span class="font-label-sm text-label-sm">Inspiration</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary font-bold after:content-[''] after:w-1 after:h-1 after:bg-primary after:rounded-full after:mt-1 transition-all w-16 h-14" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="font-label-sm text-label-sm">Profil</span>
+</a>
+</nav>
+<script>
+        function switchTab(tab) {
+            const listsContent = document.getElementById('content-lists');
+            const settingsContent = document.getElementById('content-settings');
+            const tabLists = document.getElementById('tab-lists');
+            const tabSettings = document.getElementById('tab-settings');
+            const indicatorLists = document.getElementById('indicator-lists');
+            const indicatorSettings = document.getElementById('indicator-settings');
+
+            if (tab === 'lists') {
+                listsContent.classList.remove('hidden');
+                settingsContent.classList.add('hidden');
+                
+                tabLists.classList.add('text-primary');
+                tabLists.classList.remove('text-on-surface-variant');
+                tabSettings.classList.remove('text-primary');
+                tabSettings.classList.add('text-on-surface-variant');
+
+                indicatorLists.style.opacity = '1';
+                indicatorSettings.style.opacity = '0';
+            } else {
+                listsContent.classList.add('hidden');
+                settingsContent.classList.remove('hidden');
+                
+                tabSettings.classList.add('text-primary');
+                tabSettings.classList.remove('text-on-surface-variant');
+                tabLists.classList.remove('text-primary');
+                tabLists.classList.add('text-on-surface-variant');
+
+                indicatorLists.style.opacity = '0';
+                indicatorSettings.style.opacity = '1';
+            }
+        }
+    </script>
+</body></html>

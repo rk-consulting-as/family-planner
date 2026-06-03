@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Aura Wish - Product Details</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed-variant": "#454748",
+                        "on-tertiary-fixed-variant": "#474649",
+                        "on-secondary": "#ffffff",
+                        "surface-container-low": "#f4f3f8",
+                        "on-background": "#1a1b1f",
+                        "tertiary": "#5f5e60",
+                        "on-error": "#ffffff",
+                        "secondary-fixed": "#e1e3e4",
+                        "on-tertiary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-container": "#a4a2a4",
+                        "on-tertiary-fixed": "#1b1b1d",
+                        "on-primary-fixed-variant": "#004f57",
+                        "on-error-container": "#93000a",
+                        "surface-tint": "#006973",
+                        "surface-dim": "#dad9df",
+                        "primary-fixed": "#90f1ff",
+                        "surface-variant": "#e3e2e7",
+                        "tertiary-fixed-dim": "#c8c6c8",
+                        "on-secondary-container": "#626566",
+                        "error-container": "#ffdad6",
+                        "surface-container-highest": "#e3e2e7",
+                        "background": "#faf9fe",
+                        "tertiary-fixed": "#e4e2e4",
+                        "secondary-container": "#e1e3e4",
+                        "primary-container": "#2fb2c1",
+                        "surface-bright": "#faf9fe",
+                        "inverse-on-surface": "#f1f0f5",
+                        "outline-variant": "#bcc9cb",
+                        "inverse-surface": "#2f3034",
+                        "on-tertiary-container": "#39393b",
+                        "outline": "#6d797b",
+                        "surface-container": "#eeedf3",
+                        "surface-container-high": "#e9e7ed",
+                        "inverse-primary": "#5fd7e6",
+                        "secondary-fixed-dim": "#c5c7c8",
+                        "on-surface": "#1a1b1f",
+                        "surface": "#faf9fe",
+                        "on-primary": "#ffffff",
+                        "primary": "#006973",
+                        "primary-fixed-dim": "#5fd7e6",
+                        "on-surface-variant": "#3d494b",
+                        "secondary": "#5c5f60",
+                        "on-secondary-fixed": "#191c1d",
+                        "on-primary-container": "#003f46",
+                        "on-primary-fixed": "#001f23"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "lg": "24px",
+                        "2xl": "48px",
+                        "md": "16px",
+                        "margin-mobile": "20px",
+                        "gutter": "16px",
+                        "xs": "4px",
+                        "base": "4px",
+                        "xl": "32px",
+                        "sm": "8px",
+                        "margin-desktop": "64px"
+                    },
+                    "fontFamily": {
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "display-lg": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "label-lg": ["14px", {"lineHeight": "20px", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["22px", {"lineHeight": "28px", "fontWeight": "700"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                        "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .backdrop-blur-custom {
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md text-body-md overflow-x-hidden selection:bg-primary-container/30">
+<!-- Top App Bar (Suppressing because it's a detail view, but the prompt mentions back/share icons) -->
+<!-- Custom Header for Detail View -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-margin-mobile h-16 pointer-events-none">
+<button class="pointer-events-auto h-10 w-10 flex items-center justify-center rounded-full bg-surface-container-lowest/80 backdrop-blur-md shadow-sm active:scale-95 transition-all text-on-surface">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="flex gap-sm pointer-events-auto">
+<button class="h-10 w-10 flex items-center justify-center rounded-full bg-surface-container-lowest/80 backdrop-blur-md shadow-sm active:scale-95 transition-all text-on-surface">
+<span class="material-symbols-outlined">ios_share</span>
+</button>
+<button class="h-10 w-10 flex items-center justify-center rounded-full bg-surface-container-lowest/80 backdrop-blur-md shadow-sm active:scale-95 transition-all text-on-surface">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+</header>
+<main class="min-h-screen pb-32">
+<!-- Hero Image Section -->
+<section class="relative w-full aspect-square bg-surface-container-low flex items-center justify-center overflow-hidden">
+<img alt="Handball Spezial sneakers" class="w-4/5 h-4/5 object-contain mix-blend-multiply transition-transform duration-700 hover:scale-110" data-alt="A professional studio product photograph of a pair of classic navy blue suede sneakers with white stripes, presented against a clean, soft-lit off-white background. The lighting is bright and airy, creating a high-key lifestyle aesthetic with minimal soft shadows. The overall mood is premium and modern, reflecting a minimalist digital retail experience with a soft color palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBI7eJUZds_-wI7rPR3IotEFDiD5vRAmiV8YmIt5pFSZvJ9ekeKuvPNVmMcNPsOI3ImmKrOwHietrhRRlEMBEASB5ZCVcc1UEX73j2Rk-iNPXWySSZVPdHcuRPwOx3ojVpevS3kHpAH3MZylCL6dFtaaI12bJU_y_M_NZsTFuqfm8rtyOKuZ4EfXxtk_QYKQ3y3tnAMqY5Y8qRC-oJxxiS_0Um_0RXxqrkuYAFBDcv5sTV1c00jnHGT6Y8euwiz0fckqoi18F3wes8"/>
+<div class="absolute bottom-lg right-lg">
+<span class="bg-surface-container-lowest/90 px-sm py-1 rounded-full text-[10px] font-bold tracking-wider text-outline uppercase backdrop-blur-sm">4 Colorways Available</span>
+</div>
+</section>
+<!-- Product Summary Section -->
+<section class="px-margin-mobile pt-lg space-y-md">
+<div class="flex flex-col gap-xs">
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">Handball Spezial sneakers</h1>
+<div class="flex items-baseline gap-sm">
+<span class="text-primary font-bold text-headline-md">$120.00</span>
+<span class="text-on-surface-variant/60 line-through text-label-lg">$145.00</span>
+<span class="ml-auto text-primary font-semibold text-label-sm px-2 py-0.5 bg-primary-container/20 rounded-lg">17% OFF</span>
+</div>
+</div>
+<p class="text-on-surface-variant italic font-body-md opacity-70">"Can I pls get these in a size 36 🩵"</p>
+<button class="w-full h-14 bg-primary text-on-primary rounded-full font-headline-md flex items-center justify-center gap-sm active:scale-[0.98] transition-all shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add_circle</span>
+                Add to wishlist
+            </button>
+</section>
+<!-- Comparison Section -->
+<section class="mt-xl px-margin-mobile">
+<div class="flex justify-between items-center mb-md">
+<h2 class="font-headline-md text-on-surface">Found in other stores</h2>
+<div class="flex items-center gap-1 group cursor-help">
+<span class="text-[10px] text-outline font-semibold uppercase tracking-wider">Contain ads</span>
+<span class="material-symbols-outlined text-sm text-outline">info</span>
+</div>
+</div>
+<div class="space-y-sm">
+<!-- Adidas Store -->
+<div class="group relative bg-surface-container-lowest border border-outline-variant/30 p-md rounded-[24px] flex items-center justify-between shadow-sm hover:shadow-md transition-all cursor-pointer">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center p-2">
+<img alt="Adidas" class="w-full h-full object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBDZPZ5H3QjPB6q3nsJ5uO0kwvmbojs1iR5K2Xn9jtSR65iW1T1QRLAadwyNjQvRRtRapRNwP3Vgxxr8Y01H-Gg7i4nru8szRMSQSmIdjJikK--V3XHdCU68WpSWeTVqnbMEMyzqqdYwt0oKo3PzNrRDUPWNB-DWifZEixGYAvXjsJANantkgSEN_HesAF3GaR4s3WbRmbH5d4lZ6B_Uwz5MJ5GlaoM3QH1CETQYtgrI32ma6JKuYu2DPQWYzy2-Gioet1_WVTtuVU"/>
+</div>
+<div>
+<p class="font-label-lg text-on-surface">Adidas</p>
+<div class="flex items-center gap-1 text-primary">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">inventory_2</span>
+<span class="text-label-sm font-semibold">In stock</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-xs">
+<div class="bg-on-background text-on-background-inverse px-md py-sm rounded-full bg-on-background flex items-center gap-1">
+<span class="text-white font-bold text-label-lg">$120.00</span>
+<span class="material-symbols-outlined text-white text-md">arrow_outward</span>
+</div>
+</div>
+</div>
+<!-- Amazon Store -->
+<div class="group relative bg-surface-container-lowest border border-outline-variant/30 p-md rounded-[24px] flex items-center justify-between shadow-sm hover:shadow-md transition-all cursor-pointer">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center p-2">
+<img alt="Amazon" class="w-full h-full object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDKtDxU-PWq9ZfWqB5XOzd-VAiW4ty-lLkYKrYbPEx1xGUP3YTO7VKFTmIY8OEZnbZIlZiLfLSV5x017vbEq7DkRJvqr9bP6tgc6kAoxaSd4s7yLjnCNGeraC90uyw3ICw_Ogk6T6HetBEkpwGAQm66Pn4Nk1srj3Cc698NMxW9sj3LSQVgtXDKbi65V9b_4O3plIBR-lAhYrWeCbLgb7x6Zoh2hcvMKgnk3sixfWE9u0qJbZlCkcIAMnNaVuKQSlQ5XlMQclDj4UE"/>
+</div>
+<div>
+<p class="font-label-lg text-on-surface">Amazon</p>
+<div class="flex items-center gap-1 text-primary">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">inventory_2</span>
+<span class="text-label-sm font-semibold">In stock</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<span class="font-bold text-on-surface text-label-lg">$110.00</span>
+<span class="material-symbols-outlined text-outline">arrow_outward</span>
+</div>
+</div>
+<!-- Foot Locker Store -->
+<div class="group relative bg-surface-container-lowest border border-outline-variant/30 p-md rounded-[24px] flex items-center justify-between shadow-sm hover:shadow-md transition-all cursor-pointer">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center p-2">
+<img alt="Foot Locker" class="w-full h-full object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCaHZJsooR2eKH4mFKjLF0f59Ei5-8mvECgR1EfhkGAo6MfKWzLvXedrNIHu7rbil68c-NY3UptFaSp6Tsj0XYDmFNeJe9BvWZIUPfxAoYqeDVlrOZ9fVUFYPyCNF8oprxQXnJY189lM-CVlBV_rSs81cvvt9LMqK_PVZItuf7ec-jPzEHqYQgZCe9GKXNyv94pa7MJZ5PQoQ4z7FHM4-XMPnnv2uV0mYheOD0BGiLmpKr5dl8drKZ2iSA0P4H9lLRt1pBnD7nhgiA"/>
+</div>
+<div>
+<p class="font-label-lg text-on-surface">Foot Locker</p>
+<div class="flex items-center gap-1 text-primary">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">inventory_2</span>
+<span class="text-label-sm font-semibold">In stock</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<span class="font-bold text-on-surface text-label-lg">$110.00</span>
+<span class="material-symbols-outlined text-outline">arrow_outward</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Product Specs (Additional Context for Rich UI) -->
+<section class="mt-xl px-margin-mobile">
+<h3 class="font-headline-md text-on-surface mb-md">Product Details</h3>
+<div class="grid grid-cols-2 gap-md">
+<div class="bg-surface-container-low/50 p-md rounded-2xl">
+<span class="text-label-sm text-outline uppercase block mb-1">Color</span>
+<span class="text-on-surface font-semibold">Navy / Blue Dawn</span>
+</div>
+<div class="bg-surface-container-low/50 p-md rounded-2xl">
+<span class="text-label-sm text-outline uppercase block mb-1">Category</span>
+<span class="text-on-surface font-semibold">Lifestyle Sneakers</span>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Bar (Mandatory Shell) -->
+<nav class="fixed bottom-0 left-0 w-full h-20 px-4 flex justify-around items-center bg-surface/90 dark:bg-surface-container-lowest/90 backdrop-blur-xl z-50 rounded-t-xl shadow-[0_-4px_16px_rgba(0,0,0,0.05)] pb-safe">
+<a class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed-dim font-bold after:content-[''] after:w-1 after:h-1 after:bg-primary after:rounded-full after:mt-1 hover:bg-secondary-container/50 dark:hover:bg-secondary-container/20 rounded-xl transition-all active:scale-90 duration-300 px-4 py-2" href="#">
+<span class="material-symbols-outlined" data-icon="list_alt">list_alt</span>
+<span class="font-label-sm text-label-sm">Wishlists</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-secondary-fixed-variant dark:text-on-surface-variant hover:bg-secondary-container/50 dark:hover:bg-secondary-container/20 rounded-xl transition-all active:scale-90 duration-300 px-4 py-2" href="#">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="font-label-sm text-label-sm">Activity</span>
+</a>
+<!-- Floating Style Middle Item -->
+<div class="relative -mt-10">
+<button class="w-14 h-14 bg-primary rounded-full flex items-center justify-center text-on-primary shadow-lg shadow-primary/40 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-3xl" data-icon="add_circle">add_circle</span>
+</button>
+<span class="absolute -bottom-6 left-1/2 -translate-x-1/2 font-label-sm text-label-sm text-on-secondary-fixed-variant">Add</span>
+</div>
+<a class="flex flex-col items-center justify-center text-on-secondary-fixed-variant dark:text-on-surface-variant hover:bg-secondary-container/50 dark:hover:bg-secondary-container/20 rounded-xl transition-all active:scale-90 duration-300 px-4 py-2" href="#">
+<span class="material-symbols-outlined" data-icon="auto_awesome">auto_awesome</span>
+<span class="font-label-sm text-label-sm">Inspiration</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-secondary-fixed-variant dark:text-on-surface-variant hover:bg-secondary-container/50 dark:hover:bg-secondary-container/20 rounded-xl transition-all active:scale-90 duration-300 px-4 py-2" href="#">
+<span class="material-symbols-outlined" data-icon="card_giftcard">card_giftcard</span>
+<span class="font-label-sm text-label-sm">Find Gift</span>
+</a>
+</nav>
+<script>
+        // Simple Interaction logic
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('touchstart', function() {
+                this.classList.add('scale-95');
+            });
+            btn.addEventListener('touchend', function() {
+                this.classList.remove('scale-95');
+            });
+        });
+
+        // Sticky header transition logic
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('header');
+            if (window.scrollY > 50) {
+                header.classList.add('pointer-events-auto');
+            } else {
+                header.classList.remove('pointer-events-auto');
+            }
+        });
+    </script>
+</body></html>

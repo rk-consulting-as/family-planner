@@ -1,0 +1,68 @@
+/* Aura Wish — egne design-tokens som scope-er kun til /aura.
+   Holder Aura visuelt separert fra Kinship. */
+
+.aura-scope {
+  /* Color tokens — light */
+  --aura-bg: #faf9fe;
+  --aura-surface: #ffffff;
+  --aura-surface-low: #f4f3f8;
+  --aura-surface-container: #eeedf3;
+  --aura-surface-high: #e9e7ed;
+  --aura-on-surface: #1a1b1f;
+  --aura-on-surface-variant: #3d494b;
+  --aura-outline: #6d797b;
+  --aura-outline-variant: #bcc9cb;
+
+  --aura-primary: #006973;
+  --aura-on-primary: #ffffff;
+  --aura-primary-container: #2fb2c1;
+  --aura-on-primary-container: #003f46;
+  --aura-primary-fixed: #90f1ff;
+
+  --aura-error: #ba1a1a;
+  --aura-success: #2e7d32;
+
+  background: var(--aura-bg);
+  color: var(--aura-on-surface);
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+.aura-scope.dark {
+  --aura-bg: #121317;
+  --aura-surface: #1a1b1f;
+  --aura-surface-low: #1f2024;
+  --aura-surface-container: #25262a;
+  --aura-surface-high: #2a2b2f;
+  --aura-on-surface: #e3e2e7;
+  --aura-on-surface-variant: #c6c5cb;
+  --aura-outline-variant: #45464a;
+  --aura-primary-container: #5fd7e6;
+  --aura-on-primary-container: #001f23;
+}
+
+/* Aura-typografi-klasser */
+.aura-display-lg { font-size: 32px; line-height: 40px; font-weight: 700; letter-spacing: -0.02em; }
+.aura-headline-lg { font-size: 24px; line-height: 32px; font-weight: 700; letter-spacing: -0.01em; }
+.aura-headline-lg-mobile { font-size: 22px; line-height: 28px; font-weight: 700; }
+.aura-headline-md { font-size: 20px; line-height: 28px; font-weight: 600; }
+.aura-body-lg { font-size: 16px; line-height: 24px; font-weight: 400; }
+.aura-body-md { font-size: 14px; line-height: 20px; font-weight: 400; }
+.aura-label-lg { font-size: 14px; line-height: 20px; font-weight: 600; }
+.aura-label-sm { font-size: 12px; line-height: 16px; font-weight: 500; letter-spacing: 0.05em; }
+
+/* Glassmorphism for bottom nav */
+.aura-glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-top: 1px solid rgba(189, 201, 203, 0.4);
+}
+.aura-scope.dark .aura-glass {
+  background: rgba(26, 27, 31, 0.7);
+  border-top: 1px solid rgba(69, 70, 74, 0.5);
+}
+
+/* Soft shadows */
+.aura-shadow-1 { box-shadow: 0 4px 12px rgba(26, 27, 31, 0.05); }
+.aura-shadow-2 { box-shadow: 0 16px 32px rgba(26, 27, 31, 0.1); }

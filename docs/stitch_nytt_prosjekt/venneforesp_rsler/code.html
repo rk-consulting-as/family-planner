@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+
+<html lang="no"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>Venneforespørsler | Aura Wish</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+    </style>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-error": "#ffffff",
+                    "inverse-surface": "#2f3034",
+                    "surface-container-highest": "#e3e2e7",
+                    "on-tertiary-fixed": "#1b1b1d",
+                    "secondary": "#5c5f60",
+                    "on-tertiary": "#ffffff",
+                    "on-secondary-container": "#626566",
+                    "surface-container-lowest": "#ffffff",
+                    "on-primary-container": "#003f46",
+                    "surface-tint": "#006973",
+                    "secondary-fixed-dim": "#c5c7c8",
+                    "inverse-on-surface": "#f1f0f5",
+                    "outline-variant": "#bcc9cb",
+                    "surface-variant": "#e3e2e7",
+                    "primary-container": "#2fb2c1",
+                    "on-secondary-fixed": "#191c1d",
+                    "surface-bright": "#faf9fe",
+                    "on-background": "#1a1b1f",
+                    "background": "#faf9fe",
+                    "on-surface": "#1a1b1f",
+                    "secondary-container": "#e1e3e4",
+                    "on-secondary": "#ffffff",
+                    "secondary-fixed": "#e1e3e4",
+                    "primary": "#006973",
+                    "on-secondary-fixed-variant": "#454748",
+                    "inverse-primary": "#5fd7e6",
+                    "on-primary-fixed": "#001f23",
+                    "surface-container": "#eeedf3",
+                    "surface-dim": "#dad9df",
+                    "tertiary": "#5f5e60",
+                    "on-tertiary-container": "#39393b",
+                    "error": "#ba1a1a",
+                    "outline": "#6d797b",
+                    "primary-fixed": "#90f1ff",
+                    "surface-container-low": "#f4f3f8",
+                    "tertiary-fixed-dim": "#c8c6c8",
+                    "on-surface-variant": "#3d494b",
+                    "on-error-container": "#93000a",
+                    "on-primary-fixed-variant": "#004f57",
+                    "error-container": "#ffdad6",
+                    "tertiary-container": "#a4a2a4",
+                    "primary-fixed-dim": "#5fd7e6",
+                    "on-tertiary-fixed-variant": "#474649",
+                    "surface-container-high": "#e9e7ed",
+                    "on-primary": "#ffffff",
+                    "tertiary-fixed": "#e4e2e4",
+                    "surface": "#faf9fe"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin-mobile": "20px",
+                    "2xl": "48px",
+                    "xs": "4px",
+                    "gutter": "16px",
+                    "xl": "32px",
+                    "md": "16px",
+                    "lg": "24px",
+                    "margin-desktop": "64px",
+                    "base": "4px",
+                    "sm": "8px"
+            },
+            "fontFamily": {
+                    "headline-lg-mobile": ["Plus Jakarta Sans"],
+                    "headline-lg": ["Plus Jakarta Sans"],
+                    "body-lg": ["Plus Jakarta Sans"],
+                    "headline-md": ["Plus Jakarta Sans"],
+                    "body-md": ["Plus Jakarta Sans"],
+                    "label-sm": ["Plus Jakarta Sans"],
+                    "label-lg": ["Plus Jakarta Sans"],
+                    "display-lg": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "headline-lg-mobile": ["22px", {"lineHeight": "28px", "fontWeight": "700"}],
+                    "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "label-lg": ["14px", {"lineHeight": "20px", "fontWeight": "600"}],
+                    "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface min-h-screen pb-32">
+<!-- Top Navigation Anchor -->
+<header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-md">
+<div class="flex justify-between items-center px-margin-mobile md:px-margin-desktop h-16 w-full max-w-7xl mx-auto">
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-primary text-2xl active:scale-95 transition-transform">arrow_back</button>
+<h1 class="font-headline-md text-headline-md text-primary">Venneforespørsler</h1>
+</div>
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-container-highest">
+<img alt="User" class="w-full h-full object-cover" data-alt="A high-quality 3D rendered avatar of a stylish young man with a friendly expression. He has short brown hair and is wearing a modern teal hoodie. The background is a soft, blurred studio environment with warm, optimistic lighting that fits a professional and clean UI design system." src="https://lh3.googleusercontent.com/aida-public/AB6AXuASzc2D5ADJNK_bFvFigtVUf6pLpS2p2xS5UYjvVdA0fnMUt6zPOcFYeUTzaA0nBlQL45-iI8HqJsiEdl9gqY-gb5QN1fPAxLZOFxvKSwmwM3DYwZbwXM6YTprIL4djAIqWv6IfYzQS_CMbKfGA1IKm9Dvw6IuRnKz_fJQe3euY0nzGJKqBL2oWgxpg9ylECDUrd55nxVD7x5l-4TkwLh_krkYLeHPYbB098Joi1dTV7A_ZKL2wU1A4dyMp2gY5P5vZJmdcroOlR4k"/>
+</div>
+</div>
+</header>
+<main class="pt-24 px-margin-mobile max-w-2xl mx-auto space-y-8">
+<!-- Search Bar Section -->
+<section class="space-y-4">
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">search</span>
+<input class="w-full h-14 pl-12 pr-4 bg-surface-container-low rounded-2xl border-none ring-1 ring-inset ring-outline-variant focus:ring-2 focus:ring-primary transition-all font-body-lg text-body-lg placeholder:text-outline-variant" placeholder="Finn venner" type="text"/>
+</div>
+</section>
+<!-- Pending Requests Section -->
+<section class="space-y-4">
+<div class="flex justify-between items-center">
+<h2 class="font-headline-md text-headline-md text-on-surface">Venter på svar (3)</h2>
+<button class="text-primary font-label-lg text-label-lg hover:underline transition-all">Se alle</button>
+</div>
+<div class="space-y-3">
+<!-- Request Card 1 -->
+<div class="glass-card p-4 rounded-3xl border border-surface-container-highest shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex items-center justify-between group">
+<div class="flex items-center gap-4">
+<div class="relative">
+<img alt="Ingrid" class="w-14 h-14 rounded-full bg-secondary-container object-cover" data-alt="Close-up portrait of a smiling young woman with long blonde hair and glasses, set against a soft, bright pastel background. The image has a clean, professional aesthetic with gentle lighting, perfect for a high-end social networking application design system." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBC65xeJHEpf5gnDBkWQNbxpTE29dYEWdDjAaljjIks2L3NKWCpNQwadTtY_7DNBYrGP-P8w_gRFt0gel-zMUg9JAbBork0U1wnXan7xqC10vNibTe2gUtpIdTyKyJ3fWplWR9onMrSb7hGw-Skc_LBfvGnxTz4N5c3wo9RNa19ZeBaSkmBZEwe474Y8syHrlcKG0uznh2bXghbdxW_6I0p7mgdpT84ddYoxoa-8haaYHrFDuflCnq3MPxUxqDy0_NCGs9vQgtNsaI"/>
+<div class="absolute -bottom-1 -right-1 w-6 h-6 bg-primary rounded-full flex items-center justify-center border-2 border-surface">
+<span class="material-symbols-outlined text-[14px] text-on-primary">group</span>
+</div>
+</div>
+<div>
+<p class="font-label-lg text-label-lg text-on-surface">Ingrid Johansen</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">4 felles venner</p>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="w-10 h-10 flex items-center justify-center rounded-full bg-surface-container-highest text-on-surface-variant hover:bg-error-container hover:text-error transition-all active:scale-90">
+<span class="material-symbols-outlined">close</span>
+</button>
+<button class="h-10 px-6 rounded-full bg-primary text-on-primary font-label-lg text-label-lg hover:shadow-lg active:scale-95 transition-all">
+                            Godta
+                        </button>
+</div>
+</div>
+<!-- Request Card 2 -->
+<div class="glass-card p-4 rounded-3xl border border-surface-container-highest shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex items-center justify-between">
+<div class="flex items-center gap-4">
+<img alt="Marcus" class="w-14 h-14 rounded-full bg-secondary-container object-cover" data-alt="A friendly male character with dark curly hair and a slight beard, wearing a minimalist gray t-shirt. The portrait is bright and high-key, featuring soft directional lighting that emphasizes a clean and modern digital product design aesthetic with an airy mood." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDq5rEpRBe7d_XY2thx0GW78AfoaE_s4TaRvGvR9SwT7e5UUw28vyAqZa_GAUczq3_YaJjwYDuvlkg1SZl1rigAK9tV18d3cjn8MxBRharux04rR1u0xPzFAGPgoeSkpLFaSA0DS22aYlUszTSGBF2fa2-M1HqlNyEcyMML8pKgREbz-Zt2dsokAS1OPOV8625P5jV5DciMxwqW7_F7l050vzhkYrVlHJmlRxl5ns7cqdiYa8e2neZAk14MWvcNokjbC6LrVJWWMrY"/>
+<div>
+<p class="font-label-lg text-label-lg text-on-surface">Marcus Berg</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Fra dine kontakter</p>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="w-10 h-10 flex items-center justify-center rounded-full bg-surface-container-highest text-on-surface-variant hover:bg-error-container hover:text-error transition-all active:scale-90">
+<span class="material-symbols-outlined">close</span>
+</button>
+<button class="h-10 px-6 rounded-full bg-primary text-on-primary font-label-lg text-label-lg hover:shadow-lg active:scale-95 transition-all">
+                            Godta
+                        </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Suggested Friends Section -->
+<section class="space-y-4">
+<h2 class="font-headline-md text-headline-md text-on-surface">Foreslåtte venner</h2>
+<!-- Horizontal scroll for a premium asymmetric feel -->
+<div class="flex gap-4 overflow-x-auto pb-4 -mx-margin-mobile px-margin-mobile no-scrollbar">
+<!-- Suggested Card 1 -->
+<div class="min-w-[160px] flex-shrink-0 bg-white p-5 rounded-[32px] shadow-sm border border-surface-container-highest flex flex-col items-center text-center space-y-3">
+<img alt="Siri" class="w-20 h-20 rounded-full bg-primary-container/20 object-cover" data-alt="A cheerful woman with bright orange hair in a bob cut, wearing a vibrant blue denim jacket. The image is rendered in a smooth, modern 3D style with a soft-focus background of a sunlit garden, reflecting an optimistic and approachable brand identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBUhX5tVSYMs_mE5BfhvqeZLtJysG0MKF8kNITFrYg2MSRxSjhkELHqMpbPfw2uT-l_WOQhlVslSbEnVxwZPEEXpxVJO5ohP_36xt0IgkGFFlqHDpx_diVDHDReODBpDiWkQ35PJek_d-7VODJcnXWge280p1TzmHCKlHl7cHnUs1rhSiv7G4j9ExRwJbQzoVzkVv3FRNaAtBydpukTxWUAShFqeHboH_nEts73hFIcLA7Ux8E3ztM05sCKDq3Gyxs9GXv3COKRMwg"/>
+<div>
+<p class="font-label-lg text-label-lg text-on-surface">Siri Nilsen</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant truncate w-32">12 felles venner</p>
+</div>
+<button class="w-full py-2 rounded-full ring-1 ring-inset ring-primary text-primary font-label-lg text-label-lg hover:bg-primary hover:text-on-primary transition-all active:scale-95">
+                        Følg
+                    </button>
+</div>
+<!-- Suggested Card 2 -->
+<div class="min-w-[160px] flex-shrink-0 bg-white p-5 rounded-[32px] shadow-sm border border-surface-container-highest flex flex-col items-center text-center space-y-3">
+<img alt="Thomas" class="w-20 h-20 rounded-full bg-primary-container/20 object-cover" data-alt="A sophisticated young man with glasses and a professional demeanor, wearing a simple white collared shirt. The lighting is soft and even, typical of high-end corporate lifestyle photography, placed against a very light gray minimalist background to maintain an airy feel." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC_ezbBiaTXEMpLftpTDq4029NEXbssP6qclZUnnPv8NPYesw0H6HQBdX3aE1vGESOT3KYj5UOaOtRT2lTHif6zsyhs6OLRqyEs_Vr5D6itWQJFGfLx_yrIgcKGgJc1XZFGbn-KgQnzZk76g_wy7CZn9KUmg30fFqRgREmjdxkkkAG-YMZwjjPnwCKFjy21avt1Rmv3p2Pe2JmdXNg1z4369Hdbuf8xPFpLdIoH0P3uHXh2Qa26OVaLE9vqO89nI0XTzMDxpJ71fd4"/>
+<div>
+<p class="font-label-lg text-label-lg text-on-surface">Thomas Lie</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant truncate w-32">Går på samme skole</p>
+</div>
+<button class="w-full py-2 rounded-full ring-1 ring-inset ring-primary text-primary font-label-lg text-label-lg hover:bg-primary hover:text-on-primary transition-all active:scale-95">
+                        Følg
+                    </button>
+</div>
+<!-- Suggested Card 3 -->
+<div class="min-w-[160px] flex-shrink-0 bg-white p-5 rounded-[32px] shadow-sm border border-surface-container-highest flex flex-col items-center text-center space-y-3">
+<img alt="Eva" class="w-20 h-20 rounded-full bg-primary-container/20 object-cover" data-alt="A portrait of an elderly woman with silver hair and a warm, kind smile. She is wearing a soft pastel lavender sweater. The aesthetic is gentle and serene, using soft-focus and bright natural lighting to evoke a sense of community and trust in a modern UI context." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC2R-9CiddvOcNB3DYL9oAK31LQPhsb1bkQFUMZ5Nt-38AMs22FD1rz3GNrWy_XB_lZmq2dN2Q3sdq9bWslUo2KwMs6EDys3yR_krHoDKrlk6foqAbYuBIU0PxhqypT5dOWMjvURp8l19Dh50IOhNM0w1OdTV5ftY3N4OHNBjnD9J4hyTPhIHYmOttfJhOeqD98fGeDga4IywAXXPFnF70tHbVuypw0rFWv-PMknN3OmT97PUr-LDGjqptBn3RKwZQsvcAzRhJGXps"/>
+<div>
+<p class="font-label-lg text-label-lg text-on-surface">Eva Gran</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant truncate w-32">Fra kontakter</p>
+</div>
+<button class="w-full py-2 rounded-full ring-1 ring-inset ring-primary text-primary font-label-lg text-label-lg hover:bg-primary hover:text-on-primary transition-all active:scale-95">
+                        Følg
+                    </button>
+</div>
+</div>
+</section>
+<!-- Find from contacts call to action -->
+<section class="glass-card p-6 rounded-[32px] bg-primary/5 border border-primary/10 flex items-center justify-between overflow-hidden relative">
+<div class="relative z-10 space-y-1">
+<p class="font-label-lg text-label-lg text-primary">Finn kjente fjes</p>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-[180px]">Synkroniser kontakter for å finne venner på Aura Wish.</p>
+<button class="mt-2 py-2 px-4 bg-primary text-on-primary rounded-full font-label-lg text-label-lg">Kom i gang</button>
+</div>
+<div class="relative z-0 opacity-20">
+<span class="material-symbols-outlined text-[80px] text-primary rotate-12">contacts</span>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Shell -->
+<nav class="fixed bottom-0 left-0 w-full h-20 px-4 flex justify-around items-center bg-surface/90 dark:bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_-4px_16px_rgba(0,0,0,0.05)] z-50 rounded-t-xl">
+<div class="flex flex-col items-center justify-center text-on-secondary-fixed-variant hover:bg-secondary-container/50 rounded-xl transition-all p-2 cursor-pointer active:scale-90 duration-300">
+<span class="material-symbols-outlined" data-icon="list_alt">list_alt</span>
+<span class="font-label-sm text-label-sm mt-1">Wishlists</span>
+</div>
+<!-- Active Tab: Activity (since Friend Requests fall under social activity) -->
+<div class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed-dim font-bold after:content-[''] after:w-1 after:h-1 after:bg-primary after:rounded-full after:mt-1 p-2 cursor-pointer active:scale-90 duration-300">
+<span class="material-symbols-outlined" data-icon="notifications" style="font-variation-settings: 'FILL' 1;">notifications</span>
+<span class="font-label-sm text-label-sm mt-1">Activity</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-secondary-fixed-variant hover:bg-secondary-container/50 rounded-xl transition-all p-2 cursor-pointer active:scale-90 duration-300">
+<span class="material-symbols-outlined text-3xl" data-icon="add_circle">add_circle</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-secondary-fixed-variant hover:bg-secondary-container/50 rounded-xl transition-all p-2 cursor-pointer active:scale-90 duration-300">
+<span class="material-symbols-outlined" data-icon="auto_awesome">auto_awesome</span>
+<span class="font-label-sm text-label-sm mt-1">Inspiration</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-secondary-fixed-variant hover:bg-secondary-container/50 rounded-xl transition-all p-2 cursor-pointer active:scale-90 duration-300">
+<span class="material-symbols-outlined" data-icon="card_giftcard">card_giftcard</span>
+<span class="font-label-sm text-label-sm mt-1">Find Gift</span>
+</div>
+</nav>
+<script>
+        // Micro-interactions
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                if (this.textContent.trim() === 'Godta') {
+                    const card = this.closest('.glass-card');
+                    card.style.transform = 'scale(0.95)';
+                    card.style.opacity = '0';
+                    setTimeout(() => {
+                        card.remove();
+                    }, 300);
+                }
+                
+                if (this.textContent.trim() === 'Følg') {
+                    this.textContent = 'Følger';
+                    this.classList.remove('ring-primary', 'text-primary');
+                    this.classList.add('bg-secondary-container', 'text-on-secondary-container', 'ring-0');
+                }
+            });
+        });
+
+        // Hide bottom nav on scroll down, show on scroll up for cleaner view
+        let lastScrollTop = 0;
+        const nav = document.querySelector('nav');
+        window.addEventListener("scroll", function() {
+            let st = window.pageYOffset || document.documentElement.scrollTop;
+            if (st > lastScrollTop && st > 100) {
+                nav.style.transform = "translateY(100%)";
+            } else {
+                nav.style.transform = "translateY(0)";
+            }
+            lastScrollTop = st <= 0 ? 0 : st;
+        }, false);
+        nav.style.transition = "transform 0.3s ease-in-out";
+    </script>
+</body></html>

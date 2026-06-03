@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Aura Wish - Recommendations</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary": "#5c5f60",
+                    "on-secondary-container": "#626566",
+                    "error": "#ba1a1a",
+                    "background": "#faf9fe",
+                    "inverse-surface": "#2f3034",
+                    "error-container": "#ffdad6",
+                    "surface-dim": "#dad9df",
+                    "surface-container-high": "#e9e7ed",
+                    "secondary-fixed-dim": "#c5c7c8",
+                    "tertiary-container": "#a4a2a4",
+                    "on-primary-fixed-variant": "#004f57",
+                    "surface-container-highest": "#e3e2e7",
+                    "on-surface": "#1a1b1f",
+                    "secondary-fixed": "#e1e3e4",
+                    "on-secondary-fixed-variant": "#454748",
+                    "tertiary-fixed": "#e4e2e4",
+                    "primary-fixed": "#90f1ff",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-tint": "#006973",
+                    "on-primary-fixed": "#001f23",
+                    "outline": "#6d797b",
+                    "inverse-on-surface": "#f1f0f5",
+                    "surface-container-low": "#f4f3f8",
+                    "primary-container": "#2fb2c1",
+                    "inverse-primary": "#5fd7e6",
+                    "surface-container": "#eeedf3",
+                    "secondary-container": "#e1e3e4",
+                    "primary": "#006973",
+                    "surface-variant": "#e3e2e7",
+                    "on-tertiary-fixed-variant": "#474649",
+                    "on-secondary-fixed": "#191c1d",
+                    "on-surface-variant": "#3d494b",
+                    "on-primary-container": "#003f46",
+                    "surface-bright": "#faf9fe",
+                    "tertiary": "#5f5e60",
+                    "on-error-container": "#93000a",
+                    "on-primary": "#ffffff",
+                    "tertiary-fixed-dim": "#c8c6c8",
+                    "on-background": "#1a1b1f",
+                    "outline-variant": "#bcc9cb",
+                    "on-secondary": "#ffffff",
+                    "surface": "#faf9fe",
+                    "on-tertiary-container": "#39393b",
+                    "on-tertiary-fixed": "#1b1b1d",
+                    "on-error": "#ffffff",
+                    "primary-fixed-dim": "#5fd7e6",
+                    "on-tertiary": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "lg": "24px",
+                    "2xl": "48px",
+                    "md": "16px",
+                    "gutter": "16px",
+                    "xs": "4px",
+                    "base": "4px",
+                    "xl": "32px",
+                    "sm": "8px",
+                    "margin-desktop": "64px",
+                    "margin-mobile": "20px"
+            },
+            "fontFamily": {
+                    "label-sm": ["Plus Jakarta Sans"],
+                    "label-lg": ["Plus Jakarta Sans"],
+                    "headline-md": ["Plus Jakarta Sans"],
+                    "display-lg": ["Plus Jakarta Sans"],
+                    "headline-lg": ["Plus Jakarta Sans"],
+                    "headline-lg-mobile": ["Plus Jakarta Sans"],
+                    "body-md": ["Plus Jakarta Sans"],
+                    "body-lg": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "label-lg": ["14px", {"lineHeight": "20px", "fontWeight": "600"}],
+                    "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "headline-lg-mobile": ["22px", {"lineHeight": "28px", "fontWeight": "700"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #faf9fe; }
+        .glass-nav { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+        .custom-scroll::-webkit-scrollbar { display: none; }
+        .custom-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        .product-card-shadow { box-shadow: 0 4px 20px -2px rgba(0, 105, 115, 0.05); }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-on-surface bg-background min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-md">
+<div class="flex justify-between items-center px-margin-mobile md:px-margin-desktop h-16 w-full max-w-7xl mx-auto">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-primary-container/20 flex items-center justify-center">
+<img alt="User" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPzlSCcue0gLobY9PX-LAjyfkufvlANX-31cNinZ-Td5bOGYAjqmeqDKdwroXtuFR0bJ7BIGGzRNHRlUGIkydDmhBCz5TgOVvzrDaYXgISwPaxEK720Gj5zXKAe97yVa7dDT_SgwQszUTsop_yUvtr_zU9lM1AVtF2SUJnmE5bzNB2QUh_Morcsw20Oe9Z4e82MTrPPRcqq5-e4M3sPltWIm9gvSCf4nraYYakPcArg9upUo72M0LY70F6EpGKfUsVYQ3Szt8qBFQ"/>
+</div>
+<h1 class="font-display-lg text-headline-md md:text-display-lg text-primary tracking-tight">Aura Wish</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-full hover:bg-surface-container-low transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined text-primary" data-icon="notifications">notifications</span>
+</button>
+</div>
+</div>
+</header>
+<main class="pt-24 px-margin-mobile md:px-margin-desktop max-w-7xl mx-auto">
+<!-- Header Section -->
+<section class="mb-lg">
+<h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface">Recommendations For You</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-xs">Curated based on your dreams and discoveries.</p>
+</section>
+<!-- Picked for you: Bento Grid -->
+<section class="mb-xl">
+<div class="flex items-center justify-between mb-md">
+<h3 class="font-headline-md text-headline-md text-on-surface">Picked for you</h3>
+<button class="text-primary font-label-lg text-label-lg hover:underline transition-all">View all</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<!-- Large Highlight Card -->
+<div class="md:col-span-8 group relative overflow-hidden rounded-[24px] bg-white product-card-shadow border border-surface-variant/30">
+<div class="aspect-[16/9] overflow-hidden">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="A high-end minimalist luxury wristwatch displayed on a soft, ethereal white fabric background. The lighting is diffused and airy, creating a high-key aesthetic that aligns with a clean light-mode UI. Reflections on the glass of the watch are soft, highlighting its premium craftsmanship and the primary teal accents of the surrounding interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCh-wM0A5HNMWs3cvSNMynnBwfYhGgoyYudZ4IxLF9b0KsSTlNkNuz5qYd0qyu6MTOAALOFCruoiRR1XgCkPhJx1ZdU_QpV5z0ixwW3Jg5B5xnqI-7l4XSjIrNbybpn8vxzUC-ZHpS1zT2abBooEJULGTyZLVsbn_qBm8FKR4pgPsIKAOrbk2D_p-qYVpGFN6Qd_HJ8Yx9xNkqlEvbhHnYGlDfN-w6N9VfgKQ0uDPfCWOCdayEO2BeoIz1vB--Hnt56Mxgd5RoFSYM"/>
+</div>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex flex-col justify-end p-lg">
+<span class="bg-primary/90 backdrop-blur-sm text-white px-3 py-1 rounded-full text-label-sm font-label-sm w-fit mb-2">Editor's Choice</span>
+<h4 class="text-white font-headline-lg text-headline-lg mb-1">Horizon Minimalist Watch</h4>
+<p class="text-white/80 font-body-md text-body-md mb-md">Timeless elegance for your daily ventures.</p>
+<div class="flex gap-3">
+<button class="bg-primary text-white px-6 py-3 rounded-full font-label-lg text-label-lg hover:bg-primary/90 transition-all flex items-center gap-2 active:scale-95">
+<span class="material-symbols-outlined text-[20px]" data-icon="cloud">cloud</span>
+                                Add to Wishlist
+                            </button>
+</div>
+</div>
+</div>
+<!-- Small Vertical Card -->
+<div class="md:col-span-4 flex flex-col gap-gutter">
+<div class="bg-white rounded-[24px] p-md product-card-shadow border border-surface-variant/30 flex flex-col h-full group">
+<div class="aspect-square rounded-[16px] overflow-hidden mb-md bg-surface-container-low">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="Premium wireless noise-canceling headphones resting on a marble surface in a bright, modern studio. The scene is bathed in soft, natural morning light, emphasizing the sleek textures and clean lines of the product. The overall aesthetic is one of calm, focused productivity within a luxury minimalist environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLQbzPyV1SwgAnbVnqlTJWtQyZeXvgQ4aq875256qLy2mCi9tb-1SzlXZc0ySErQSGyEMIe2iDSgvp00Q3gxo301vBJHZXKiFOtJdfO553Pc-SB0l85gzU9iXGOmQuXP1HcJ3keiJ80P4M6ntwuGW2v3EC6sOP4R6EbGUTC2vB-INNsD-JNFEdfLn19_W8bcfEVQwbHdfRoS4tl0cK5EdCQ4AVDu4AplP6qyngNywBiGAhjWnuHcDmYDtwBipNEXf28pBIemzKPgY"/>
+</div>
+<h4 class="font-headline-md text-headline-md text-on-surface truncate">Sonic Flow Headphones</h4>
+<p class="text-primary font-bold text-label-lg">$299.00</p>
+<button class="mt-auto w-full border-2 border-primary/20 hover:border-primary text-primary py-3 rounded-full font-label-lg flex items-center justify-center gap-2 transition-all active:scale-95">
+<span class="material-symbols-outlined text-[20px]" data-icon="add">add</span>
+                            Wishlist
+                        </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Because you liked Section -->
+<section class="mb-xl">
+<div class="flex items-center justify-between mb-md">
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Because you liked <span class="text-primary italic">Velvet Journal</span></h3>
+</div>
+</div>
+<div class="flex gap-gutter overflow-x-auto custom-scroll pb-4 -mx-margin-mobile px-margin-mobile md:mx-0 md:px-0">
+<!-- Reusable Product Card Component -->
+<div class="min-w-[240px] md:min-w-[280px] bg-white rounded-[24px] p-md product-card-shadow border border-surface-variant/30 group">
+<div class="relative aspect-square rounded-[16px] overflow-hidden mb-md">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A stack of handcrafted linen notebooks in earthy pastel tones like soft teal, cream, and muted gray. The composition is shot from a top-down perspective on a bright wooden desk, creating a tactile and cozy atmosphere. Soft shadows provide depth, enhancing the artisanal quality and premium feel consistent with a light-mode UI." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbnTwKtYMmPcRXCMX3gEHxBmc830DwW0hZ42-tds7BqE-sdslnQiUZJq4TGlcZfEYKhq6vOlazU-cj-TjXREg0N2SdypGNjKtPT3aPXezivx7HyLReMdqUD-Oy3DuKJNBsTgQ3EAt2x5I1jx3TcZB00HK1vzAvi34KM_2F9RwQn018WZepbuex5SPJPTJOR0eiMANChjcX-SWx3vklCUAGBisd0d4Eg-hTT8ZYL7lYR4Gc5ba5kR8Pmxz6PWAkmReFVKyzEqCcKwk"/>
+<button class="absolute top-2 right-2 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-primary shadow-sm active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-icon="favorite">favorite</span>
+</button>
+</div>
+<p class="text-label-sm font-label-sm text-on-surface-variant mb-1 uppercase tracking-wider">Stationery</p>
+<h4 class="font-headline-md text-body-lg text-on-surface font-semibold truncate">Artisan Linen Notebook</h4>
+<p class="text-primary font-bold text-label-lg mt-1">$35.00</p>
+</div>
+<div class="min-w-[240px] md:min-w-[280px] bg-white rounded-[24px] p-md product-card-shadow border border-surface-variant/30 group">
+<div class="relative aspect-square rounded-[16px] overflow-hidden mb-md">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="An elegant brass fountain pen resting on an open ink-splattered journal. The lighting is warm and directional, creating soft highlights on the metallic surface. The background is a blurred, high-end home office with minimalist white furniture, perfectly complementing a sophisticated, airy brand identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB-zVz8U_Q3ew292vVJo9z8ZDY9NJZzOtVU_-D1hsXKP0FOhyXT0rStI9aozfG4rSAZWjFxgRcGGrjs6DnOrsFfsq1_EtANJGgb3KhncEWgqpzrX7vljfBscjYfzqgYEw-m3MT59YdGS6-1Vm7f10KmGSqejll0zXwuguw6bf5-YOmM6Ju3qIb6YAZtDVGj0R4MwFjPOeaav_o_b2IXkW86cfZfrxZRvuFDz4BT1seNkwcYy3Yx99-45f_4N6Sjjo7mCzmrEmqvkU8"/>
+<button class="absolute top-2 right-2 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-primary shadow-sm active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-icon="favorite">favorite</span>
+</button>
+</div>
+<p class="text-label-sm font-label-sm text-on-surface-variant mb-1 uppercase tracking-wider">Writing</p>
+<h4 class="font-headline-md text-body-lg text-on-surface font-semibold truncate">Solid Brass Fountain Pen</h4>
+<p class="text-primary font-bold text-label-lg mt-1">$85.00</p>
+</div>
+<div class="min-w-[240px] md:min-w-[280px] bg-white rounded-[24px] p-md product-card-shadow border border-surface-variant/30 group">
+<div class="relative aspect-square rounded-[16px] overflow-hidden mb-md">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Minimalist desktop organizer made of light oak wood and matte white metal. It holds a single aesthetic candle and a small ceramic plant pot. The scene is brightly lit by natural light from a nearby window, creating a serene, clutter-free environment that inspires productivity and matches the airy brand pillars." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdAEy-OP9sWk3yluAeRtQ2D0b3t429lCR7SJ_YsovV28R2lJm1hb8_O888tMFkNRbKkSTtgS2FS5g-6xKvaskfLYriD_z6E7ijzVFlhNrBKpxUcaF1McEb2EETM7nqsUn6qt4t_w2qDdAldL_lO2aPdk1kz2wrzMuEf3mh_VK1mMn1yFPKHLLQwoviHRzMW6OaA0_JBEx_G7ACeiJqcCnzKBdlMzXselAOkbURQ9p-iTsB1i3h4kmNN3KPvI0W4uXG3GtIiF2sww4"/>
+<button class="absolute top-2 right-2 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-primary shadow-sm active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-icon="favorite">favorite</span>
+</button>
+</div>
+<p class="text-label-sm font-label-sm text-on-surface-variant mb-1 uppercase tracking-wider">Lifestyle</p>
+<h4 class="font-headline-md text-body-lg text-on-surface font-semibold truncate">Oakwood Desk Organizer</h4>
+<p class="text-primary font-bold text-label-lg mt-1">$42.00</p>
+</div>
+</div>
+</section>
+<!-- Trending in your circles -->
+<section class="mb-xl">
+<div class="flex items-center justify-between mb-md">
+<h3 class="font-headline-md text-headline-md text-on-surface">Trending in your circles</h3>
+</div>
+<div class="space-y-md">
+<!-- List Item Variant -->
+<div class="bg-white rounded-[24px] p-4 product-card-shadow border border-surface-variant/30 flex items-center gap-md group hover:bg-surface-container-low transition-colors duration-300">
+<div class="w-20 h-20 md:w-24 md:h-24 rounded-[16px] overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="Modern geometric sunglasses with a transparent frame, displayed on a clean, light-reflective surface. The image is crisp and high-contrast, featuring soft blue ambient lighting that emphasizes the product's modern edges. The background is a soft, out-of-focus urban interior, aligning with a premium lifestyle aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCjEITH_XaoWL9lIZpYsBPBW30gmk_riDL35o7KdkAxsPjLnO-__zizDEIHWRErlG_KIAino98Nde_EEnQW1KMwOh6Pat0mN4qfOQnshbqFMoR_h9_l1RqcXiRemwDmFxRZkZ-ID6hCeeI2y1Z8H6Ggh-fmxKfFzy7yNZ21rV1Dh2Be6qCmaccfAbZMlkK-0fTT9pRqnoD3PK5O7yz00d9OGj79gHYqNeFuW0lyiPZ_P9eGABhYlIQ74cS5jBfFQp9Ko9HCy0Jp0pQ"/>
+</div>
+<div class="flex-grow min-w-0">
+<div class="flex items-center gap-2 mb-1">
+<div class="flex -space-x-2">
+<img class="w-5 h-5 rounded-full border border-white" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD43kPDj2xnLD3EIdJPlim3F67SrSPwaCw2mvQ5EaF0tbdSxu6scF3BWw9ssr5U4HFxfa02gUO6wt2K51zUfIHAW4J9qjYuxfzyvOvQkgfl5bfrmrpNNpsrxVD6swspFLh2hqN7jNUttUpy0hLZwQBDBKIJV4DQIua8jjsQoEr0relLTBHrzExT2su9f0mSLRZU5pT80wo7UFrrHFhBewDdPfxnVcQ9yJWT29BWZTE8Co8TjGYp7m2eK3FufOa-1Vi0yI6wI_AlSyc"/>
+<img class="w-5 h-5 rounded-full border border-white" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBD0zXe9fOXktNKHceCTOkCLu2Us_W00sL_z2I3t2RnrMdhY7y_2ZYiN7w78sda2STOrAcjupUWMvBejnGU6HbjOvL7Jaj8sLdlVRzrS9xa86pTKd8lWd8Wc1MlSoD3IAjGzRY0ghoq4ytv8HgO50HqfZkJaV5ateCU16xgS-BlMXJ4-iY8ptq03cUBki0l60KOydXaD0gw0iwnpX8DQ49Dgcp9HR5p832aZaAsbBHb7b6TvJyvG5dNzSp8YJeBzS0EzSvbK1oSNUk"/>
+</div>
+<span class="text-label-sm font-label-sm text-on-surface-variant">Liked by 12 friends</span>
+</div>
+<h4 class="font-headline-md text-body-lg text-on-surface font-semibold truncate">Prism Geometric Shades</h4>
+<div class="flex items-center gap-3 mt-1">
+<span class="text-primary font-bold text-label-lg">$145.00</span>
+<span class="bg-success/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full uppercase flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]" data-icon="trending_up">trending_up</span>
+                                Trending
+                            </span>
+</div>
+</div>
+<button class="w-12 h-12 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center flex-shrink-0 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</button>
+</div>
+<div class="bg-white rounded-[24px] p-4 product-card-shadow border border-surface-variant/30 flex items-center gap-md group hover:bg-surface-container-low transition-colors duration-300">
+<div class="w-20 h-20 md:w-24 md:h-24 rounded-[16px] overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="Vibrant red performance running shoes captured mid-air against a pure white background. The motion is frozen, highlighting the aerodynamic design and mesh textures. Bright, clean lighting ensures no harsh shadows, maintaining the airy and optimistic brand feel for a high-performance footwear product." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMM46tEHzmzF6yQG_9W2yT6Qo0k0gvTMh_SBs5zFqo4vOjnmpm5i1ozqUplUE4oKiJdbuLDZ7hTbMbXYeqFuS40Ho7PI_sJmMvh01Bbv1HMqFVkuSrJtSy1Degh1JA6jsOmDpF-rxf6Cu9UsOCNsThKTqiZLxB7xV9ldtmqPR8DDwlM5vZdPAnc_yuyMGul30_r43khylGYbPeY-oPghSL4npbv9AAgYAg9NFBfA_srfx9P917mL0JDNZAj8DuY5InpW2lp4z547E"/>
+</div>
+<div class="flex-grow min-w-0">
+<div class="flex items-center gap-2 mb-1">
+<div class="flex -space-x-2">
+<img class="w-5 h-5 rounded-full border border-white" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC7Zqc30Cw6-33hRxuwqJ7q-tMjH_pbQBYIRG2QnFZgURtBS4IoIZ5Yur8drukP8Ij-vhRe2Ob6JEROCbL8umIKc0kFYBL_nawgvzI7jIYwTKsJJvOA3t7ox4jXUzmCVUg48Jq2wjHP2QKAQsOq_FiS6sBguSogNCpBpFZZtVEfM2h9BNqcpJ3LFlJ655e-xIIvllHDyDsGIR36mU1hG-DZnU8DBuXvuoCrW0asoASQFXgg9ficHMSRc05axxOTZRt1-rhwuEtPU3k"/>
+<img class="w-5 h-5 rounded-full border border-white" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBClfsuG_eKbHEAHGwCduQBf8PFIPLcWim8YuQZQIogSDf23sUZj52JN7jU9eZUCfFPT036JPHjL1txToDWMumq9GXD8lkrE6jtC0aBKelBd0CLSXdQSaW8t-sKoJ3RzhuhgY5krmnBbvME_khIGU0F_eDZ2K8mYyyzNkTqorUcgGF17Aq_LM-LHf8XjCO-UgiOn2HRVUeARElowGKom3zw-W48z3ku0sw6yfk_y1B5Glic9Z3uZ3k7SGinY_EEQs4hebnFzs6shos"/>
+</div>
+<span class="text-label-sm font-label-sm text-on-surface-variant">Liked by 8 friends</span>
+</div>
+<h4 class="font-headline-md text-body-lg text-on-surface font-semibold truncate">AeroStep Pro Runners</h4>
+<div class="flex items-center gap-3 mt-1">
+<span class="text-primary font-bold text-label-lg">$180.00</span>
+<span class="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Price Drop</span>
+</div>
+</div>
+<button class="w-12 h-12 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center flex-shrink-0 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full h-20 px-4 flex justify-around items-center pb-safe bg-surface/90 dark:bg-surface-container-lowest/90 backdrop-blur-xl z-50 rounded-t-xl shadow-[0_-4px_16px_rgba(0,0,0,0.05)] dark:shadow-none">
+<a class="flex flex-col items-center justify-center text-on-secondary-fixed-variant hover:bg-secondary-container/50 rounded-xl px-4 py-2 transition-all active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="list_alt">list_alt</span>
+<span class="font-label-sm text-label-sm mt-1">Wishlists</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-secondary-fixed-variant hover:bg-secondary-container/50 rounded-xl px-4 py-2 transition-all active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="font-label-sm text-label-sm mt-1">Activity</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-secondary-fixed-variant hover:bg-secondary-container/50 rounded-xl px-4 py-2 transition-all active:scale-90" href="#">
+<span class="material-symbols-outlined text-primary scale-125" data-icon="add_circle">add_circle</span>
+<span class="font-label-sm text-label-sm mt-1">Add</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary font-bold after:content-[''] after:w-1 after:h-1 after:bg-primary after:rounded-full after:mt-1 hover:bg-secondary-container/50 rounded-xl px-4 py-2 transition-all active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="auto_awesome" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<span class="font-label-sm text-label-sm mt-1">Inspiration</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-secondary-fixed-variant hover:bg-secondary-container/50 rounded-xl px-4 py-2 transition-all active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="card_giftcard">card_giftcard</span>
+<span class="font-label-sm text-label-sm mt-1">Find Gift</span>
+</a>
+</nav>
+<script>
+        // Simple micro-interaction for wishlist buttons
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                if(this.innerText.includes('Wishlist') || this.querySelector('[data-icon="favorite"]')) {
+                    const icon = this.querySelector('.material-symbols-outlined');
+                    if(icon) {
+                        icon.style.fontVariationSettings = "'FILL' 1";
+                        this.classList.add('scale-110');
+                        setTimeout(() => this.classList.remove('scale-110'), 200);
+                    }
+                }
+            });
+        });
+
+        // Add scroll animation reveal effect
+        const observerOptions = {
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('opacity-100', 'translate-y-0');
+                    entry.target.classList.remove('opacity-0', 'translate-y-10');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('section').forEach(section => {
+            section.classList.add('transition-all', 'duration-700', 'opacity-0', 'translate-y-10');
+            observer.observe(section);
+        });
+    </script>
+</body></html>

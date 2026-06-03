@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Aura Wish - Inspiration</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed-variant": "#454748",
+                        "on-tertiary-fixed-variant": "#474649",
+                        "on-secondary": "#ffffff",
+                        "surface-container-low": "#f4f3f8",
+                        "on-background": "#1a1b1f",
+                        "tertiary": "#5f5e60",
+                        "on-error": "#ffffff",
+                        "secondary-fixed": "#e1e3e4",
+                        "on-tertiary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-container": "#a4a2a4",
+                        "on-tertiary-fixed": "#1b1b1d",
+                        "on-primary-fixed-variant": "#004f57",
+                        "on-error-container": "#93000a",
+                        "surface-tint": "#006973",
+                        "surface-dim": "#dad9df",
+                        "primary-fixed": "#90f1ff",
+                        "surface-variant": "#e3e2e7",
+                        "tertiary-fixed-dim": "#c8c6c8",
+                        "on-secondary-container": "#626566",
+                        "error-container": "#ffdad6",
+                        "surface-container-highest": "#e3e2e7",
+                        "background": "#faf9fe",
+                        "tertiary-fixed": "#e4e2e4",
+                        "secondary-container": "#e1e3e4",
+                        "primary-container": "#2fb2c1",
+                        "surface-bright": "#faf9fe",
+                        "inverse-on-surface": "#f1f0f5",
+                        "outline-variant": "#bcc9cb",
+                        "inverse-surface": "#2f3034",
+                        "on-tertiary-container": "#39393b",
+                        "outline": "#6d797b",
+                        "surface-container": "#eeedf3",
+                        "surface-container-high": "#e9e7ed",
+                        "inverse-primary": "#5fd7e6",
+                        "secondary-fixed-dim": "#c5c7c8",
+                        "on-surface": "#1a1b1f",
+                        "surface": "#faf9fe",
+                        "on-primary": "#ffffff",
+                        "primary": "#006973",
+                        "primary-fixed-dim": "#5fd7e6",
+                        "on-surface-variant": "#3d494b",
+                        "secondary": "#5c5f60",
+                        "on-secondary-fixed": "#191c1d",
+                        "on-primary-container": "#003f46",
+                        "on-primary-fixed": "#001f23"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "12px",
+                        "2xl": "24px",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "lg": "24px",
+                        "2xl": "48px",
+                        "md": "16px",
+                        "margin-mobile": "20px",
+                        "gutter": "16px",
+                        "xs": "4px",
+                        "base": "4px",
+                        "xl": "32px",
+                        "sm": "8px",
+                        "margin-desktop": "64px"
+                    },
+                    "fontFamily": {
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "display-lg": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "label-lg": ["14px", {"lineHeight": "20px", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["22px", {"lineHeight": "28px", "fontWeight": "700"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                        "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .glass-nav { backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen pb-24">
+<!-- Top App Bar -->
+<header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-md">
+<div class="flex justify-between items-center px-margin-mobile md:px-margin-desktop h-16 w-full max-w-7xl mx-auto">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-on-primary shadow-sm">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">cloud</span>
+</div>
+<h1 class="font-display-lg text-display-lg text-primary tracking-tight">Aura Wish</h1>
+</div>
+<div class="flex items-center gap-3">
+<button class="w-10 h-10 rounded-full flex items-center justify-center bg-surface-container-low hover:bg-surface-container-high transition-colors active:scale-95">
+<span class="material-symbols-outlined text-on-surface-variant">person_add</span>
+</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center bg-surface-container-low hover:bg-surface-container-high transition-colors active:scale-95">
+<span class="material-symbols-outlined text-on-surface-variant">notifications</span>
+</button>
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-container">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="A professional close-up portrait of a woman with a warm, friendly smile and long brown hair, set against a soft, out-of-focus natural background. The lighting is bright and airy, reflecting a modern light-mode interface aesthetic. The image is clean and high-quality, fitting a premium lifestyle application brand." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwco6xLnZvGXXFx5R_Pxi5szGNkNVGLzLEKyf-70O3n4ZRP9zmmyAg4BKd2Jg3RGlotpWoLoo3x2-nw0KnqBVCYPeAIqwrGWVA0CiVjLVtNBSKOtQYAvwB6QGE8H0nNiVNRHiKSTTfnsbpIfDNPG9bD4HC-_0aOGTOYnDIa5OdBE_Kn_iH16Z8thef98vpRpNCKmk-6VFsgycWQX845nFnl2cjQqzK8dBFrM9pF7B5tl7JNPFLHJkBemmLQ8IkXAhWTqk93Vz0Bt8"/>
+</div>
+</div>
+</div>
+</header>
+<main class="pt-20 px-margin-mobile md:px-margin-desktop max-w-7xl mx-auto">
+<!-- Search & Filter Section -->
+<section class="mt-lg">
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-4 text-on-surface-variant">search</span>
+<input class="w-full bg-surface-container text-on-surface-variant border-none rounded-2xl py-4 pl-12 pr-4 focus:ring-2 focus:ring-primary transition-all placeholder:text-on-surface-variant/60" placeholder="Search for gifts, stores, or brands" type="text"/>
+</div>
+<!-- Category Chips -->
+<div class="flex gap-3 mt-md overflow-x-auto no-scrollbar pb-2">
+<button class="px-6 py-2 rounded-full bg-primary text-on-primary font-label-lg whitespace-nowrap">All</button>
+<button class="px-6 py-2 rounded-full bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest transition-colors font-label-lg whitespace-nowrap">Creators</button>
+<button class="px-6 py-2 rounded-full bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest transition-colors font-label-lg whitespace-nowrap">Products</button>
+<button class="px-6 py-2 rounded-full bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest transition-colors font-label-lg whitespace-nowrap">Trending</button>
+<button class="px-6 py-2 rounded-full bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest transition-colors font-label-lg whitespace-nowrap">Electronics</button>
+<button class="px-6 py-2 rounded-full bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest transition-colors font-label-lg whitespace-nowrap">Home</button>
+</div>
+</section>
+<!-- Featured Section: Products for you -->
+<section class="mt-xl">
+<div class="flex justify-between items-center mb-md">
+<h2 class="font-headline-md text-headline-md text-on-surface">Products for you</h2>
+<button class="text-primary flex items-center gap-1 font-label-lg hover:underline transition-all">
+                    See all <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-gutter">
+<!-- Product Card 1 -->
+<div class="group">
+<div class="relative bg-white rounded-2xl aspect-square overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.04)] transition-transform duration-300 group-hover:scale-[1.02]">
+<img alt="Radiation Tee" class="w-full h-full object-cover" data-alt="A high-quality minimalist product shot of a black designer t-shirt with a vibrant pink graphic on a clean white background. The lighting is soft and even, highlighting the fabric texture and modern design. The composition is centered, creating a premium lifestyle feel for a wishlist application." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB8fdQ6V2wDh_u_p5meFjEOk320hW4O-oowgWIVtKt5P9jq2rPkFHtqJ2QynZAG1yJpbfA87Fp4s5DtvrsPJ0A7SB-th1PtZ0pmwb0HC7vdDO70BcGVc0daCx8u2VnU_XLOU_I5CG-Ap5GQl_KIGe0x51J3U4madevTGlcjz_QcCkYyBxA6kiAVx10q5JPUTXaw9MFD7xucfASY0cxAVC7D5U9RHypecHjCUTg-U6BCheirfBrA2qxNwS3amIu5c7rNmYXn3uU2iV4"/>
+<button class="absolute bottom-3 right-3 w-10 h-10 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all active:scale-90">
+<span class="material-symbols-outlined text-[20px]">cloud_download</span>
+</button>
+</div>
+<div class="mt-3">
+<h3 class="font-label-lg text-label-lg text-on-surface uppercase tracking-wider">RADIATION TEE</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">$49.99</p>
+</div>
+</div>
+<!-- Product Card 2 -->
+<div class="group">
+<div class="relative bg-white rounded-2xl aspect-square overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.04)] transition-transform duration-300 group-hover:scale-[1.02]">
+<img alt="Beauty Primer" class="w-full h-full object-cover" data-alt="A professional cosmetic product shot of a sleek tube of skin primer on a soft blue and white gradient background. The lighting is editorial and bright, with subtle reflections on the packaging. The image conveys a sense of luxury and personal care, fitting for a modern inspiration feed." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvY05H5ZpS0ja2R5LuPVmrvKHP3lSRE0OwfoHCOPYmbn2P9PY-UFHDQq-ZpFpggoggy80nzHz3q71gDWrnRkVeL_fDUhcEDrVefLd6QhZzdeDb3MWGVafQBB0UvfbFm0rKWa0wKzhuIlLAVY75bw8tm5Mk1LMfETQWNIzh4dljrHjhp29wSmERQnpG-u8gPX7jDuAQHAuvDXkyYhb5LDJm7SKjoE-E2JN-RabTAKdXts9LDz53SiiTTcfzPby4fAWgVSj6vdvTjRg"/>
+<button class="absolute bottom-3 right-3 w-10 h-10 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all active:scale-90">
+<span class="material-symbols-outlined text-[20px]">cloud_download</span>
+</button>
+</div>
+<div class="mt-3">
+<h3 class="font-label-lg text-label-lg text-on-surface uppercase tracking-wider">e.l.f. Power Grip</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">$11.99</p>
+</div>
+</div>
+<!-- Product Card 3 (Desktop Only/Hidden on smallest) -->
+<div class="group hidden md:block">
+<div class="relative bg-white rounded-2xl aspect-square overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.04)] transition-transform duration-300 group-hover:scale-[1.02]">
+<img alt="Modern Watch" class="w-full h-full object-cover" data-alt="An elegant, minimalist white wristwatch with a light tan leather strap, displayed against a bright, airy background with soft shadows. The lighting is natural and high-key, emphasizing a clean and sophisticated aesthetic. Perfect for a curated gift wishlist platform targeting young professionals." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLQ0SJK0soha9lQgl_VTaplgfSyWaYAK2Cnxj58B0LFrnZI0o3zgXBOh744wN_Ce-27Yy-O6TBCwgewsbBpTeoHAOxjTJljAZSrsoyBS9ETlXbHOZHzJEsPq-yAxmJEMYJceQIUzuCz3DnDRsF813-qcHWbkt-VSMUCX45OmLs4gWl4iU5wK57xxrQZAN4GSBqovITm5EGIHUPidlBv4r94eZBrCMh8QM2WFHwH-Pt26eqCajqwpeozZZKwU_x4TE0cQKkny9zFBc"/>
+<button class="absolute bottom-3 right-3 w-10 h-10 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all active:scale-90">
+<span class="material-symbols-outlined text-[20px]">cloud_download</span>
+</button>
+</div>
+<div class="mt-3">
+<h3 class="font-label-lg text-label-lg text-on-surface uppercase tracking-wider">Timeless Chrono</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">$189.00</p>
+</div>
+</div>
+<!-- Product Card 4 (Desktop Only) -->
+<div class="group hidden md:block">
+<div class="relative bg-white rounded-2xl aspect-square overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.04)] transition-transform duration-300 group-hover:scale-[1.02]">
+<img alt="Sneakers" class="w-full h-full object-cover" data-alt="A side view of a vibrant red performance sneaker on a stark white background. The lighting is crisp and detailed, showcasing the high-tech materials and sleek silhouette. The composition is modern and energetic, designed to inspire gift-giving for sports enthusiasts." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAhoyb9lfImXmUHPGUuso5KDmYWArrDGa_xxsiJYKcsbojwjXJNilBus3yUqJsnIurEHGp0mKBGlI9YsZKpkBhayWSyUmWFFnUiMH_J00yakmjk_p3Vy5IbkqYWHA0ls79zUn63y34fOUqhdF6Z4a694vkhziA6ukBizG2knuVKjlu4XK2RtDJ5XjMDDmNRxUnN0-W4_XIk2TYU-tB1bue7HCuT77ysYZTH6OHUhn539zyWxebSQHjrOrkvj6jLX4fB0KAYtCYrIEw"/>
+<button class="absolute bottom-3 right-3 w-10 h-10 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all active:scale-90">
+<span class="material-symbols-outlined text-[20px]">cloud_download</span>
+</button>
+</div>
+<div class="mt-3">
+<h3 class="font-label-lg text-label-lg text-on-surface uppercase tracking-wider">Velocity Runners</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">$120.00</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Trending Categories Bento Grid -->
+<section class="mt-xl">
+<div class="flex justify-between items-center mb-md">
+<h2 class="font-headline-md text-headline-md text-on-surface">Trending now</h2>
+<button class="text-primary flex items-center gap-1 font-label-lg hover:underline transition-all">
+                    Explore more <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter h-auto md:h-80">
+<!-- Large Featured Category -->
+<div class="relative group overflow-hidden rounded-2xl md:col-span-1 shadow-lg cursor-pointer">
+<img alt="Jewelry Category" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" data-alt="A luxurious close-up of a smiling woman wearing elegant gold earrings and a necklace. The scene is bathed in warm, golden hour sunlight, creating a dreamy and optimistic atmosphere. The visual style is editorial fashion photography, emphasizing beauty and personal expression in a modern lifestyle app." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDam005KvJ5SYDG4rBc4ieO2DxZkCFw-Bz0nPzEjA_HhZfM_bJVtEiXnxXrKqcHDGuGH5b-LSJxw-oLw24DtUviOqo4P457MSvU9IET_cBRSUJSGITr9pX4Ve14ktrNP17vlq3bv4cnlPl9V8_ijmGGa1HGYu8b9kHcVN_-nnZTcAqyHVu8vSkJL5YpCndLcFq0L1ajo1-stE4qS2F26fVAVF-DmgWCfoF_kflOUvs4D79kX14-AhNOgQhRce3VICTPSV9vHuRG9V8"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+<div class="absolute bottom-6 left-6 text-white">
+<h4 class="font-headline-lg text-headline-lg mb-1">Jewelry</h4>
+<div class="flex items-center gap-2 opacity-80">
+<div class="w-5 h-5 rounded-full bg-white flex items-center justify-center">
+<span class="material-symbols-outlined text-[12px] text-primary" style="font-variation-settings: 'FILL' 1;">stars</span>
+</div>
+<span class="font-label-sm uppercase tracking-widest">Sponsoreret</span>
+</div>
+</div>
+</div>
+<!-- Second Featured Category -->
+<div class="relative group overflow-hidden rounded-2xl md:col-span-1 shadow-lg cursor-pointer">
+<img alt="Sneakers Category" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" data-alt="A dynamic shot of premium high-top sneakers in white and black. The shoes are staged in a minimalist, architectural setting with sharp shadows and bright highlights. The mood is urban and trendy, fitting for a curated 'trending' section in a high-end UI design." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBBMH_AAZMiQBHKlRGZWf_baM3smA0r89NFyz3dfcd_SUck8wzblzOaLSLA4h3YPJdQmizmIFnwSIeKXw_4ILX4blAKtvoen5MBB-aXeO_XiIvrjMXzatMpDD8dxZ7il0xQI-aitFa5bB9LLXVZVQfz6t_7o7PoN3BZJe598z8VDV-3bZ3bCyrO6ooZD50Fev-13xgJTRNaOpCeF2GbngUGao5XkQNtOtVnnwl8Q0l0uVwKTQSGWhzsjhyxe1Hno0PBEasJYSPcxfo"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+<div class="absolute bottom-6 left-6 text-white">
+<h4 class="font-headline-lg text-headline-lg mb-1">Sneakers</h4>
+<div class="flex items-center gap-2 opacity-80">
+<div class="w-5 h-5 rounded-full bg-white flex items-center justify-center">
+<span class="material-symbols-outlined text-[12px] text-primary" style="font-variation-settings: 'FILL' 1;">bolt</span>
+</div>
+<span class="font-label-sm uppercase tracking-widest">Trending now</span>
+</div>
+</div>
+</div>
+<!-- Third Featured Category -->
+<div class="relative group overflow-hidden rounded-2xl md:col-span-1 shadow-lg cursor-pointer">
+<img alt="Tech Category" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" data-alt="A sleek and modern technology setup featuring premium aluminum laptops and tablets in a bright, sunlit workspace. The lighting is clean and emphasizes high-quality materials and professional design. The aesthetic is sophisticated and minimalist, reflecting a 'gift ideas for tech lovers' theme." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD2HKi8PjFPxNN9NoJYBU9uNNzb7IbIYsBCrGzufn7x8-Rgu1mG1qPbXDbXTPkRIHTZjJbr1ukA4Jl_fpPIo_wg0hYDm323C3Cm44H4bR4kQaFrzAz0L3sNCNXh-Mwf01b8n4r-Av2ZIdU8opJcjfV4iL0v8XIChQQqNmOsmMYDas9FUphD8MhWns_Dc7VCrZD6t45bqvXmSxwLhqyc79z0er46NniQdvGmluPZqcn30r7UG3RjXGeMaMxUR6j5YzkDVv3bPXQ2GyI"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+<div class="absolute bottom-6 left-6 text-white">
+<h4 class="font-headline-lg text-headline-lg mb-1">Tech Gadgets</h4>
+<div class="flex items-center gap-2 opacity-80">
+<div class="w-5 h-5 rounded-full bg-white flex items-center justify-center">
+<span class="material-symbols-outlined text-[12px] text-primary" style="font-variation-settings: 'FILL' 1;">devices</span>
+</div>
+<span class="font-label-sm uppercase tracking-widest">Top Rated</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Popular Wishes Grid (Vertical Cards) -->
+<section class="mt-xl mb-32">
+<div class="flex justify-between items-center mb-md">
+<div class="flex items-center gap-4">
+<h2 class="font-headline-md text-headline-md text-on-surface">Popular wishes</h2>
+<div class="flex gap-2">
+<select class="bg-surface-container-high border-none rounded-lg font-label-sm py-1 pl-2 pr-8 text-on-surface-variant focus:ring-1 focus:ring-primary">
+<option>Female</option>
+<option>Male</option>
+<option>Unisex</option>
+</select>
+<select class="bg-surface-container-high border-none rounded-lg font-label-sm py-1 pl-2 pr-8 text-on-surface-variant focus:ring-1 focus:ring-primary">
+<option>21 years</option>
+<option>18-25</option>
+<option>25-40</option>
+</select>
+</div>
+</div>
+<button class="w-10 h-10 rounded-full flex items-center justify-center bg-surface-container-low hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant">share</span>
+</button>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-gutter">
+<!-- Popular Item 1 -->
+<div class="bg-surface-container-lowest p-3 rounded-2xl shadow-sm hover:shadow-md transition-shadow group">
+<div class="relative bg-surface rounded-xl overflow-hidden aspect-[4/5] mb-3">
+<img alt="Polaroid Camera" class="w-full h-full object-cover" data-alt="A vintage-style pink instant film camera placed on a soft, monochromatic pastel background. The lighting is diffused and gentle, creating a playful and creative mood. The image is clean and focused, perfect for a digital gift inspiration catalog targeted at a youthful audience." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxK5JXA7416P_hgJ6j-4OME1pYlhN642VEpCXSxItyIHT7SMLNpwCjm3yTgMigeAXAOwttrr94USR5oymnEsoKeFnPW_FTLTdQsPMymiTuUm7VrQTbEyiOK-NWeoILIv1AY400S9Ga6mmiwuVD1aYAUuMMK0D9Q5p0t879GqzL5dqEZizhBDyq7fKWYMUsD9OY08EGU0ODNnOtWIz5IhUU7Pf6GSrmA7MCLTcef0hNbmy-x9_K6jme1tbz82Di9W0bgjDd76fSmgc"/>
+<button class="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-white/95 shadow-sm flex items-center justify-center text-primary active:scale-90">
+<span class="material-symbols-outlined text-[18px]">add</span>
+</button>
+</div>
+<h3 class="font-label-lg text-on-surface line-clamp-1">Retro Instant Camera</h3>
+<p class="font-body-md text-on-surface-variant">$49.99</p>
+</div>
+<!-- Popular Item 2 -->
+<div class="bg-surface-container-lowest p-3 rounded-2xl shadow-sm hover:shadow-md transition-shadow group">
+<div class="relative bg-surface rounded-xl overflow-hidden aspect-[4/5] mb-3">
+<img alt="Water Bottle" class="w-full h-full object-cover" data-alt="A sleek, modern insulated water bottle in a matte pastel blue finish. It is standing upright in a brightly lit, minimalist studio setting with soft directional shadows. The image emphasizes functionality and style, ideal for a modern wellness and lifestyle application." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBBj0Y6n_6nPuezvpOhDJgCj97EXfW_6egmwyAt-4fJt52HbhfqYU1EXofq2jYltCJsM7JXRdjm6INYJ7lhq2U5wolP2mguD7vkTOhEFUekp2hql-SXGsrcSMq8g7nWjKMmNVA62haxkrfRW6c-drumFMMbI4wJVerofPFEbAVyYtvzVzJ6dSbs0mLh_KbT-5q1FL2bkdX6WDIoQQ1Dc48eMSdDO4bLowIy01Isc5yhK9O83dVGU_c3vQoGCJ7xe7B86OuC4Jb6mII"/>
+<button class="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-white/95 shadow-sm flex items-center justify-center text-primary active:scale-90">
+<span class="material-symbols-outlined text-[18px]">add</span>
+</button>
+</div>
+<h3 class="font-label-lg text-on-surface line-clamp-1">Thermal Oasis Flask</h3>
+<p class="font-body-md text-on-surface-variant">$34.99</p>
+</div>
+<!-- Popular Item 3 -->
+<div class="bg-surface-container-lowest p-3 rounded-2xl shadow-sm hover:shadow-md transition-shadow group">
+<div class="relative bg-surface rounded-xl overflow-hidden aspect-[4/5] mb-3">
+<img alt="Sweatpants" class="w-full h-full object-cover" data-alt="High-quality lifestyle photograph of comfortable light-gray fleece sweatpants hanging in a bright, modern closet. The fabric texture is clearly visible, illuminated by soft natural light. The mood is cozy and high-end, representing luxury loungewear for a gift wishlist." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDY7gTfvFTGmnAp6qBIF-tow8V2lXRMssQDxIJQh_0e-ldfoajPgJBtmiZ3VCnLc9X7IelaCGZizxrLfZToebCeEQA_01VbZyGe84Sfbn67UF2quKqzN7V-09zTr41saV430SD5SdkUzx2R0GB6zRlcbMClLw2vWgCycIBEb__EsrTxk0WCPOSwxgKI-QOS28mH3FgK53D_y6Yau_G_Qx0WJusw_qPws6LdObn52pFf95mhlw0arFrNYYawg19_mI0bCLLg8xn5HTc"/>
+<button class="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-white/95 shadow-sm flex items-center justify-center text-primary active:scale-90">
+<span class="material-symbols-outlined text-[18px]">add</span>
+</button>
+</div>
+<h3 class="font-label-lg text-on-surface line-clamp-1">Club Fleece Pants</h3>
+<p class="font-body-md text-on-surface-variant">$60.00</p>
+</div>
+<!-- Popular Item 4 -->
+<div class="bg-surface-container-lowest p-3 rounded-2xl shadow-sm hover:shadow-md transition-shadow group">
+<div class="relative bg-surface rounded-xl overflow-hidden aspect-[4/5] mb-3">
+<img alt="Beauty Organizer" class="w-full h-full object-cover" data-alt="A clean, organized vanity featuring a crystal-clear rotating makeup organizer filled with premium skincare and cosmetic products. The scene is bright and airy with high-key lighting, creating a sense of luxury and order. Perfect for inspiring organizational and beauty gift ideas." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCuDQw7CLny4mr0hQI6TCimS4rQpF4hRH7zN5Qb3wq_Z7aTAGHLhBnNRJYqPbUzYU-BXQ5dR9ObbG4KC4CE0gr_NPfO_szorKjy21uCy0RwZFb4lMtFMEVUBzhfHMb7AS11_d3Hep9-Wk4A5GOD_PbiSKY_xLIARqpRXHcSB7oUSq4RRDm5inD7Py7wld3gibA1QhfbDcUlhcboMrN1dUqGCZfR5TeKXjQTjN4ygtoZjV47ZlzoZvyYmu3_YZGrH3lCdcTKgJmBcRw"/>
+<button class="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-white/95 shadow-sm flex items-center justify-center text-primary active:scale-90">
+<span class="material-symbols-outlined text-[18px]">add</span>
+</button>
+</div>
+<h3 class="font-label-lg text-on-surface line-clamp-1">360 Rotating Vanity</h3>
+<p class="font-body-md text-on-surface-variant">$17.99</p>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Nav Bar -->
+<nav class="fixed bottom-0 left-0 w-full h-20 px-4 flex justify-around items-center pb-safe bg-surface/90 dark:bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_-4px_16px_rgba(0,0,0,0.05)] z-50 rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-secondary-fixed-variant hover:bg-secondary-container/50 rounded-xl transition-all px-4 py-2" href="#">
+<span class="material-symbols-outlined">list_alt</span>
+<span class="font-label-sm text-label-sm">Wishlists</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-secondary-fixed-variant hover:bg-secondary-container/50 rounded-xl transition-all px-4 py-2" href="#">
+<span class="material-symbols-outlined">notifications</span>
+<span class="font-label-sm text-label-sm">Activity</span>
+</a>
+<!-- Center Action FAB -->
+<button class="relative -top-6 w-14 h-14 rounded-full bg-primary-container text-on-primary-container shadow-lg flex items-center justify-center active:scale-90 transition-transform duration-300">
+<span class="material-symbols-outlined text-[32px]" style="font-variation-settings: 'FILL' 1;">add_circle</span>
+</button>
+<a class="flex flex-col items-center justify-center text-primary font-bold after:content-[''] after:w-1 after:h-1 after:bg-primary after:rounded-full after:mt-1 hover:bg-secondary-container/50 rounded-xl transition-all px-4 py-2" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<span class="font-label-sm text-label-sm">Inspiration</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-secondary-fixed-variant hover:bg-secondary-container/50 rounded-xl transition-all px-4 py-2" href="#">
+<span class="material-symbols-outlined">card_giftcard</span>
+<span class="font-label-sm text-label-sm">Find Gift</span>
+</a>
+</nav>
+<script>
+        // Micro-interactions and subtle effects
+        document.querySelectorAll('a, button').forEach(el => {
+            el.addEventListener('touchstart', function() {
+                this.classList.add('opacity-70');
+            });
+            el.addEventListener('touchend', function() {
+                this.classList.remove('opacity-70');
+            });
+        });
+
+        // Simple scroll reveal for cards
+        const observerOptions = {
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('opacity-100', 'translate-y-0');
+                    entry.target.classList.remove('opacity-0', 'translate-y-4');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.group, .bg-surface-container-lowest').forEach(card => {
+            card.classList.add('transition-all', 'duration-500', 'opacity-0', 'translate-y-4');
+            observer.observe(card);
+        });
+    </script>
+</body></html>

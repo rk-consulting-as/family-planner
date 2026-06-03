@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary": "#5c5f60",
+                    "on-secondary-container": "#626566",
+                    "error": "#ba1a1a",
+                    "background": "#faf9fe",
+                    "inverse-surface": "#2f3034",
+                    "error-container": "#ffdad6",
+                    "surface-dim": "#dad9df",
+                    "surface-container-high": "#e9e7ed",
+                    "secondary-fixed-dim": "#c5c7c8",
+                    "tertiary-container": "#a4a2a4",
+                    "on-primary-fixed-variant": "#004f57",
+                    "surface-container-highest": "#e3e2e7",
+                    "on-surface": "#1a1b1f",
+                    "secondary-fixed": "#e1e3e4",
+                    "on-secondary-fixed-variant": "#454748",
+                    "tertiary-fixed": "#e4e2e4",
+                    "primary-fixed": "#90f1ff",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-tint": "#006973",
+                    "on-primary-fixed": "#001f23",
+                    "outline": "#6d797b",
+                    "inverse-on-surface": "#f1f0f5",
+                    "surface-container-low": "#f4f3f8",
+                    "primary-container": "#2fb2c1",
+                    "inverse-primary": "#5fd7e6",
+                    "surface-container": "#eeedf3",
+                    "secondary-container": "#e1e3e4",
+                    "primary": "#006973",
+                    "surface-variant": "#e3e2e7",
+                    "on-tertiary-fixed-variant": "#474649",
+                    "on-secondary-fixed": "#191c1d",
+                    "on-surface-variant": "#3d494b",
+                    "on-primary-container": "#003f46",
+                    "surface-bright": "#faf9fe",
+                    "tertiary": "#5f5e60",
+                    "on-error-container": "#93000a",
+                    "on-primary": "#ffffff",
+                    "tertiary-fixed-dim": "#c8c6c8",
+                    "on-background": "#1a1b1f",
+                    "outline-variant": "#bcc9cb",
+                    "on-secondary": "#ffffff",
+                    "surface": "#faf9fe",
+                    "on-tertiary-container": "#39393b",
+                    "on-tertiary-fixed": "#1b1b1d",
+                    "on-error": "#ffffff",
+                    "primary-fixed-dim": "#5fd7e6",
+                    "on-tertiary": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "lg": "24px",
+                    "2xl": "48px",
+                    "md": "16px",
+                    "gutter": "16px",
+                    "xs": "4px",
+                    "base": "4px",
+                    "xl": "32px",
+                    "sm": "8px",
+                    "margin-desktop": "64px",
+                    "margin-mobile": "20px"
+            },
+            "fontFamily": {
+                    "label-sm": ["Plus Jakarta Sans"],
+                    "label-lg": ["Plus Jakarta Sans"],
+                    "headline-md": ["Plus Jakarta Sans"],
+                    "display-lg": ["Plus Jakarta Sans"],
+                    "headline-lg": ["Plus Jakarta Sans"],
+                    "headline-lg-mobile": ["Plus Jakarta Sans"],
+                    "body-md": ["Plus Jakarta Sans"],
+                    "body-lg": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "label-lg": ["14px", {"lineHeight": "20px", "fontWeight": "600"}],
+                    "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "headline-lg-mobile": ["22px", {"lineHeight": "28px", "fontWeight": "700"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface min-h-screen">
+<!-- Top App Bar -->
+<header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-md">
+<div class="flex justify-between items-center px-margin-mobile md:px-margin-desktop h-16 w-full max-w-7xl mx-auto">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center overflow-hidden">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="A clean, professional close-up portrait of a diverse, smiling individual against a soft-focus studio background. The lighting is bright and airy, matching a high-end minimalist UI aesthetic. The color palette is neutral with soft warmth, emphasizing a friendly and approachable user persona for a premium lifestyle application." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAvJ4027JeMuSbAE7LW7kth-zr21vn1y1vE3HWPMMJKGslEcSgM0JFTUDCmq_LZntWV9ov3i_2L1C-5ML9AhMyqcgqzM2sl3uFqPWlNjPjzuI5LNBvWn4byb0PQwag4SGGtLEiuvYgkAn-jxdsGo_P9QKr0K8TVuXxIvYoTydywFIf4C3ap5e2j7robyM60aK7FBCkGs75pkpLLm0KrJwUU04o5XjP56A9-qE7R7eLPjY2HYumm58TX_hru8dAER389RaX4owuqGZU"/>
+</div>
+<h1 class="font-display-lg text-display-lg text-primary tracking-tight">Aura Wish</h1>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-low transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined text-primary">notifications</span>
+</button>
+</div>
+</header>
+<main class="pt-24 pb-32 px-margin-mobile md:px-margin-desktop max-w-7xl mx-auto">
+<!-- Search & Header Section -->
+<section class="mb-xl">
+<div class="flex flex-col gap-md">
+<h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface">Explore Brands</h2>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-2xl">Discover iconic collections and curate your wishlist with the brands that inspire you most.</p>
+<div class="relative mt-md group">
+<div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline">search</span>
+</div>
+<input class="w-full h-14 pl-12 pr-4 bg-surface-container-low border-none rounded-xl font-body-lg text-body-lg focus:ring-2 focus:ring-primary-container transition-all placeholder:text-outline-variant" placeholder="Search brands, styles, or collections..." type="text"/>
+<button class="absolute right-3 top-2 px-4 h-10 bg-primary text-on-primary rounded-lg font-label-lg text-label-lg hover:shadow-lg transition-all active:scale-95">Find</button>
+</div>
+</div>
+</section>
+<!-- Trending Categories (Horizontal Scroll) -->
+<section class="mb-xl">
+<div class="flex items-center justify-between mb-md">
+<h3 class="font-headline-md text-headline-md">Inspiration Hub</h3>
+<button class="text-primary font-label-lg text-label-lg hover:underline">See all</button>
+</div>
+<div class="flex overflow-x-auto gap-md pb-xs hide-scrollbar">
+<div class="flex-shrink-0 w-64 h-40 rounded-[24px] relative overflow-hidden glass-card shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
+<img class="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-80 group-hover:scale-105 transition-transform duration-500" data-alt="A dynamic, high-contrast shot of a sleek Nike running shoe suspended in mid-air against a clean white and teal gradient background. The lighting is crisp and editorial, highlighting the textures of the fabric and the curve of the sole. The overall mood is athletic, optimistic, and high-performance, fitting a modern minimalist lifestyle brand guide." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBJ1U7PESdvwy-Qu1FcB8zokbrxAYcrwUkKLxGebYIgHugpyD8ZNojLHqvmB4IXW7KuoQWACz_DjaQOo_KW2SSpZQSlXWP4cZyt9aaNy8uMMUxLOE9EpKLU00eoxTP1vUeq3X8j69ij77rqF2FN98Nf4_BHAw9oKq6AH5RJzbWkNNxBfA5eWuPdmDKhvvXr4ctgMnSlN8YZWbKVYBlMzaJAuRfQ6SrTZ0a8_r6IDcdb7_rxYXT8oug5MZoHIhuyiW1jWxLq2m7RjOU"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+<div class="absolute bottom-4 left-4">
+<span class="font-label-sm text-label-sm text-white/80 uppercase tracking-widest">Featured</span>
+<p class="font-headline-md text-headline-md text-white">Active Essentials</p>
+</div>
+</div>
+<div class="flex-shrink-0 w-64 h-40 rounded-[24px] relative overflow-hidden glass-card shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
+<img class="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-80 group-hover:scale-105 transition-transform duration-500" data-alt="A minimalist overhead shot of tech accessories including a modern laptop, white wireless earbuds, and a clean leather wallet on a soft gray surface. The aesthetic is extremely clean with a cool-toned color palette and soft ambient lighting. This visual represents luxury tech and modern productivity essentials within a bright, airy digital environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDPI7WluAGMYwRc1dsbrLVrxJJ4wcbia_JRNfDfMiamsYMNzXYu5FlkCB0SCWicC0DsJ2DG-j-LSXtCnE2XCW5Jq4vuL8mLrgi90AptoS5s_FtuHXOTeXF1Gswf_DtGqK-xRmcVXdMzXIbbwukDYt-9D98Jo_d6J_shbEdUKXcO7hChJG2bllI86A7ZEAPvSIw7RgbpCRL6fv2jFnp840I63FdzHHDXH1vGLhrJCvvdpFbvCZ997kyEhvFSfsZ15AB4RZomtcjoxyA"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+<div class="absolute bottom-4 left-4">
+<span class="font-label-sm text-label-sm text-white/80 uppercase tracking-widest">Trending</span>
+<p class="font-headline-md text-headline-md text-white">Minimalist Tech</p>
+</div>
+</div>
+<div class="flex-shrink-0 w-64 h-40 rounded-[24px] relative overflow-hidden glass-card shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
+<img class="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-80 group-hover:scale-105 transition-transform duration-500" data-alt="A close-up artistic view of colorful plastic building blocks meticulously arranged into an abstract architectural structure. The lighting is soft and playful, with gentle shadows that create depth and a tactile feel. The color palette is vibrant yet sophisticated, embodying creativity and imaginative play for a curated gift-finding experience." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAOX4P2VkxdnUwl4hXCpblHpZ1Wo6iNB6ojoZaTfGJPizZJ7O-328fTk20aYRkTquIuaNVIC8xkmkcbMybZMHOvtmP2fcxjomu7ZepkmZm22Jt5FXSobM2zikh7RVBS5QQ_paEbR5YUc3Kf6HowOGruJdQUdeRzwtyU9X6gfc436oEIlRTiDevrr6Wbyx_2vsG6iUc6R8bGpP7vatoDAtiG_Cony5mworsNi0eXTtFrC2mipOKzj54liW1BhGNB4cF-vPPSEgBL8pw"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+<div class="absolute bottom-4 left-4">
+<span class="font-label-sm text-label-sm text-white/80 uppercase tracking-widest">New</span>
+<p class="font-headline-md text-headline-md text-white">Creative Play</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Brand Bento Grid -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-lg">
+<!-- Nike Card -->
+<article class="bg-surface-container-lowest rounded-[24px] overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col group border border-surface-container-high/50">
+<div class="h-48 relative bg-[#F6F6F6] flex items-center justify-center p-xl">
+<img alt="Nike" class="w-32 h-auto object-contain opacity-10 group-hover:scale-110 transition-transform duration-500 absolute" onerror="this.style.display='none'" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA_iXEndlZBMinZGtY95nk-VYAMk6gSqVZfnveQzVybGHUGlwu963XUnNUfVVUjZeJRg73P9cPsukQldA3RfQbwQVt-KSQE3NjNbVmJ5rBjq1nkT82-aZln4A6AdZS-X_zCjDSzT_zzZTw0C2bMV-Wt53sv5TPPHeAdNhqr_Lvi0ht6U6nj2qF9EU7hLIAc1yxZhtmesOo0H5evaCXIUUGrkMDmQ_sHcpvKFZl-WOqnX99vb37YFudf770zTL_9PjtCjvt_GsNbklw"/>
+<span class="font-display-lg text-display-lg text-primary/10 select-none">NIKE</span>
+<div class="absolute inset-0 flex items-center justify-center gap-md">
+<img class="w-24 h-24 rounded-2xl object-cover shadow-lg -rotate-12 group-hover:-rotate-6 transition-transform" data-alt="An editorial close-up of a stylish white sneaker with vibrant color accents, placed against a soft teal background. The lighting is bright and ethereal, casting very soft shadows to maintain an airy feel. The image represents modern urban fashion and premium athletic wear within a high-end wishlist application context." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAf29h7vk4S3M1SHG7Gxnj9_xzlveGH50Brp23xNEgY-6B0rO30a2YabjFMCuzSA_Zhpz_0pgZJbqvfDzL7VUERFNkVFexSpvCILO9Ys1Hu5nkbuqO6-zr-El_UTXbd4Nhz5fWjNpsLte5xCLb3x6TSxYOFEzqAMk5D8VmyGLl1GKN9gPycYPH-RFUGjsnyMnbaPiMv40qG1pR0H_xiL6C38SwL_Sgx8FqYNzQ-piVc3feHo7ecBl7f6kA5lQGvoyGKb4QZYyV0_Mg"/>
+<img class="w-24 h-24 rounded-2xl object-cover shadow-lg rotate-12 group-hover:rotate-6 transition-transform" data-alt="A high-quality product shot of a minimalist black and white sports cap resting on a clean, light-filled surface. The lighting is natural and diffuse, highlighting the fabric texture and the subtle branding. The composition is clean and focused, evoking a sense of effortless style and functional design." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDDNdQsREvAvXTSB_vIg1oOucuwmhTM_rxacxf6LYXFEJrKmsKTyO7jdvVcMf7pxFb8fmfTSFdq7mxd3esrYdQvLIQE_RLDD5dWdVfsBMxol1ZV4uX-_-Xaklt09IvgUZcsOHjbhYNn142uaODqjSP8yMYNdpkr9lslMc3WJEbp2X8hyqvacmh7-71-aFJ828I29YqV9Pbu0hvwHW4-qQsrkJaNXMxl2Vaoqu5JxdeDAxXF0U26ikT5fcddNvokSiIKcT34oBycmPA"/>
+</div>
+</div>
+<div class="p-md flex flex-col gap-xs">
+<div class="flex items-center justify-between">
+<h4 class="font-headline-md text-headline-md text-on-surface">Nike</h4>
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">The world's leading designer of athletic footwear, apparel, and equipment.</p>
+<div class="mt-md pt-md border-t border-surface-container flex justify-between items-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant">1.2k Wishlists</span>
+<button class="bg-secondary-container/50 hover:bg-secondary-container text-primary px-4 py-2 rounded-full font-label-lg text-label-lg transition-colors">Follow</button>
+</div>
+</div>
+</article>
+<!-- Apple Card -->
+<article class="bg-surface-container-lowest rounded-[24px] overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col group border border-surface-container-high/50">
+<div class="h-48 relative bg-slate-50 flex items-center justify-center p-xl">
+<span class="material-symbols-outlined text-[80px] text-on-surface/5 absolute">laptop_mac</span>
+<div class="absolute inset-0 flex items-center justify-center gap-md">
+<img class="w-32 h-20 rounded-xl object-cover shadow-lg -translate-y-2 group-hover:-translate-y-4 transition-transform" data-alt="A sleek silver laptop open on a white marble desk, illuminated by bright morning sunlight. The environment is extremely minimalist and clean, with a neutral color palette that emphasizes clarity and productivity. This visual represents luxury technology and modern workspace aesthetics within a high-end lifestyle app." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCDo0WkrLoP5BEet3knWcL4DgMCOv0ONddivfbZ2dGYgMVm5EcfsfjAPifMA6zf28SUVdX0bXEGxs0hcskndP9uUaTQBxruqz_mFEPcfkQzHreQAIEj7xsGkfWuoZfMgWVEXy872Ha33G_G7p2e1EPmt26_fi-Ir6xoFMBXnQGyKGxdezvaWJkqoWCXu7m0YwR88xKJrRxAgaar9ZUaNf0TCQJ1ZSxEI4Jc0C-7vxKLc4uY9R-RVXzSXB1N3BVGHPc7vnei-2E6yG8"/>
+</div>
+</div>
+<div class="p-md flex flex-col gap-xs">
+<div class="flex items-center justify-between">
+<h4 class="font-headline-md text-headline-md text-on-surface">Apple</h4>
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">Innovating in electronics, software, and online services with timeless design.</p>
+<div class="mt-md pt-md border-t border-surface-container flex justify-between items-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant">2.8k Wishlists</span>
+<button class="bg-secondary-container/50 hover:bg-secondary-container text-primary px-4 py-2 rounded-full font-label-lg text-label-lg transition-colors">Follow</button>
+</div>
+</div>
+</article>
+<!-- Lego Card -->
+<article class="bg-surface-container-lowest rounded-[24px] overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col group border border-surface-container-high/50">
+<div class="h-48 relative bg-red-50 flex items-center justify-center p-xl">
+<span class="material-symbols-outlined text-[80px] text-error/5 absolute">toys</span>
+<div class="absolute inset-0 flex items-center justify-center">
+<img class="w-40 h-32 rounded-2xl object-cover shadow-xl group-hover:scale-110 transition-transform" data-alt="An intricate LEGO model of a classic car, shown in sharp focus with a soft-blurred workshop background. The lighting is warm and detailed, highlighting the complex interlocking pieces and bright primary colors. The mood is nostalgic and creative, appealing to hobbyists and collectors using a premium gift discovery platform." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDBdD1tu8siIckuH7pBlMzYr3PEhrU3VtbjLT9nWRIYuFZvPDgmiRr0aLwglkaKBWMztYXItifHmnVCbsj81RBw0po6ImhdVZq-cdDkNYTbUkLfYfT4UCtRe6YAlPANCzHZKRDEMNTJMZslpPBE3xlIrVDJyqmaUAEHu_J2khR9paYuUNI2HtyzRbmSoSsLDMycXvva9c3b9tx9ulIhkgxr6lPqQF2bZn7YioGNA7sX7WrDcw_78rrENRkjO3kA6qdGfiYkA05n9PI"/>
+</div>
+</div>
+<div class="p-md flex flex-col gap-xs">
+<div class="flex items-center justify-between">
+<h4 class="font-headline-md text-headline-md text-on-surface">LEGO</h4>
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">Building creativity since 1932 with the world's most iconic brick system.</p>
+<div class="mt-md pt-md border-t border-surface-container flex justify-between items-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant">940 Wishlists</span>
+<button class="bg-secondary-container/50 hover:bg-secondary-container text-primary px-4 py-2 rounded-full font-label-lg text-label-lg transition-colors">Follow</button>
+</div>
+</div>
+</article>
+<!-- Dyson Card (Additional) -->
+<article class="bg-surface-container-lowest rounded-[24px] overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col group border border-surface-container-high/50">
+<div class="h-48 relative bg-purple-50 flex items-center justify-center p-xl">
+<span class="material-symbols-outlined text-[80px] text-on-surface/5 absolute">air</span>
+<div class="absolute inset-0 flex items-center justify-center">
+<img class="w-28 h-40 rounded-2xl object-cover shadow-xl rotate-3 group-hover:rotate-0 transition-transform" data-alt="A luxurious, high-tech hair styling tool with a metallic finish, presented against a clean lavender and white background. The lighting is soft and flattering, emphasizing the futuristic design and premium materials. This image captures the essence of high-end home and beauty technology within a sophisticated minimalist lifestyle app." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDAFbq06Z7hbNIfAUEMnCSQcOrfpIDR23Vw5A7g7SY7qBGttAqACtgjaUA47g356nN79VaRsiFA8P_X5LV2tB-7jbBVAqHfs3JVApyQw_iE55xTkyHK48mrKOGA7hpFZXIWFrsN42nfjsTHN6RmZlSA_o5myW7bZNtAH227k3nscSNEBpfrjmJtmTDucoN2NJx17A2NbDvYRgV_4-vVtliAGVZU19ALQKYeLXZOgWpYgM9pVD_92crow3nkKiUwIiTme9MV5Zu13-8"/>
+</div>
+</div>
+<div class="p-md flex flex-col gap-xs">
+<div class="flex items-center justify-between">
+<h4 class="font-headline-md text-headline-md text-on-surface">Dyson</h4>
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">Pioneering engineering in vacuum cleaners, air purifiers, and hair care technology.</p>
+<div class="mt-md pt-md border-t border-surface-container flex justify-between items-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant">450 Wishlists</span>
+<button class="bg-secondary-container/50 hover:bg-secondary-container text-primary px-4 py-2 rounded-full font-label-lg text-label-lg transition-colors">Follow</button>
+</div>
+</div>
+</article>
+<!-- Aesop Card (Additional) -->
+<article class="bg-surface-container-lowest rounded-[24px] overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col group border border-surface-container-high/50">
+<div class="h-48 relative bg-stone-50 flex items-center justify-center p-xl">
+<span class="material-symbols-outlined text-[80px] text-on-surface/5 absolute">spa</span>
+<div class="absolute inset-0 flex items-center justify-center">
+<img class="w-32 h-40 rounded-2xl object-cover shadow-xl -rotate-2 group-hover:rotate-0 transition-transform" data-alt="A curated collection of amber glass apothecary bottles arranged on a minimalist stone shelf. The lighting is moody and organic, with soft shadows that evoke a sense of calm and luxury. The aesthetic is clean, natural, and highly editorial, perfect for a brand focused on botanical skin care and high-end wellness." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBX-NwALB7n2UKArrodA-GFlemzmuua0rk6RjSUlHi1PAx01ZVumnY11lYHKrKQhzOhqy57hemDthMzvfFLUGWWStD1hQlWU8bvJxGiTt_08PR2gJYVLWKJBLpRL1_Z_jbNb8srj2QqXPR2tMNjtIxEFDiOy1WK0_fZSgxJ7jnlQu8oURpBKB3GX6gilC8FWrEBW_R2p3Zf-89ibTSj9bzZUd4vJmgB7syCZlLiyCyZlPqvwni0D2iZNr7HCgCrOD3JN-qRsCMv1lg"/>
+</div>
+</div>
+<div class="p-md flex flex-col gap-xs">
+<div class="flex items-center justify-between">
+<h4 class="font-headline-md text-headline-md text-on-surface">Aesop</h4>
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">Meticulously formulated skin, hair, and body care products with botanical ingredients.</p>
+<div class="mt-md pt-md border-t border-surface-container flex justify-between items-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant">620 Wishlists</span>
+<button class="bg-secondary-container/50 hover:bg-secondary-container text-primary px-4 py-2 rounded-full font-label-lg text-label-lg transition-colors">Follow</button>
+</div>
+</div>
+</article>
+<!-- Patagonia Card (Additional) -->
+<article class="bg-surface-container-lowest rounded-[24px] overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col group border border-surface-container-high/50">
+<div class="h-48 relative bg-emerald-50 flex items-center justify-center p-xl">
+<span class="material-symbols-outlined text-[80px] text-on-surface/5 absolute">landscape</span>
+<div class="absolute inset-0 flex items-center justify-center">
+<img class="w-32 h-32 rounded-2xl object-cover shadow-xl group-hover:scale-105 transition-transform" data-alt="A durable outdoor jacket in a deep earthy green, shown in an alpine mountain setting during the golden hour. The lighting is warm and dramatic, highlighting the quality of the material and the rugged environment. This visual represents sustainable fashion and adventure-ready gear for a premium wishlist app targeting outdoor enthusiasts." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHYEksXPnpFOnhCKuqj3NwtAnguTPXj-jwX3vtQw8KxxOM75M1VS_rAJzzKiRUvToNvs9Th1Oh71Cr3GZtkxI58oGKMUaZpGoteWdtdNFkTlc1T2inhGfLCpTeXWbDO_pj4wiJKTL67qmJG9qFzVTM8MYCwHnqyBdZjEUGYAtRkHUuw7-al5Z8tVYeDY4ysLK1kB5f7U5DZSXa-vL2z8PG8B5Rp4fbFjaKJ5veuc9wf08hEbKDTtNHGcKI1o2GpnBphxvIR7dCpxI"/>
+</div>
+</div>
+<div class="p-md flex flex-col gap-xs">
+<div class="flex items-center justify-between">
+<h4 class="font-headline-md text-headline-md text-on-surface">Patagonia</h4>
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">Quality outdoor clothing and gear that supports environmental conservation efforts.</p>
+<div class="mt-md pt-md border-t border-surface-container flex justify-between items-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant">880 Wishlists</span>
+<button class="bg-secondary-container/50 hover:bg-secondary-container text-primary px-4 py-2 rounded-full font-label-lg text-label-lg transition-colors">Follow</button>
+</div>
+</div>
+</article>
+</section>
+<!-- View More Brands CTA -->
+<div class="mt-2xl flex flex-col items-center justify-center text-center gap-md">
+<p class="font-body-lg text-body-lg text-on-surface-variant">Can't find your favorite brand?</p>
+<button class="pill-primary bg-primary text-on-primary px-8 py-3 rounded-full font-headline-md text-headline-md hover:shadow-lg active:scale-95 transition-all">Request a Brand</button>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full h-20 px-4 flex justify-around items-center pb-safe bg-surface/90 dark:bg-surface-container-lowest/90 backdrop-blur-xl z-50 rounded-t-xl shadow-[0_-4px_16px_rgba(0,0,0,0.05)]">
+<button class="flex flex-col items-center justify-center text-on-secondary-fixed-variant dark:text-on-surface-variant hover:bg-secondary-container/50 rounded-xl transition-all p-2 group active:scale-90">
+<span class="material-symbols-outlined mb-1 group-hover:text-primary">list_alt</span>
+<span class="font-label-sm text-label-sm">Wishlists</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-secondary-fixed-variant dark:text-on-surface-variant hover:bg-secondary-container/50 rounded-xl transition-all p-2 group active:scale-90">
+<span class="material-symbols-outlined mb-1 group-hover:text-primary">notifications</span>
+<span class="font-label-sm text-label-sm">Activity</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-secondary-fixed-variant dark:text-on-surface-variant hover:bg-secondary-container/50 rounded-xl transition-all p-2 group active:scale-90">
+<span class="material-symbols-outlined text-[32px] mb-1 group-hover:text-primary text-primary">add_circle</span>
+<span class="font-label-sm text-label-sm">Add</span>
+</button>
+<button class="flex flex-col items-center justify-center text-primary font-bold after:content-[''] after:w-1 after:h-1 after:bg-primary after:rounded-full after:mt-1 p-2 group active:scale-90">
+<span class="material-symbols-outlined mb-1">auto_awesome</span>
+<span class="font-label-sm text-label-sm">Inspiration</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-secondary-fixed-variant dark:text-on-surface-variant hover:bg-secondary-container/50 rounded-xl transition-all p-2 group active:scale-90">
+<span class="material-symbols-outlined mb-1 group-hover:text-primary">card_giftcard</span>
+<span class="font-label-sm text-label-sm">Find Gift</span>
+</button>
+</nav>
+<script>
+        // Simple micro-interaction for follow buttons
+        document.querySelectorAll('button').forEach(button => {
+            if (button.innerText === 'Follow') {
+                button.addEventListener('click', function() {
+                    const isFollowing = this.innerText === 'Following';
+                    this.innerText = isFollowing ? 'Follow' : 'Following';
+                    this.classList.toggle('bg-primary');
+                    this.classList.toggle('text-on-primary');
+                    this.classList.toggle('bg-secondary-container/50');
+                    this.classList.toggle('text-primary');
+                });
+            }
+        });
+
+        // Search bar interaction
+        const searchInput = document.querySelector('input[type="text"]');
+        searchInput.addEventListener('focus', () => {
+            searchInput.parentElement.classList.add('scale-[1.02]');
+        });
+        searchInput.addEventListener('blur', () => {
+            searchInput.parentElement.classList.remove('scale-[1.02]');
+        });
+    </script>
+</body></html>
