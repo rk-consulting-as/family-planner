@@ -70,20 +70,20 @@ export default async function UtleggPage() {
   const isAdmin = ctx.role !== "member";
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
+    <div className="space-y-md">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Wallet className="w-6 h-6" />
+          <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background flex items-center gap-2">
+            <Wallet className="w-7 h-7 text-primary" />
             Felles utlegg
           </h1>
-          <p className="text-slate-600 text-sm">
+          <p className="text-body-md text-on-surface-variant">
             Aktiv periode: <strong>{p.name}</strong> (siden {p.started_on})
           </p>
         </div>
         <div className="flex gap-2">
           <Link href={`/utlegg/utskrift/${p.id}?modus=enkel`} target="_blank">
-            <Button variant="secondary" size="sm">🖨 Skriv ut</Button>
+            <Button variant="tonal" size="sm">🖨 Skriv ut</Button>
           </Link>
           <Link href="/utlegg/perioder">
             <Button variant="ghost" size="sm">Tidligere oppgjør</Button>
@@ -91,15 +91,15 @@ export default async function UtleggPage() {
         </div>
       </div>
 
-      {/* Sammendrag */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        <SummaryCard label="Totalt i perioden" value={formatCurrency(total)} icon="💰" />
-        <SummaryCard label="Antall utlegg" value={String(expenses.length)} icon="📋" />
-        <SummaryCard
-          label="Periode startet"
-          value={p.started_on}
-          icon="📅"
-        />
+      {/* Stort totalbalanse-kort à la Stitch */}
+      <div className="rounded-2xl bg-gradient-to-br from-primary to-primary-container p-md text-on-primary shadow-soft">
+        <div className="text-label-sm uppercase tracking-wider opacity-90">Totalbalanse</div>
+        <div className="font-display text-headline-xl font-bold mt-1">
+          {formatCurrency(total)}
+        </div>
+        <div className="text-label-lg opacity-90 mt-1">
+          {expenses.length} {expenses.length === 1 ? "utlegg" : "utlegg"} i perioden
+        </div>
       </div>
 
       {/* Saldo per person */}

@@ -59,12 +59,12 @@ export default async function GaverPage() {
   const otherLists = lists.filter((l) => l.owner_id !== ctx.user.id);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-md">
       <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Gift className="w-6 h-6" /> Gaver & ønsker
+        <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background flex items-center gap-2">
+          <Gift className="w-7 h-7 text-primary" /> Gaver & ønsker
         </h1>
-        <p className="text-slate-600 text-sm">
+        <p className="text-body-md text-on-surface-variant">
           Lag ønskelister til bursdag, jul eller andre anledninger. Familien kan reservere
           gaver — også skjult for deg som overraskelse.
         </p>
@@ -188,28 +188,39 @@ function ListCard({
     <li>
       <Link
         href={`/gaver/${list.id}`}
-        className="block p-4 rounded-2xl border border-slate-200 hover:border-brand-300 hover:bg-brand-50 transition"
+        className="block rounded-2xl overflow-hidden bg-surface-container-lowest border border-outline-variant/30 hover:shadow-soft transition-all group"
       >
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <div className="font-semibold flex items-center gap-2">
-              <span className="text-2xl">{occ?.icon || "🎁"}</span>
-              <span className="truncate">{list.title}</span>
-            </div>
-            <div className="text-xs text-slate-500 mt-1">
-              For{" "}
-              <span
-                className="inline-block w-2 h-2 rounded-full mr-1 align-middle"
-                style={{ background: ownerColor || "#7C3AED" }}
-              />
-              <strong>{ownerName}</strong>
-              {list.occasion_date && ` • ${list.occasion_date}`}
-            </div>
-            {list.description && (
-              <p className="text-sm text-slate-600 mt-2 line-clamp-2">{list.description}</p>
-            )}
+        {/* Hero med gradient bakgrunn basert på eier-farge */}
+        <div
+          className="aspect-[16/9] grid place-items-center text-6xl relative"
+          style={{
+            background: ownerColor
+              ? `linear-gradient(135deg, ${ownerColor}22, ${ownerColor}55)`
+              : "linear-gradient(135deg, #cae6ff, #aeedd5)",
+          }}
+        >
+          <span className="drop-shadow-sm">{occ?.icon || "🎁"}</span>
+          <span className="absolute top-3 right-3 bg-surface-container-lowest/90 backdrop-blur px-2.5 py-1 rounded-full text-label-sm font-bold text-on-surface">
+            {count} {count === 1 ? "ønske" : "ønsker"}
+          </span>
+        </div>
+        <div className="p-md">
+          <div className="font-display font-semibold text-on-surface text-base group-hover:text-primary transition">
+            {list.title}
           </div>
-          <Badge variant="info">{count} {count === 1 ? "ønske" : "ønsker"}</Badge>
+          <div className="text-label-sm text-on-surface-variant mt-1 flex items-center gap-1.5">
+            <span
+              className="inline-block w-2 h-2 rounded-full"
+              style={{ background: ownerColor || "#7C3AED" }}
+            />
+            For <strong className="font-bold text-on-surface">{ownerName}</strong>
+            {list.occasion_date && ` • ${list.occasion_date}`}
+          </div>
+          {list.description && (
+            <p className="text-label-sm text-on-surface-variant mt-2 line-clamp-2">
+              {list.description}
+            </p>
+          )}
         </div>
       </Link>
     </li>

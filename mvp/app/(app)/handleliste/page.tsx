@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import HandlelisteShell from "./HandlelisteShell";
+import ReceiptScanner from "./ReceiptScanner";
 
 export default async function HandlelistePage() {
   const ctx = await getActiveContext();
@@ -42,9 +43,12 @@ export default async function HandlelistePage() {
             Live: alle ser endringer umiddelbart.
           </p>
         </div>
-        <Link href="/maltidsplan">
-          <Button size="sm" variant="secondary">🍽️ Måltidsplan</Button>
-        </Link>
+        <div className="flex gap-2 flex-wrap">
+          <ReceiptScanner groupId={ctx.group.id} />
+          <Link href="/maltidsplan">
+            <Button size="sm" variant="ghost">🍽️ Måltidsplan</Button>
+          </Link>
+        </div>
       </div>
 
       <HandlelisteShell

@@ -39,10 +39,14 @@ export default async function KalenderPage() {
   const isAdmin = ctx.role === "owner" || ctx.role === "admin";
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-md">
       <div>
-        <h1 className="text-2xl font-bold">Kalender</h1>
-        <p className="text-slate-600 text-sm">Familiens uke i ett bilde.</p>
+        <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background">
+          Kalender
+        </h1>
+        <p className="text-body-md text-on-surface-variant">
+          Familiens uke i ett bilde.
+        </p>
       </div>
       <KalenderShell
         groupId={ctx.group.id}

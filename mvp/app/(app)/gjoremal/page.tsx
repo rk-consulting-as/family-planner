@@ -82,11 +82,13 @@ export default async function GjoremalPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold">Gjøremål</h1>
-          <p className="text-slate-600 text-sm">
-            Dine oppgaver + delte pool. Første som hakker av i en periode «tar» oppgaven.
+          <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background flex items-center gap-2">
+            ⭐ Dagens oppdrag
+          </h1>
+          <p className="text-body-md text-on-surface-variant">
+            Hjelp hverandre — og samle stjerner!
           </p>
         </div>
         {isAdmin && (
@@ -108,31 +110,38 @@ export default async function GjoremalPage() {
               description="Sjekk poolen under, eller vent på neste periode."
             />
           ) : (
-            <ul className="space-y-3">
+            <ul className="grid sm:grid-cols-2 gap-3">
               {mine.map((a) => (
-                <li key={a.id} className="p-4 rounded-xl border border-slate-200">
+                <li
+                  key={a.id}
+                  className="p-md rounded-2xl bg-surface-container-lowest border-l-4 border-primary shadow-soft hover:scale-[1.01] transition-transform"
+                >
                   <div className="flex items-start gap-3">
                     <span className="text-3xl flex-shrink-0">{a.chore?.icon || "✅"}</span>
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold">{a.chore?.title}</div>
+                      <div className="font-display font-semibold text-on-surface">
+                        {a.chore?.title}
+                      </div>
                       {a.chore?.description && (
-                        <div className="text-sm text-slate-600 mt-0.5">{a.chore.description}</div>
+                        <div className="text-label-sm text-on-surface-variant mt-0.5">
+                          {a.chore.description}
+                        </div>
                       )}
-                      <div className="text-xs text-slate-500 mt-1">
+                      <div className="text-label-sm text-on-surface-variant mt-1">
                         {a.due_date ? `Frist: ${a.due_date}` : periodLabel(a.chore?.period_kind)}
                       </div>
                     </div>
-                    <div className="flex flex-col items-end gap-2">
-                      <RewardBadge
-                        type={a.chore?.reward_type ?? undefined}
-                        value={a.chore?.reward_value ?? undefined}
-                      />
-                      {a.status === "selected" || a.status === "in_progress" ? (
-                        <CompleteWithProofButton assignmentId={a.id} />
-                      ) : (
-                        <Badge variant="warning">Venter godkjenning</Badge>
-                      )}
-                    </div>
+                    <RewardBadge
+                      type={a.chore?.reward_type ?? undefined}
+                      value={a.chore?.reward_value ?? undefined}
+                    />
+                  </div>
+                  <div className="mt-3">
+                    {a.status === "selected" || a.status === "in_progress" ? (
+                      <CompleteWithProofButton assignmentId={a.id} />
+                    ) : (
+                      <Badge variant="warning">⏳ Venter godkjenning</Badge>
+                    )}
                   </div>
                 </li>
               ))}
@@ -157,34 +166,41 @@ export default async function GjoremalPage() {
                   .map((id) => ctx.members.find((m) => m.profile_id === id)?.display_name)
                   .filter(Boolean);
                 return (
-                  <li key={a.id} className="p-4 rounded-xl border border-slate-200">
+                  <li
+                    key={a.id}
+                    className="p-md rounded-2xl bg-surface-container-lowest border-l-4 border-secondary shadow-soft hover:scale-[1.01] transition-transform"
+                  >
                     <div className="flex items-start gap-3">
                       <span className="text-3xl flex-shrink-0">{a.chore?.icon || "✅"}</span>
                       <div className="min-w-0 flex-1">
-                        <div className="font-semibold">{a.chore?.title}</div>
+                        <div className="font-display font-semibold text-on-surface">
+                          {a.chore?.title}
+                        </div>
                         {a.chore?.description && (
-                          <div className="text-sm text-slate-600 mt-0.5">{a.chore.description}</div>
+                          <div className="text-label-sm text-on-surface-variant mt-0.5">
+                            {a.chore.description}
+                          </div>
                         )}
-                        <div className="text-xs text-slate-500 mt-1">
+                        <div className="text-label-sm text-on-surface-variant mt-1">
                           {periodLabel(a.chore?.period_kind)}
                           {sharedWith.length > 0 && ` • Del med: ${sharedWith.join(", ")}`}
                           {ids.length === 0 && " • Åpen for alle"}
                         </div>
                       </div>
-                    </div>
-                    <div className="flex items-center justify-between mt-3">
                       <RewardBadge
                         type={a.chore?.reward_type ?? undefined}
                         value={a.chore?.reward_value ?? undefined}
                       />
+                    </div>
+                    <div className="mt-3">
                       <form
                         action={async () => {
                           "use server";
                           await pickChore(a.id);
                         }}
                       >
-                        <Button size="sm" variant="secondary">
-                          Velg
+                        <Button variant="tonal" className="w-full">
+                          Ta oppdraget
                         </Button>
                       </form>
                     </div>
@@ -237,10 +253,31 @@ export default async function GjoremalPage() {
 
 function RewardBadge({ type, value }: { type?: string; value?: number | null }) {
   if (!type || value == null) return null;
-  if (type === "money") return <Badge variant="success">{formatCurrency(Number(value))}</Badge>;
-  if (type === "screen_time_minutes") return <Badge variant="info">{value} min</Badge>;
-  if (type === "points") return <Badge variant="warning">{value} ⭐</Badge>;
-  return <Badge>{value}</Badge>;
+  // Kinship-stil: pille med stjerne-emoji for poeng
+  const baseCls =
+    "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-label-sm font-bold flex-shrink-0";
+  if (type === "money") {
+    return (
+      <span className={`${baseCls} bg-secondary-container text-on-secondary-container`}>
+        💰 {formatCurrency(Number(value))}
+      </span>
+    );
+  }
+  if (type === "screen_time_minutes") {
+    return (
+      <span className={`${baseCls} bg-primary-container text-on-primary-container`}>
+        📺 {value} min
+      </span>
+    );
+  }
+  if (type === "points") {
+    return (
+      <span className={`${baseCls} bg-tertiary-fixed text-on-tertiary-fixed`}>
+        ⭐ {value}
+      </span>
+    );
+  }
+  return <span className={`${baseCls} bg-surface-container`}>{value}</span>;
 }
 
 function periodLabel(kind: string | null | undefined): string {
