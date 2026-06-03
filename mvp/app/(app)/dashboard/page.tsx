@@ -10,6 +10,7 @@ import Next3Days, { DashEvent } from "@/components/dashboard/Next3Days";
 import TodayActivities from "@/components/dashboard/TodayActivities";
 import QuickGrid from "@/components/dashboard/QuickGrid";
 import Birthdays, { BirthdayMember } from "@/components/dashboard/Birthdays";
+import DashboardSettings from "@/components/dashboard/DashboardSettings";
 import { formatCurrency, formatMinutes } from "@/lib/utils";
 import { CheckSquare, Calendar, Footprints, Trophy, Users, Flame, ShoppingBag } from "lucide-react";
 import { markHabitDone } from "@/lib/actions/habits";
@@ -174,37 +175,48 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-md">
-      <header className="flex items-center gap-sm">
-        <UserAvatar
-          name={ctx.profile.display_name}
-          avatarUrl={ctx.profile.avatar_url}
-          colorHex={ctx.profile.color_hex}
-          size="xl"
-        />
-        <div className="min-w-0">
-          <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background">
-            {greeting}, {firstName}!
-          </h1>
-          <p className="text-body-md text-on-surface-variant">
-            Her er oversikten for en rolig og organisert {weekday}.
-          </p>
+      <header className="flex items-center justify-between gap-sm flex-wrap">
+        <div className="flex items-center gap-sm min-w-0">
+          <UserAvatar
+            name={ctx.profile.display_name}
+            avatarUrl={ctx.profile.avatar_url}
+            colorHex={ctx.profile.color_hex}
+            size="xl"
+          />
+          <div className="min-w-0">
+            <h1 className="font-display text-headline-lg-mobile sm:text-headline-lg text-on-background">
+              {greeting}, {firstName}!
+            </h1>
+            <p className="text-body-md text-on-surface-variant">
+              Her er oversikten for en rolig og organisert {weekday}.
+            </p>
+          </div>
         </div>
+        <DashboardSettings />
       </header>
 
       {/* Bento: Dagens aktiviteter (stort) + Bursdager (sidekolonne) */}
       <div className="grid lg:grid-cols-[2fr,1fr] gap-md items-start">
-        <TodayActivities events={dashEvents} />
-        <Birthdays members={birthdayMembers} />
+        <div data-section="today">
+          <TodayActivities events={dashEvents} />
+        </div>
+        <div data-section="birthdays">
+          <Birthdays members={birthdayMembers} />
+        </div>
       </div>
 
       {/* Snarvei-grid (kompakt — 6 viktigste) */}
-      <QuickGrid permissions={ctx.permissions as unknown as Record<string, boolean>} />
+      <div data-section="quickgrid">
+        <QuickGrid permissions={ctx.permissions as unknown as Record<string, boolean>} />
+      </div>
 
       {/* Neste 2 dager fram */}
-      <Next3Days events={dashEvents} />
+      <div data-section="next-days">
+        <Next3Days events={dashEvents} />
+      </div>
 
       {/* Belønningssaldo-rad i bento-stil */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div data-section="balance" className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <BentoStat
           label="Lommepenger"
           value={formatCurrency(Number(moneyBalance))}

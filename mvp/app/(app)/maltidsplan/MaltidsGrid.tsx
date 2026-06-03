@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Card, CardBody } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Select, Textarea } from "@/components/ui/Input";
 import { createMeal, deleteMeal } from "@/lib/actions/meals";
@@ -29,17 +28,19 @@ export default function MaltidsGrid({
   slots: readonly Slot[];
   meals: Meal[];
 }) {
-  const [adding, setAdding] = useState<{ date: string; slot: Slot["key"] } | null>(null);
+  const [adding, setAdding] = useState<{
+    date: string;
+    slot?: Slot["key"];
+  } | null>(null);
   const [pending, startTransition] = useTransition();
 
-  function mealsFor(date: string, slot: Slot["key"]): Meal[] {
-    return meals.filter((m) => m.date === date && m.slot === slot);
+  function mealsFor(date: string, slot?: Slot["key"]): Meal[] {
+    return meals.filter((m) => m.date === date && (!slot || m.slot === slot));
   }
 
   function handleCreate(formData: FormData) {
     if (!adding) return;
     formData.set("date", adding.date);
-    formData.set("slot", adding.slot);
     startTransition(async () => {
       await createMeal(groupId, formData);
       setAdding(null);
@@ -52,100 +53,114 @@ export default function MaltidsGrid({
     });
   }
 
+  // Sjekk hvilke dager som er i dag/i går for accent
+  const today = new Date().toISOString().slice(0, 10);
+
   return (
     <>
-      <Card>
-        <CardBody className="overflow-x-auto">
-          <table className="w-full min-w-[700px] text-sm">
-            <thead>
-              <tr>
-                <th className="w-24 text-left text-xs text-slate-500 font-medium pb-2"></th>
-                {days.map((d) => (
-                  <th key={d.iso} className="text-left text-xs font-medium text-slate-700 pb-2 px-1 capitalize">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+        {days.map((d) => {
+          const items = mealsFor(d.iso);
+          const isToday = d.iso === today;
+          return (
+            <article
+              key={d.iso}
+              className={`rounded-2xl bg-surface-container-lowest border ${
+                isToday ? "border-primary/40 shadow-pop" : "border-outline-variant/30 shadow-soft"
+              } overflow-hidden flex flex-col`}
+            >
+              <header
+                className={`px-md py-sm flex items-center justify-between border-b border-outline-variant/20 ${
+                  isToday ? "bg-primary-container/30" : "bg-surface-container-low"
+                }`}
+              >
+                <div>
+                  <div className="font-display font-bold text-on-surface capitalize">
                     {d.label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {slots.map((slot) => (
-                <tr key={slot.key} className="border-t border-slate-100 align-top">
-                  <td className="py-2 pr-2 text-xs font-medium text-slate-700">
-                    <span className="text-base mr-1">{slot.icon}</span>
-                    {slot.label}
-                  </td>
-                  {days.map((d) => {
-                    const items = mealsFor(d.iso, slot.key);
-                    return (
-                      <td key={d.iso} className="py-2 px-1 align-top">
-                        <div className="space-y-1">
-                          {items.map((m) => (
-                            <div
-                              key={m.id}
-                              className="rounded-lg bg-emerald-50 border border-emerald-200 p-2 text-xs group relative"
-                            >
-                              <div className="font-medium flex items-start gap-1">
-                                <span>{m.icon || "🍽️"}</span>
-                                <span className="break-words">{m.title}</span>
-                              </div>
-                              {m.recipe_url && (
-                                <a
-                                  href={m.recipe_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-brand-700 hover:underline text-[11px] block mt-0.5"
-                                >
-                                  Oppskrift →
-                                </a>
-                              )}
-                              <button
-                                onClick={() => handleDelete(m.id)}
-                                className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-600 text-xs"
-                                title="Slett"
-                              >
-                                ×
-                              </button>
-                            </div>
-                          ))}
-                          <button
-                            onClick={() => setAdding({ date: d.iso, slot: slot.key })}
-                            className="w-full text-xs text-slate-400 hover:text-brand-700 hover:bg-brand-50 rounded-lg py-1 border border-dashed border-slate-200"
-                          >
-                            +
-                          </button>
-                        </div>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </CardBody>
-      </Card>
+                    {isToday && (
+                      <span className="ml-2 text-label-sm font-bold uppercase text-primary tracking-wider">
+                        I dag
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setAdding({ date: d.iso, slot: "dinner" })}
+                  className="w-8 h-8 rounded-full bg-primary text-on-primary grid place-items-center hover:brightness-110 transition shadow-soft"
+                  title="Nytt måltid"
+                >
+                  +
+                </button>
+              </header>
+
+              <div className="p-sm space-y-1.5 flex-1">
+                {slots.map((slot) => {
+                  const slotMeals = items.filter((m) => m.slot === slot.key);
+                  if (slotMeals.length === 0) return null;
+                  return (
+                    <div key={slot.key} className="space-y-1">
+                      <div className="text-label-sm uppercase font-bold text-on-surface-variant tracking-wider px-1">
+                        {slot.icon} {slot.label}
+                      </div>
+                      {slotMeals.map((m) => (
+                        <MealRow
+                          key={m.id}
+                          meal={m}
+                          onDelete={() => handleDelete(m.id)}
+                        />
+                      ))}
+                    </div>
+                  );
+                })}
+
+                {items.length === 0 && (
+                  <button
+                    onClick={() => setAdding({ date: d.iso, slot: "dinner" })}
+                    className="w-full py-md rounded-xl border-2 border-dashed border-outline-variant/40 text-on-surface-variant hover:bg-surface-container-low text-body-md transition"
+                  >
+                    + Legg til måltid
+                  </button>
+                )}
+              </div>
+            </article>
+          );
+        })}
+      </div>
 
       {adding && (
         <div
-          className="fixed inset-0 z-50 bg-black/40 grid place-items-center p-4"
+          className="fixed inset-0 z-50 bg-on-surface/70 backdrop-blur grid place-items-center p-3"
           onClick={() => setAdding(null)}
         >
           <div
-            className="bg-white rounded-2xl max-w-md w-full p-6"
+            className="bg-surface-container-lowest rounded-2xl max-w-md w-full p-md shadow-pop"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-xl font-semibold mb-4">
+            <h2 className="font-display text-headline-md text-on-surface mb-1">
               Nytt måltid
             </h2>
-            <p className="text-xs text-slate-500 mb-4">
-              {adding.date} • {slots.find((s) => s.key === adding.slot)?.label}
-            </p>
-            <form action={handleCreate} className="space-y-4">
+            <p className="text-label-sm text-on-surface-variant mb-4">{adding.date}</p>
+            <form action={handleCreate} className="space-y-3">
+              <Field label="Måltid">
+                <Select name="slot" defaultValue={adding.slot || "dinner"}>
+                  {slots.map((s) => (
+                    <option key={s.key} value={s.key}>
+                      {s.icon} {s.label}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
               <div className="grid grid-cols-[80px_1fr] gap-3">
                 <Field label="Ikon">
                   <Input name="icon" defaultValue="🍽️" maxLength={4} />
                 </Field>
                 <Field label="Tittel">
-                  <Input name="title" required placeholder="F.eks. Pasta carbonara" autoFocus />
+                  <Input
+                    name="title"
+                    required
+                    placeholder="F.eks. Pasta carbonara"
+                    autoFocus
+                  />
                 </Field>
               </div>
               <Field label="Lenke til oppskrift (valgfri)">
@@ -154,7 +169,7 @@ export default function MaltidsGrid({
               <Field label="Notater (valgfri)">
                 <Textarea name="notes" rows={2} placeholder="Husk parmesan" />
               </Field>
-              <div className="flex gap-2 justify-end">
+              <div className="flex gap-2 justify-end pt-2 border-t border-outline-variant/20">
                 <Button type="button" variant="ghost" onClick={() => setAdding(null)}>
                   Avbryt
                 </Button>
@@ -167,5 +182,42 @@ export default function MaltidsGrid({
         </div>
       )}
     </>
+  );
+}
+
+function MealRow({ meal, onDelete }: { meal: Meal; onDelete: () => void }) {
+  return (
+    <div className="rounded-lg bg-secondary-container/40 border border-secondary/20 px-2.5 py-2 text-body-md group relative">
+      <div className="flex items-start gap-2">
+        <span className="text-lg flex-shrink-0">{meal.icon || "🍽️"}</span>
+        <div className="flex-1 min-w-0">
+          <div className="font-bold text-on-surface leading-snug break-words">
+            {meal.title}
+          </div>
+          {meal.notes && (
+            <div className="text-label-sm text-on-surface-variant mt-0.5 line-clamp-2">
+              {meal.notes}
+            </div>
+          )}
+          {meal.recipe_url && (
+            <a
+              href={meal.recipe_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-label-sm text-primary hover:underline block mt-0.5 font-bold"
+            >
+              Oppskrift →
+            </a>
+          )}
+        </div>
+        <button
+          onClick={onDelete}
+          className="opacity-0 group-hover:opacity-100 text-on-surface-variant hover:text-error transition w-5 h-5 grid place-items-center"
+          title="Slett"
+        >
+          ×
+        </button>
+      </div>
+    </div>
   );
 }
