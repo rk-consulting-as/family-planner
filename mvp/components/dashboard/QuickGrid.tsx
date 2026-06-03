@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   Calendar, CheckSquare, ShoppingBag, MessageSquare, UtensilsCrossed,
   ShoppingCart, Gift, Briefcase, Mail, Wallet, Trophy, Footprints, CheckCheck,
+  BookOpen, Camera,
 } from "lucide-react";
 
 type Tile = {
@@ -23,7 +24,9 @@ const ALL_TILES: Tile[] = [
   { href: "/onsker", label: "Ønsker", icon: ShoppingBag, bg: "from-rose-500 to-rose-600", module: "needs" },
   { href: "/gaver", label: "Gaver", icon: Gift, bg: "from-pink-500 to-pink-600", module: "gifts" },
   { href: "/maltidsplan", label: "Måltider", icon: UtensilsCrossed, bg: "from-amber-500 to-amber-600", module: "meals" },
+  { href: "/oppskrifter", label: "Oppskrifter", icon: BookOpen, bg: "from-yellow-600 to-orange-500", module: "recipes" },
   { href: "/handleliste", label: "Handle", icon: ShoppingCart, bg: "from-orange-500 to-orange-600", module: "shopping" },
+  { href: "/bilder", label: "Bilder", icon: Camera, bg: "from-cyan-500 to-cyan-600", module: "photos" },
   { href: "/chat", label: "Chat", icon: MessageSquare, bg: "from-violet-500 to-violet-600", module: "chat" },
   { href: "/prosjekter", label: "Prosjekter", icon: Briefcase, bg: "from-slate-500 to-slate-600", module: "projects" },
   { href: "/invitasjoner", label: "Invitasjoner", icon: Mail, bg: "from-indigo-500 to-indigo-600", module: "invitations" },

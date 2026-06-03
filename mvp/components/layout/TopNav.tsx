@@ -10,6 +10,7 @@ import {
   Calendar, CheckSquare, Trophy, Footprints, Home, Settings, LogOut, Shield,
   CheckCheck, ShoppingBag, Bell, Wallet, MessageSquare, UtensilsCrossed,
   ShoppingCart, Gift, Briefcase, Mail, ChevronDown, Menu, X, Sparkles,
+  BookOpen, Camera,
 } from "lucide-react";
 
 type LeafItem = {
@@ -45,8 +46,13 @@ const NAV: NavGroup[] = [
     icon: UtensilsCrossed,
     items: [
       { href: "/maltidsplan", label: "Måltider", icon: UtensilsCrossed, module: "meals" },
+      { href: "/oppskrifter", label: "Oppskrifter", icon: BookOpen, module: "recipes" },
       { href: "/handleliste", label: "Handleliste", icon: ShoppingCart, module: "shopping" },
     ],
+  },
+  {
+    type: "leaf",
+    item: { href: "/bilder", label: "Bilder", icon: Camera, module: "photos" },
   },
   {
     type: "group",
