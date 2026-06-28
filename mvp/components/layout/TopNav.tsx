@@ -80,7 +80,7 @@ const NAV: NavGroup[] = [
     icon: LayoutGrid,
     items: [
       { href: "/buildplan/", label: "BuildPlan", icon: HardHat, external: true },
-      { href: "http://localhost:3001", label: "KostPlan", icon: Apple, external: true },
+      { href: process.env.NEXT_PUBLIC_KOSTPLAN_URL ?? "http://localhost:3001", label: "KostPlan", icon: Apple, external: true },
     ],
   },
 ];
