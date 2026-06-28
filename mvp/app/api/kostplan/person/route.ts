@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
-import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 
 export async function POST(req: NextRequest) {
   try {
     const cookieStore = await cookies()
 
-    // Bruk SSR-klient kun for å verifisere sesjon og hente token
-    const authClient = createServerClient(
+    const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
@@ -25,22 +23,13 @@ export async function POST(req: NextRequest) {
       }
     )
 
-    const { data: { user } } = await authClient.auth.getUser()
+    // getUser() verifiserer token mot serveren og laster sesjonen internt
+    const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Ikke innlogget' }, { status: 401 })
-
-    // Hent access token eksplisitt
-    const { data: { session } } = await authClient.auth.getSession()
-    if (!session) return NextResponse.json({ error: 'Ingen sesjon' }, { status: 401 })
-
-    // Lag en klient med eksplisitt Authorization-header — garanterer at auth.uid() fungerer i RLS
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { global: { headers: { Authorization: `Bearer ${session.access_token}` } } }
-    )
 
     const body = await req.json()
 
+    // Bruk samme supabase-instans — den har allerede sesjon lastet med riktig JWT
     const { data, error } = await supabase
       .from('kp_persons')
       .insert({
