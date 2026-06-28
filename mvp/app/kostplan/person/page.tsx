@@ -74,7 +74,7 @@ export default function NewPersonPage() {
       created_by: user.id,
       linked_profile_id: linkedProfile || null,
       name: name.trim(),
-      emoji_avatar: emoji,
+      avatar_emoji: emoji,
       color_hex: color,
       health_goal: healthGoal,
       health_notes: healthNotes || null,
