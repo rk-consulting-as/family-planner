@@ -43,6 +43,7 @@ export default function NewPersonPage() {
   const [familyProfiles, setProfiles] = useState<{id: string; display_name: string; avatar_url: string|null; color_hex: string|null}[]>([])
   const [linkedProfile, setLinked]  = useState<string>('')
   const [loading, setLoading]       = useState(false)
+  const [error, setError]           = useState('')
   const [step, setStep]             = useState(1)
   const router = useRouter()
   const sb = createClient()
@@ -67,10 +68,15 @@ export default function NewPersonPage() {
   async function save() {
     if (!name.trim()) return
     setLoading(true)
+    setError('')
     const { data: { user } } = await sb.auth.getUser()
-    if (!user) return
+    if (!user) {
+      setError('Ikke innlogget – logg inn igjen')
+      setLoading(false)
+      return
+    }
 
-    const { data, error } = await sb.from('kp_persons').insert({
+    const { data, error: insertError } = await sb.from('kp_persons').insert({
       created_by: user.id,
       linked_profile_id: linkedProfile || null,
       name: name.trim(),
@@ -86,7 +92,12 @@ export default function NewPersonPage() {
       lunchbox_friendly: lunchbox,
     }).select('id').single()
 
-    if (!error && data) {
+    if (insertError) {
+      setError(insertError.message)
+      setLoading(false)
+      return
+    }
+    if (data) {
       router.push(`/kostplan/dashboard?person=${data.id}`)
     }
     setLoading(false)
@@ -220,6 +231,12 @@ export default function NewPersonPage() {
               <input type="checkbox" id="lunchbox" checked={lunchbox} onChange={e => setLunchbox(e.target.checked)} style={{ width: 16, height: 16 }} />
               <label htmlFor="lunchbox" style={{ fontSize: 14, cursor: 'pointer' }}>🎒 Maten bør egne seg i matboks</label>
             </div>
+          </div>
+        )}
+
+        {error && (
+          <div style={{ marginTop: 16, padding: '10px 14px', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, color: '#DC2626', fontSize: 13 }}>
+            ⚠️ {error}
           </div>
         )}
 
