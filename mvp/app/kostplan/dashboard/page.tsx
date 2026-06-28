@@ -2,13 +2,14 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 
-interface DayPlan { id: string; week_plan_id: string; day_of_week: number; notes: string | null }
+interface Person { id: string; name: string; avatar_emoji: string; color_hex: string; health_goal: string; health_notes: string | null }
+interface DayPlan { id: string; week_plan_id: string; day_of_week: number }
 interface MealSlot { id: string; day_plan_id: string; meal_type: MealType; title: string | null; ingredients: string[]; ai_generated: boolean }
-interface Profile { id: string; display_name: string; avatar_url: string | null; color_hex: string | null }
+interface AISuggestion { title: string; description: string; ingredients: string[]; tags: string[]; prep_minutes: number; nutrition_notes: string; why_fits_goal: string }
 
 const DAYS = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag']
 const MEALS: { type: MealType; label: string; emoji: string }[] = [
@@ -18,55 +19,72 @@ const MEALS: { type: MealType; label: string; emoji: string }[] = [
   { type: 'snack',     label: 'Snack',   emoji: '🍎' },
 ]
 
+const GOAL_LABELS: Record<string, { label: string; emoji: string; color: string }> = {
+  general:            { label: 'Generelt sunt',        emoji: '🥗', color: '#16A34A' },
+  weight_loss:        { label: 'Vektreduksjon',         emoji: '⚖️', color: '#DC2626' },
+  weight_gain:        { label: 'Vektøkning',            emoji: '💪', color: '#D97706' },
+  anxiety_reduction:  { label: 'Angstreduserende',      emoji: '🧘', color: '#7C3AED' },
+  anti_inflammatory:  { label: 'Betennelsesdempende',   emoji: '🫚', color: '#0891B2' },
+  gut_health:         { label: 'Tarmhelse',             emoji: '🦠', color: '#65A30D' },
+  blood_sugar:        { label: 'Blodsukker',            emoji: '📊', color: '#EA580C' },
+  heart_health:       { label: 'Hjertehelse',           emoji: '❤️', color: '#E11D48' },
+  energy:             { label: 'Energi',                emoji: '⚡', color: '#CA8A04' },
+  muscle_building:    { label: 'Muskelbygging',         emoji: '🏋️', color: '#1D4ED8' },
+  adhd_focus:         { label: 'Konsentrasjon',         emoji: '🧠', color: '#7C3AED' },
+  sleep:              { label: 'Søvn',                  emoji: '😴', color: '#1D4ED8' },
+  immune_support:     { label: 'Immunforsvar',          emoji: '🛡️', color: '#059669' },
+  bone_health:        { label: 'Skjeletthelse',         emoji: '🦴', color: '#6B7280' },
+  sports_performance: { label: 'Idrettsernæring',       emoji: '🏃', color: '#DC2626' },
+}
+
 function getMonday(): string {
   const d = new Date()
   const day = d.getDay()
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
-  d.setDate(diff)
+  d.setDate(d.getDate() - day + (day === 0 ? -6 : 1))
   return d.toISOString().slice(0, 10)
 }
 
 export default function KostPlanDashboard() {
-  const [profile, setProfile]     = useState<Profile | null>(null)
-  const [dayPlans, setDayPlans]   = useState<DayPlan[]>([])
-  const [slots, setSlots]         = useState<MealSlot[]>([])
-  const [loading, setLoading]     = useState(true)
-  const [hasPrefs, setHasPrefs]   = useState(true)
-  const [adding, setAdding]       = useState<{ dayId: string; type: MealType } | null>(null)
-  const [newTitle, setNewTitle]   = useState('')
-  const [newIngr, setNewIngr]     = useState('')
+  const [persons, setPersons]         = useState<Person[]>([])
+  const [activePerson, setActive]     = useState<Person | null>(null)
+  const [dayPlans, setDayPlans]       = useState<DayPlan[]>([])
+  const [slots, setSlots]             = useState<MealSlot[]>([])
+  const [loading, setLoading]         = useState(true)
+  const [personOpen, setPersonOpen]   = useState(false)
+
+  // Legg til måltid manuelt
+  const [adding, setAdding]           = useState<{ dayId: string; type: MealType; dayIdx: number } | null>(null)
+  const [newTitle, setNewTitle]       = useState('')
+  const [newIngr, setNewIngr]         = useState('')
+
+  // AI-forslag
+  const [aiPanel, setAiPanel]         = useState<{ dayId: string; type: MealType; dayIdx: number } | null>(null)
+  const [aiSuggestions, setAiSugg]    = useState<AISuggestion[]>([])
+  const [aiLoading, setAiLoading]     = useState(false)
+  const [aiError, setAiError]         = useState('')
+
   const router = useRouter()
+  const searchParams = useSearchParams()
   const sb = createClient()
   const monday = getMonday()
 
-  const init = useCallback(async () => {
-    const { data: { user } } = await sb.auth.getUser()
-    if (!user) { router.push('/sign-in'); return }
-
-    const [{ data: prof }, { data: prefs }] = await Promise.all([
-      sb.from('profiles').select('id,display_name,avatar_url,color_hex').eq('id', user.id).single(),
-      sb.from('kp_preferences').select('id').eq('profile_id', user.id).single(),
-    ])
-    setProfile(prof)
-    setHasPrefs(!!prefs)
-
-    // Hent eller opprett ukeplan
+  const loadWeekPlan = useCallback(async (person: Person) => {
     let { data: wp } = await sb.from('kp_week_plans')
-      .select('id').eq('profile_id', user.id).eq('week_start', monday).single()
+      .select('id').eq('person_id', person.id).eq('week_start', monday).single()
     if (!wp) {
-      const { data } = await sb.from('kp_week_plans').insert({ profile_id: user.id, week_start: monday }).select('id').single()
+      const { data } = await sb.from('kp_week_plans')
+        .insert({ person_id: person.id, week_start: monday }).select('id').single()
       wp = data
     }
-    if (!wp) { setLoading(false); return }
+    if (!wp) return
 
-    // Hent eller opprett dagplaner
     let { data: dps } = await sb.from('kp_day_plans').select('*').eq('week_plan_id', wp.id).order('day_of_week')
     if (!dps || dps.length < 7) {
       const existing = (dps || []).map((d: DayPlan) => d.day_of_week)
       const toCreate = [1,2,3,4,5,6,7].filter(d => !existing.includes(d)).map(d => ({ week_plan_id: wp!.id, day_of_week: d }))
       if (toCreate.length) await sb.from('kp_day_plans').insert(toCreate)
-      const { data: refreshed } = await sb.from('kp_day_plans').select('*').eq('week_plan_id', wp.id).order('day_of_week')
-      dps = refreshed
+      const { data: r } = await sb.from('kp_day_plans').select('*').eq('week_plan_id', wp.id).order('day_of_week')
+      dps = r
     }
     setDayPlans(dps || [])
 
@@ -74,12 +92,38 @@ export default function KostPlanDashboard() {
     if (ids.length) {
       const { data: sl } = await sb.from('kp_meal_slots').select('*').in('day_plan_id', ids)
       setSlots(sl || [])
+    } else {
+      setSlots([])
+    }
+  }, [monday, sb])
+
+  const init = useCallback(async () => {
+    const { data: { user } } = await sb.auth.getUser()
+    if (!user) { router.push('/sign-in'); return }
+
+    const { data: persons } = await sb.from('kp_persons').select('id,name,avatar_emoji,color_hex,health_goal,health_notes').order('created_at')
+    setPersons(persons || [])
+
+    if (persons && persons.length > 0) {
+      const paramId = searchParams.get('person')
+      const selected = persons.find((p: Person) => p.id === paramId) || persons[0]
+      setActive(selected)
+      await loadWeekPlan(selected)
     }
     setLoading(false)
-  }, [monday, router, sb])
+  }, [router, sb, searchParams, loadWeekPlan])
 
   useEffect(() => { init() }, [init])
 
+  async function switchPerson(p: Person) {
+    setActive(p)
+    setPersonOpen(false)
+    setSlots([])
+    setDayPlans([])
+    await loadWeekPlan(p)
+  }
+
+  // ── Manuelt legg til måltid ──
   async function addMeal() {
     if (!adding || !newTitle.trim()) return
     const { data } = await sb.from('kp_meal_slots').insert({
@@ -90,6 +134,54 @@ export default function KostPlanDashboard() {
     }).select().single()
     if (data) setSlots(prev => [...prev, data])
     setAdding(null); setNewTitle(''); setNewIngr('')
+  }
+
+  // ── AI-forslag ──
+  async function openAI(dayId: string, type: MealType, dayIdx: number) {
+    if (!activePerson) return
+    setAiPanel({ dayId, type, dayIdx })
+    setAiSugg([])
+    setAiError('')
+    setAiLoading(true)
+
+    const existingTitles = slots.filter(s => s.title).map(s => s.title as string)
+
+    try {
+      const res = await fetch('/api/kostplan/suggest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          person_id: activePerson.id,
+          meal_type: type,
+          day_of_week: dayIdx + 1,
+          existing_meals: existingTitles,
+        }),
+      })
+      const data = await res.json()
+      if (data.error) setAiError(data.error)
+      else setAiSugg(data.suggestions || [])
+    } catch {
+      setAiError('Noe gikk galt. Prøv igjen.')
+    }
+    setAiLoading(false)
+  }
+
+  async function pickSuggestion(suggestion: AISuggestion) {
+    if (!aiPanel) return
+    const { data } = await sb.from('kp_meal_slots').insert({
+      day_plan_id: aiPanel.dayId,
+      meal_type: aiPanel.type,
+      title: suggestion.title,
+      description: suggestion.description,
+      ingredients: suggestion.ingredients,
+      tags: suggestion.tags,
+      prep_minutes: suggestion.prep_minutes,
+      nutrition_notes: suggestion.nutrition_notes,
+      ai_generated: true,
+    }).select().single()
+    if (data) setSlots(prev => [...prev, data])
+    setAiPanel(null)
+    setAiSugg([])
   }
 
   async function deleteSlot(id: string) {
@@ -103,96 +195,208 @@ export default function KostPlanDashboard() {
     </div>
   )
 
-  const initials = profile?.display_name?.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() || '?'
+  const goal = activePerson ? (GOAL_LABELS[activePerson.health_goal] || GOAL_LABELS.general) : null
   const weekLabel = new Date(monday).toLocaleDateString('nb-NO', { day: 'numeric', month: 'long' })
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {/* Header */}
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+
+      {/* ── HEADER ── */}
       <header style={s.header}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <button style={s.backBtn} onClick={() => router.push('/dashboard')} title="Tilbake til Familie-appen">
-            ← Familie
-          </button>
+          <button style={s.backBtn} onClick={() => router.push('/dashboard')}>← Familie</button>
           <div style={s.logo}>Kost<span style={{ color: '#3B7DD8' }}>Plan</span></div>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontSize: 13, color: '#6B7280' }}>Uke fra {weekLabel}</span>
-          {!hasPrefs && (
-            <button style={s.setupBtn} onClick={() => router.push('/kostplan/onboarding')}>
-              ⚙️ Sett opp preferanser
-            </button>
+          <span style={{ color: '#D1D5DB', fontSize: 16 }}>|</span>
+
+          {/* Person-velger */}
+          {persons.length === 0 ? (
+            <button style={s.addPersonBtn} onClick={() => router.push('/kostplan/person')}>+ Legg til person</button>
+          ) : (
+            <div style={{ position: 'relative' }}>
+              <button style={s.personPill} onClick={() => setPersonOpen(v => !v)}>
+                <span style={{ fontSize: 16 }}>{activePerson?.avatar_emoji}</span>
+                <span style={{ fontSize: 14, fontWeight: 500 }}>{activePerson?.name}</span>
+                {goal && (
+                  <span style={{ ...s.goalBadge, color: goal.color, background: goal.color + '18', border: `1px solid ${goal.color}30` }}>
+                    {goal.emoji} {goal.label}
+                  </span>
+                )}
+                <span style={{ color: '#9CA3AF', fontSize: 12 }}>▾</span>
+              </button>
+              {personOpen && (
+                <div style={s.personDropdown}>
+                  {persons.map(p => {
+                    const g = GOAL_LABELS[p.health_goal] || GOAL_LABELS.general
+                    return (
+                      <button key={p.id} style={{ ...s.personDropItem, ...(p.id === activePerson?.id ? { background: '#EBF2FF' } : {}) }}
+                        onClick={() => switchPerson(p)}>
+                        <span style={{ fontSize: 18 }}>{p.avatar_emoji}</span>
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 500 }}>{p.name}</div>
+                          <div style={{ fontSize: 11, color: g.color }}>{g.emoji} {g.label}</div>
+                        </div>
+                      </button>
+                    )
+                  })}
+                  <div style={{ borderTop: '1px solid #E4E8EF', marginTop: 4, paddingTop: 4 }}>
+                    <button style={{ ...s.personDropItem, color: '#3B7DD8' }} onClick={() => { setPersonOpen(false); router.push('/kostplan/person') }}>
+                      + Legg til person
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
-          <button style={s.aiBtn} title="Kommer snart">✨ AI-forslag</button>
-          <div style={{ ...s.avatar, background: profile?.color_hex || '#3B7DD8' }}>{initials}</div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 12, color: '#9CA3AF' }}>Uke fra {weekLabel}</span>
         </div>
       </header>
 
-      {/* Ukegrid */}
-      <div style={s.grid}>
-        {dayPlans.map((day, i) => {
-          const daySlots = slots.filter(m => m.day_plan_id === day.id)
-          const todayIdx = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1
-          const isToday = i === todayIdx
+      {persons.length === 0 ? (
+        // Tomt state
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12, color: '#6B7280' }}>
+          <div style={{ fontSize: 48 }}>🍽️</div>
+          <div style={{ fontSize: 18, fontWeight: 600, color: '#111827' }}>Ingen kostplan ennå</div>
+          <div style={{ fontSize: 14 }}>Legg til en person for å starte</div>
+          <button style={{ ...s.btn, width: 'auto', padding: '10px 24px', marginTop: 8 }} onClick={() => router.push('/kostplan/person')}>
+            + Legg til person
+          </button>
+        </div>
+      ) : (
+        /* ── UKEGRID ── */
+        <div style={s.grid}>
+          {dayPlans.map((day, i) => {
+            const daySlots = slots.filter(m => m.day_plan_id === day.id)
+            const todayIdx = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1
+            const isToday = i === todayIdx
 
-          return (
-            <div key={day.id} style={{ ...s.dayCol, ...(isToday ? s.dayToday : {}) }}>
-              <div style={s.dayHead}>
-                <span style={{ fontSize: 13, fontWeight: 600 }}>{DAYS[i]}</span>
-                {isToday && <span style={s.todayBadge}>I dag</span>}
+            return (
+              <div key={day.id} style={{ ...s.dayCol, ...(isToday ? s.dayToday : {}) }}>
+                <div style={s.dayHead}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: isToday ? '#1D4ED8' : '#374151' }}>{DAYS[i]}</span>
+                  {isToday && <span style={s.todayBadge}>I dag</span>}
+                </div>
+
+                {MEALS.map(({ type, label, emoji }) => {
+                  const slot = daySlots.find(sl => sl.meal_type === type)
+                  return (
+                    <div key={type} style={{ marginBottom: 5 }}>
+                      <div style={{ fontSize: 10, color: '#9CA3AF', marginBottom: 2 }}>{emoji} {label}</div>
+                      {slot ? (
+                        <div style={s.mealCard}>
+                          <div style={{ fontSize: 12, fontWeight: 500, paddingRight: 14, lineHeight: 1.3 }}>{slot.title}</div>
+                          {slot.ingredients.length > 0 && (
+                            <div style={{ fontSize: 10, color: '#9CA3AF', marginTop: 2 }}>
+                              {slot.ingredients.slice(0,3).join(', ')}{slot.ingredients.length > 3 ? '…' : ''}
+                            </div>
+                          )}
+                          {slot.ai_generated && <span style={{ position: 'absolute', bottom: 3, left: 6, fontSize: 9, color: '#6366F1' }}>✨ AI</span>}
+                          <button style={s.delBtn} onClick={() => deleteSlot(slot.id)}>×</button>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', gap: 3 }}>
+                          <button style={s.addBtn} onClick={() => { setAdding({ dayId: day.id, type, dayIdx: i }); setNewTitle(''); setNewIngr('') }}>
+                            +
+                          </button>
+                          {activePerson && (
+                            <button style={s.aiSmallBtn} onClick={() => openAI(day.id, type, i)} title="AI-forslag">
+                              ✨
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
+            )
+          })}
+        </div>
+      )}
 
-              {MEALS.map(({ type, label, emoji }) => {
-                const slot = daySlots.find(sl => sl.meal_type === type)
-                return (
-                  <div key={type} style={{ marginBottom: 6 }}>
-                    <div style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 3 }}>{emoji} {label}</div>
-                    {slot ? (
-                      <div style={s.mealCard}>
-                        <div style={{ fontSize: 13, fontWeight: 500, paddingRight: 16 }}>{slot.title}</div>
-                        {slot.ingredients.length > 0 && (
-                          <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>
-                            {slot.ingredients.slice(0, 3).join(', ')}{slot.ingredients.length > 3 ? '…' : ''}
-                          </div>
-                        )}
-                        {slot.ai_generated && <span style={s.aiBadge}>✨</span>}
-                        <button style={s.delBtn} onClick={() => deleteSlot(slot.id)}>×</button>
-                      </div>
-                    ) : (
-                      <button style={s.addBtn} onClick={() => { setAdding({ dayId: day.id, type }); setNewTitle(''); setNewIngr('') }}>
-                        + Legg til
-                      </button>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )
-        })}
-      </div>
-
-      {/* Modal */}
+      {/* ── MANUELL LEGG TIL MODAL ── */}
       {adding && (
         <div style={s.overlay} onClick={e => { if (e.target === e.currentTarget) setAdding(null) }}>
           <div style={s.modal}>
-            <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 18 }}>Legg til måltid</div>
-            <div style={{ marginBottom: 14 }}>
-              <label style={s.label}>Hva skal du spise?</label>
+            <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 16 }}>Legg til måltid</div>
+            <Field label="Hva skal du spise?">
               <input style={s.input} autoFocus value={newTitle}
                 onChange={e => setNewTitle(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && addMeal()}
                 placeholder="f.eks. Pastasalat med kylling" />
-            </div>
-            <div style={{ marginBottom: 20 }}>
-              <label style={s.label}>Ingredienser (valgfritt)</label>
-              <input style={s.input} value={newIngr}
-                onChange={e => setNewIngr(e.target.value)}
-                placeholder="pasta, kylling, paprika" />
-            </div>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            </Field>
+            <Field label="Ingredienser (valgfritt, kommaseparert)">
+              <input style={s.input} value={newIngr} onChange={e => setNewIngr(e.target.value)} placeholder="pasta, kylling, paprika" />
+            </Field>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
               <button style={s.btnGhost} onClick={() => setAdding(null)}>Avbryt</button>
               <button style={s.btnPrimary} onClick={addMeal}>Lagre</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── AI-FORSLAG PANEL ── */}
+      {aiPanel && (
+        <div style={s.overlay} onClick={e => { if (e.target === e.currentTarget) { setAiPanel(null); setAiSugg([]) } }}>
+          <div style={{ ...s.modal, maxWidth: 540 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <div style={{ fontSize: 17, fontWeight: 700 }}>✨ AI-forslag</div>
+              <button style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer', fontSize: 18 }} onClick={() => { setAiPanel(null); setAiSugg([]) }}>×</button>
+            </div>
+            {activePerson && goal && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, padding: '8px 12px', background: '#F4F6F9', borderRadius: 8 }}>
+                <span style={{ fontSize: 20 }}>{activePerson.avatar_emoji}</span>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>{activePerson.name}</div>
+                  <div style={{ fontSize: 11, color: goal.color }}>{goal.emoji} {goal.label}</div>
+                </div>
+                <div style={{ marginLeft: 'auto', fontSize: 12, color: '#6B7280' }}>
+                  {DAYS[aiPanel.dayIdx]} — {MEALS.find(m => m.type === aiPanel.type)?.label}
+                </div>
+              </div>
+            )}
+
+            {aiLoading && (
+              <div style={{ textAlign: 'center', padding: '32px 0', color: '#6B7280' }}>
+                <div style={{ fontSize: 28, marginBottom: 8 }}>🤔</div>
+                <div style={{ fontSize: 14 }}>Claude lager forslag tilpasset {activePerson?.name}…</div>
+              </div>
+            )}
+
+            {aiError && (
+              <div style={{ background: '#FEE2E2', color: '#B91C1C', padding: '10px 14px', borderRadius: 8, fontSize: 14, marginBottom: 12 }}>
+                {aiError}
+              </div>
+            )}
+
+            {aiSuggestions.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {aiSuggestions.map((sug, idx) => (
+                  <div key={idx} style={s.suggCard}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 3 }}>{sug.title}</div>
+                        <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 6 }}>{sug.description}</div>
+                        <div style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>
+                          🥦 {sug.ingredients.slice(0,4).join(', ')}{sug.ingredients.length > 4 ? '…' : ''}
+                          {sug.prep_minutes ? ` · ⏱ ${sug.prep_minutes} min` : ''}
+                        </div>
+                        <div style={{ fontSize: 11, color: '#6366F1', background: '#EEF2FF', padding: '4px 8px', borderRadius: 5, display: 'inline-block' }}>
+                          💡 {sug.why_fits_goal}
+                        </div>
+                      </div>
+                      <button style={s.pickBtn} onClick={() => pickSuggestion(sug)}>Velg</button>
+                    </div>
+                  </div>
+                ))}
+                <button style={{ ...s.btnGhost, marginTop: 4 }} onClick={() => openAI(aiPanel.dayId, aiPanel.type, aiPanel.dayIdx)}>
+                  🔄 Nye forslag
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -200,26 +404,40 @@ export default function KostPlanDashboard() {
   )
 }
 
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#6B7280', textTransform: 'uppercase' as const, letterSpacing: '.4px', marginBottom: 5 }}>{label}</label>
+      {children}
+    </div>
+  )
+}
+
 const s: Record<string, React.CSSProperties> = {
-  header: { background: '#fff', borderBottom: '1px solid #E4E8EF', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', height: 52, position: 'sticky', top: 0, zIndex: 10 },
-  logo: { fontSize: 17, fontWeight: 700, letterSpacing: '-.4px' },
-  backBtn: { fontSize: 13, color: '#6B7280', background: 'none', border: '1px solid #E4E8EF', borderRadius: 6, padding: '5px 10px', cursor: 'pointer' },
-  setupBtn: { fontSize: 13, background: '#FEF3C7', color: '#92400E', border: '1px solid #FDE68A', borderRadius: 7, padding: '5px 12px', cursor: 'pointer' },
-  aiBtn: { padding: '5px 12px', background: '#EBF2FF', color: '#1D4ED8', border: '1px solid #BFDBFE', borderRadius: 7, fontSize: 13, fontWeight: 500, cursor: 'pointer' },
-  avatar: { width: 30, height: 30, borderRadius: '50%', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600 },
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 1, flex: 1, background: '#E4E8EF' },
-  dayCol: { background: '#F4F6F9', padding: '10px 8px' },
+  header: { background: '#fff', borderBottom: '1px solid #E4E8EF', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', height: 50, position: 'sticky', top: 0, zIndex: 20, gap: 8 },
+  logo: { fontSize: 15, fontWeight: 700, letterSpacing: '-.4px', whiteSpace: 'nowrap' },
+  backBtn: { fontSize: 12, color: '#6B7280', background: 'none', border: '1px solid #E4E8EF', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', whiteSpace: 'nowrap' },
+  addPersonBtn: { fontSize: 13, color: '#3B7DD8', background: '#EBF2FF', border: '1px solid #BFDBFE', borderRadius: 7, padding: '5px 12px', cursor: 'pointer' },
+  personPill: { display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', background: '#F4F6F9', border: '1px solid #E4E8EF', borderRadius: 8, cursor: 'pointer' },
+  goalBadge: { fontSize: 11, padding: '2px 7px', borderRadius: 20, fontWeight: 500 },
+  personDropdown: { position: 'absolute', top: '100%', left: 0, marginTop: 4, background: '#fff', border: '1px solid #E4E8EF', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,.12)', minWidth: 200, zIndex: 50, padding: '4px 0' },
+  personDropItem: { display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' as const },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 1, flex: 1, background: '#E4E8EF', minHeight: 'calc(100vh - 50px)' },
+  dayCol: { background: '#F4F6F9', padding: '8px 6px' },
   dayToday: { background: '#EBF2FF' },
-  dayHead: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
-  todayBadge: { fontSize: 10, background: '#3B7DD8', color: '#fff', padding: '2px 5px', borderRadius: 4, fontWeight: 600 },
-  mealCard: { background: '#fff', border: '1px solid #E4E8EF', borderRadius: 7, padding: '7px 9px', position: 'relative' },
-  aiBadge: { position: 'absolute', bottom: 4, left: 6, fontSize: 10 },
-  delBtn: { position: 'absolute', top: 3, right: 5, background: 'none', border: 'none', color: '#D1D5DB', cursor: 'pointer', fontSize: 15 },
-  addBtn: { width: '100%', padding: '5px 0', background: 'transparent', border: '1px dashed #D1D5DB', borderRadius: 7, color: '#9CA3AF', fontSize: 12, cursor: 'pointer' },
-  overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 },
-  modal: { background: '#fff', borderRadius: 12, padding: 28, width: '100%', maxWidth: 420, boxShadow: '0 20px 60px rgba(0,0,0,.2)' },
-  label: { display: 'block', fontSize: 12, fontWeight: 600, color: '#6B7280', textTransform: 'uppercase' as const, letterSpacing: '.4px', marginBottom: 6 },
-  input: { width: '100%', padding: '10px 14px', border: '1px solid #E4E8EF', borderRadius: 8, fontSize: 15, background: '#F4F6F9', outline: 'none' },
+  dayHead: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  todayBadge: { fontSize: 9, background: '#3B7DD8', color: '#fff', padding: '2px 5px', borderRadius: 4, fontWeight: 600 },
+  mealCard: { background: '#fff', border: '1px solid #E4E8EF', borderRadius: 6, padding: '6px 8px', position: 'relative', minHeight: 36 },
+  delBtn: { position: 'absolute', top: 2, right: 4, background: 'none', border: 'none', color: '#D1D5DB', cursor: 'pointer', fontSize: 14, lineHeight: 1 },
+  addBtn: { flex: 1, padding: '4px 0', background: 'transparent', border: '1px dashed #D1D5DB', borderRadius: 6, color: '#9CA3AF', fontSize: 14, cursor: 'pointer' },
+  aiSmallBtn: { width: 28, padding: '4px 0', background: '#EEF2FF', border: '1px solid #C7D2FE', borderRadius: 6, fontSize: 12, cursor: 'pointer' },
+  overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 },
+  modal: { background: '#fff', borderRadius: 12, padding: 24, width: '100%', maxWidth: 440, boxShadow: '0 20px 60px rgba(0,0,0,.2)', maxHeight: '90vh', overflowY: 'auto' },
+  suggCard: { background: '#F8F9FF', border: '1px solid #E0E7FF', borderRadius: 10, padding: '12px 14px' },
+  pickBtn: { padding: '7px 14px', background: '#3B7DD8', color: '#fff', border: 'none', borderRadius: 7, fontSize: 13, fontWeight: 500, cursor: 'pointer', flexShrink: 0 },
+  label: { display: 'block', fontSize: 12, fontWeight: 600, color: '#6B7280', textTransform: 'uppercase' as const, letterSpacing: '.4px', marginBottom: 5 },
+  input: { width: '100%', padding: '10px 14px', border: '1px solid #E4E8EF', borderRadius: 8, fontSize: 15, background: '#F4F6F9', color: '#111827', outline: 'none', fontFamily: 'inherit' },
+  btn: { padding: '11px 0', background: '#3B7DD8', color: '#fff', border: 'none', borderRadius: 8, fontSize: 15, fontWeight: 500, cursor: 'pointer', width: '100%' },
   btnPrimary: { padding: '9px 20px', background: '#3B7DD8', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 500, cursor: 'pointer' },
-  btnGhost: { padding: '9px 16px', background: 'transparent', border: '1px solid #E4E8EF', borderRadius: 8, fontSize: 14, color: '#6B7280', cursor: 'pointer' },
+  btnGhost: { padding: '9px 16px', background: 'transparent', border: '1px solid #E4E8EF', borderRadius: 8, fontSize: 14, color: '#6B7280', cursor: 'pointer', width: '100%' },
 }
