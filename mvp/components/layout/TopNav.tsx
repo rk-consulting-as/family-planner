@@ -10,7 +10,7 @@ import {
   Calendar, CheckSquare, Trophy, Footprints, Home, Settings, LogOut, Shield,
   CheckCheck, ShoppingBag, Bell, Wallet, MessageSquare, UtensilsCrossed,
   ShoppingCart, Gift, Briefcase, Mail, ChevronDown, Menu, X, Sparkles,
-  BookOpen, Camera, Sun, Moon,
+  BookOpen, Camera, Sun, Moon, LayoutGrid, HardHat, Apple,
 } from "lucide-react";
 
 type LeafItem = {
@@ -18,6 +18,7 @@ type LeafItem = {
   label: string;
   icon: typeof Home;
   module?: string;
+  external?: boolean;
 };
 
 type NavGroup =
@@ -71,6 +72,15 @@ const NAV: NavGroup[] = [
       { href: "/belonninger", label: "Belønninger", icon: Trophy, module: "rewards" },
       { href: "/ga-tracker", label: "Gå-tracker", icon: Footprints, module: "walking" },
       { href: "/utlegg", label: "Utlegg", icon: Wallet, module: "expenses" },
+    ],
+  },
+  {
+    type: "group",
+    label: "Mine apper",
+    icon: LayoutGrid,
+    items: [
+      { href: "/buildplan/", label: "BuildPlan", icon: HardHat, external: true },
+      { href: "http://localhost:3001", label: "KostPlan", icon: Apple, external: true },
     ],
   },
 ];
@@ -133,18 +143,32 @@ function NavDropdown({
         <div className="absolute left-0 top-full mt-1 w-56 bg-white border border-slate-200 rounded-xl shadow-lg py-1 z-50">
           {items.map((it) => {
             const ItemIcon = it.icon;
-            const active = pathname === it.href || pathname.startsWith(it.href + "/");
-            return (
+            const active = !it.external && (pathname === it.href || pathname.startsWith(it.href + "/"));
+            const cls = cn(
+              "flex items-center gap-2.5 px-3 py-2 text-sm",
+              active
+                ? "bg-brand-50 text-brand-700 font-medium"
+                : "text-slate-700 hover:bg-slate-50"
+            );
+            return it.external ? (
+              <a
+                key={it.href}
+                href={it.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setOpen(false)}
+                className={cls}
+              >
+                <ItemIcon className="w-4 h-4" />
+                {it.label}
+                <span className="ml-auto text-slate-400 text-xs">↗</span>
+              </a>
+            ) : (
               <Link
                 key={it.href}
                 href={it.href}
                 onClick={() => setOpen(false)}
-                className={cn(
-                  "flex items-center gap-2.5 px-3 py-2 text-sm",
-                  active
-                    ? "bg-brand-50 text-brand-700 font-medium"
-                    : "text-slate-700 hover:bg-slate-50"
-                )}
+                className={cls}
               >
                 <ItemIcon className="w-4 h-4" />
                 {it.label}

@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BuildPlan</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* ── Design tokens – Morgen/Sunsama-estetikk ── */
+    :root {
+      --bg:          #F7F5F2;
+      --surface:     #FFFFFF;
+      --border:      #E8E4DF;
+      --accent:      #C4622D;
+      --accent-soft: #F3E8E1;
+      --text:        #1A1714;
+      --muted:       #8A837A;
+      --sidebar-w:   240px;
+      --radius:      10px;
+      --shadow:      0 1px 4px rgba(0,0,0,.08);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── AUTH ── */
+    #auth-screen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .auth-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: var(--shadow);
+    }
+
+    .auth-logo {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -.5px;
+      margin-bottom: 6px;
+    }
+    .auth-logo span { color: var(--accent); }
+
+    .auth-tagline {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 32px;
+    }
+
+    .tab-row {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 24px;
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 4px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 8px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 500;
+      transition: all .15s;
+    }
+    .tab-btn.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: var(--shadow);
+    }
+
+    .form-group { margin-bottom: 16px; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+    }
+
+    input[type="email"],
+    input[type="password"],
+    input[type="text"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 15px;
+      background: var(--bg);
+      color: var(--text);
+      outline: none;
+      transition: border-color .15s;
+      font-family: inherit;
+    }
+    input:focus, textarea:focus, select:focus {
+      border-color: var(--accent);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 18px;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity .15s, transform .1s;
+      font-family: inherit;
+    }
+    .btn:active { transform: scale(.98); }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      width: 100%;
+    }
+    .btn-primary:hover { opacity: .9; }
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--bg); }
+    .btn-sm { padding: 6px 12px; font-size: 13px; }
+    .btn-danger { background: #DC2626; color: #fff; }
+
+    .error-msg {
+      background: #FEE2E2;
+      color: #B91C1C;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 14px;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    /* ── APP LAYOUT ── */
+    #app { display: none; }
+
+    .layout {
+      display: flex;
+      height: 100vh;
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 16px 0;
+      flex-shrink: 0;
+    }
+
+    .sidebar-logo {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -.4px;
+      padding: 0 16px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-logo span { color: var(--accent); }
+
+    .sidebar-section {
+      padding: 12px 12px 4px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .6px;
+    }
+
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      margin: 1px 8px;
+      border-radius: 7px;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--text);
+      text-decoration: none;
+      transition: background .1s;
+      border: none;
+      background: transparent;
+      width: calc(100% - 16px);
+      text-align: left;
+      font-family: inherit;
+    }
+    .sidebar-item:hover { background: var(--bg); }
+    .sidebar-item.active { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
+
+    .area-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .sidebar-bottom {
+      margin-top: auto;
+      padding: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .user-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .user-pill:hover { background: var(--bg); }
+
+    .avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .user-name { font-size: 13px; font-weight: 500; }
+    .user-email { font-size: 11px; color: var(--muted); }
+
+    /* ── MAIN CONTENT ── */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 32px;
+    }
+
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+    }
+
+    .page-title { font-size: 24px; font-weight: 700; letter-spacing: -.4px; }
+    .page-sub   { font-size: 14px; color: var(--muted); margin-top: 2px; }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .card + .card { margin-top: 16px; }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 14px;
+    }
+
+    /* ── PROJECT GRID ── */
+    .project-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+    }
+
+    .project-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      transition: box-shadow .15s, transform .1s;
+      position: relative;
+      overflow: hidden;
+    }
+    .project-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: var(--project-color, var(--accent));
+    }
+    .project-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.12); transform: translateY(-1px); }
+
+    .project-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+    .project-card p  { font-size: 13px; color: var(--muted); }
+
+    .project-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 16px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .new-project-card {
+      background: transparent;
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 500;
+      transition: all .15s;
+      min-height: 120px;
+    }
+    .new-project-card:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+
+    /* ── AREAS + TASKS ── */
+    .area-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .area-color-bar {
+      width: 4px;
+      height: 20px;
+      border-radius: 2px;
+    }
+    .area-title { font-size: 16px; font-weight: 600; }
+
+    .task-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      transition: background .1s;
+      cursor: pointer;
+    }
+    .task-row:hover { background: var(--bg); }
+    .task-row + .task-row { border-top: 1px solid var(--border); }
+
+    .task-check {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all .1s;
+      cursor: pointer;
+    }
+    .task-check.done { background: var(--accent); border-color: var(--accent); }
+    .task-check.done::after { content: '✓'; color: #fff; font-size: 11px; }
+
+    .task-title { font-size: 14px; flex: 1; }
+    .task-title.done { text-decoration: line-through; color: var(--muted); }
+
+    .task-badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-weight: 500;
+    }
+    .badge-purchase { background: #E0F2FE; color: #0369A1; }
+    .badge-hours    { background: #F0FDF4; color: #15803D; }
+
+    .sub-task { padding-left: 32px; }
+
+    /* ── STATS ROW ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+    .stat-value { font-size: 28px; font-weight: 700; letter-spacing: -.5px; }
+    .stat-label { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 16px;
+      display: none;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 28px;
+      width: 100%;
+      max-width: 460px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.2);
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+
+    /* ── PROGRESS BAR ── */
+    .progress-bar {
+      height: 6px;
+      background: var(--bg);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: var(--accent);
+      transition: width .3s;
+    }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      text-align: center;
+      padding: 60px 24px;
+      color: var(--muted);
+    }
+    .empty-state svg { margin-bottom: 12px; opacity: .4; }
+    .empty-state p { font-size: 15px; }
+
+    /* ── UTILITY ── */
+    .hidden { display: none !important; }
+    .flex { display: flex; }
+    .gap-8 { gap: 8px; }
+    .mt-16 { margin-top: 16px; }
+    .color-picker {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;
+    }
+    .color-swatch {
+      width: 24px; height: 24px; border-radius: 50%; cursor: pointer;
+      border: 2px solid transparent; transition: transform .1s;
+    }
+    .color-swatch.selected { border-color: var(--text); transform: scale(1.15); }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════ AUTH SCREEN ══════════════════ -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">Build<span>Plan</span></div>
+    <p class="auth-tagline">Planlegg boligprosjektet ditt</p>
+
+    <div class="tab-row">
+      <button class="tab-btn active" onclick="showTab('login')">Logg inn</button>
+      <button class="tab-btn" onclick="showTab('register')">Opprett konto</button>
+    </div>
+
+    <div id="auth-error" class="error-msg"></div>
+
+    <!-- Login form -->
+    <div id="login-form">
+      <div class="form-group">
+        <label>E-post</label>
+        <input type="email" id="login-email" placeholder="deg@example.com" />
+      </div>
+      <div class="form-group">
+        <label>Passord</label>
+        <input type="password" id="login-password" placeholder="••••••••" />
+      </div>
+      <button class="btn btn-primary" onclick="login()">Logg inn</button>
+    </div>
+
+    <!-- Register form -->
+    <div id="register-form" class="hidden">
+      <div class="form-group">
+        <label>Navn</label>
+        <input type="text" id="reg-name" placeholder="Ola Nordmann" />
+      </div>
+      <div class="form-group">
+        <label>E-post</label>
+        <input type="email" id="reg-email" placeholder="deg@example.com" />
+      </div>
+      <div class="form-group">
+        <label>Passord</label>
+        <input type="password" id="reg-password" placeholder="Minst 8 tegn" />
+      </div>
+      <button class="btn btn-primary" onclick="register()">Opprett konto</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ APP ══════════════════ -->
+<div id="app">
+  <div class="layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">Build<span>Plan</span></div>
+
+      <div class="sidebar-section">Navigasjon</div>
+      <button class="sidebar-item active" id="nav-today" onclick="showPage('today')">
+        ☀️ I dag
+      </button>
+      <button class="sidebar-item" id="nav-projects" onclick="showPage('projects')">
+        📁 Alle prosjekter
+      </button>
+
+      <div class="sidebar-section" id="areas-section-label" style="display:none">Områder</div>
+      <div id="sidebar-areas"></div>
+
+      <div class="sidebar-bottom">
+        <div class="user-pill" onclick="logout()">
+          <div class="avatar" id="user-avatar">?</div>
+          <div>
+            <div class="user-name" id="user-name-label">–</div>
+            <div class="user-email" id="user-email-label">–</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+
+      <!-- TODAY PAGE -->
+      <div id="page-today">
+        <div class="page-header">
+          <div>
+            <div class="page-title">I dag</div>
+            <div class="page-sub" id="today-date"></div>
+          </div>
+        </div>
+        <div class="stats-row" id="today-stats"></div>
+        <div id="today-tasks-container"></div>
+      </div>
+
+      <!-- PROJECTS PAGE -->
+      <div id="page-projects" class="hidden">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Prosjekter</div>
+            <div class="page-sub">Alle boligprosjektene dine</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="openNewProjectModal()">+ Nytt prosjekt</button>
+        </div>
+        <div class="project-grid" id="project-grid">
+          <div class="new-project-card" onclick="openNewProjectModal()">
+            + Nytt prosjekt
+          </div>
+        </div>
+      </div>
+
+      <!-- PROJECT DETAIL PAGE -->
+      <div id="page-project" class="hidden">
+        <div class="page-header">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <button class="btn btn-ghost btn-sm" onclick="showPage('projects')">← Tilbake</button>
+              <div class="page-title" id="project-detail-title"></div>
+            </div>
+            <div class="page-sub" id="project-detail-sub"></div>
+          </div>
+          <div class="flex gap-8">
+            <button class="btn btn-ghost btn-sm" onclick="openNewAreaModal()">+ Område</button>
+            <button class="btn btn-primary btn-sm" onclick="openNewTaskModal()">+ Oppgave</button>
+          </div>
+        </div>
+        <div id="project-areas-container"></div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ══════════════════ MODALS ══════════════════ -->
+
+<!-- New Project Modal -->
+<div class="modal-overlay" id="modal-new-project">
+  <div class="modal">
+    <div class="modal-title">Nytt prosjekt</div>
+    <div class="form-group">
+      <label>Prosjektnavn</label>
+      <input type="text" id="np-name" placeholder="f.eks. Baderomsoppussing 2025" />
+    </div>
+    <div class="form-group">
+      <label>Beskrivelse (valgfritt)</label>
+      <textarea id="np-desc" rows="2" placeholder="Hva skal gjøres?"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Farge</label>
+      <div class="color-picker" id="np-colors"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-new-project')">Avbryt</button>
+      <button class="btn btn-primary" style="width:auto" onclick="createProject()">Opprett</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Area Modal -->
+<div class="modal-overlay" id="modal-new-area">
+  <div class="modal">
+    <div class="modal-title">Nytt område</div>
+    <div class="form-group">
+      <label>Navn</label>
+      <input type="text" id="na-name" placeholder="f.eks. Bad, Kjøkken, 1. etasje" />
+    </div>
+    <div class="form-group">
+      <label>Farge</label>
+      <div class="color-picker" id="na-colors"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-new-area')">Avbryt</button>
+      <button class="btn btn-primary" style="width:auto" onclick="createArea()">Opprett</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Task Modal -->
+<div class="modal-overlay" id="modal-new-task">
+  <div class="modal">
+    <div class="modal-title">Ny oppgave</div>
+    <div class="form-group">
+      <label>Tittel</label>
+      <input type="text" id="nt-title" placeholder="Hva skal gjøres?" />
+    </div>
+    <div class="form-group">
+      <label>Type</label>
+      <select id="nt-type" onchange="onTaskTypeChange()">
+        <option value="hours">⏱ Timer</option>
+        <option value="purchase">🛒 Innkjøp</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Område</label>
+      <select id="nt-area"></select>
+    </div>
+    <div id="nt-hours-fields">
+      <div class="form-group">
+        <label>Estimert tid (timer)</label>
+        <input type="number" id="nt-est-hours" placeholder="8" min="0" />
+      </div>
+    </div>
+    <div id="nt-purchase-fields" class="hidden">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div class="form-group">
+          <label>Antall</label>
+          <input type="number" id="nt-qty" placeholder="1" min="0" />
+        </div>
+        <div class="form-group">
+          <label>Enhet</label>
+          <input type="text" id="nt-unit" placeholder="stk" />
+        </div>
+        <div class="form-group">
+          <label>Pris/enhet</label>
+          <input type="number" id="nt-price" placeholder="0" min="0" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Lenke til forhandler</label>
+        <input type="text" id="nt-url" placeholder="https://..." />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Startdato</label>
+      <input type="date" id="nt-start" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-new-task')">Avbryt</button>
+      <button class="btn btn-primary" style="width:auto" onclick="createTask()">Legg til</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ SCRIPT ══════════════════ -->
+<script>
+// ─── CONFIG ────────────────────────────────────────────────────────────
+// Bytt ut disse med dine Supabase-verdier
+const SUPABASE_URL  = 'https://egccohgxphbxfeslhmow.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_Akkq_E6ihmGo6HwQKq-_-A_bb8TQqM3';
+
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// ─── STATE ─────────────────────────────────────────────────────────────
+let currentUser    = null;
+let currentProfile = null;
+let currentProject = null;
+let projects       = [];
+let areas          = [];
+let tasks          = [];
+let selectedColor  = '#C4622D';
+let selectedAreaColor = '#C4622D';
+
+const COLORS = ['#C4622D','#2D6BC4','#2DB87C','#C4A82D','#8B2DC4','#C42D2D','#2DB8C4'];
+
+// ─── AUTH ───────────────────────────────────────────────────────────────
+sb.auth.onAuthStateChange(async (event, session) => {
+  if (session?.user) {
+    currentUser = session.user;
+    await loadProfile();
+    showApp();
+  } else {
+    currentUser = null;
+    showAuthScreen();
+  }
+});
+
+function showTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) =>
+    b.classList.toggle('active', (i===0 && tab==='login') || (i===1 && tab==='register'))
+  );
+  document.getElementById('login-form').classList.toggle('hidden', tab !== 'login');
+  document.getElementById('register-form').classList.toggle('hidden', tab !== 'register');
+}
+
+async function login() {
+  const email    = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) showAuthError(error.message);
+}
+
+async function register() {
+  const name     = document.getElementById('reg-name').value.trim();
+  const email    = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-password').value;
+  if (!name) return showAuthError('Skriv inn navn');
+  if (password.length < 8) return showAuthError('Passordet må ha minst 8 tegn');
+
+  const { data, error } = await sb.auth.signUp({ email, password });
+  if (error) return showAuthError(error.message);
+
+  if (data.user) {
+    await sb.from('profiles').upsert({
+      id: data.user.id,
+      display_name: name,
+      email,
+    });
+  }
+}
+
+async function logout() {
+  await sb.auth.signOut();
+}
+
+function showAuthError(msg) {
+  const el = document.getElementById('auth-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+// ─── PROFILE ────────────────────────────────────────────────────────────
+async function loadProfile() {
+  const { data } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
+  currentProfile = data;
+  if (data) {
+    const initials = data.display_name?.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    document.getElementById('user-avatar').textContent = initials || '?';
+    document.getElementById('user-name-label').textContent = data.display_name || '';
+    document.getElementById('user-email-label').textContent = data.email || currentUser.email || '';
+  }
+}
+
+// ─── SHOW SCREENS ───────────────────────────────────────────────────────
+function showAuthScreen() {
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+}
+
+async function showApp() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  await loadProjects();
+  showPage('today');
+}
+
+function showPage(page) {
+  ['today','projects','project'].forEach(p =>
+    document.getElementById('page-'+p).classList.toggle('hidden', p !== page)
+  );
+  ['today','projects'].forEach(p =>
+    document.getElementById('nav-'+p)?.classList.toggle('active', p === page)
+  );
+}
+
+// ─── PROJECTS ───────────────────────────────────────────────────────────
+async function loadProjects() {
+  // Prosjekter der brukeren er owner eller member
+  const { data: owned } = await sb.from('bp_projects')
+    .select('*').eq('owner_id', currentUser.id).eq('archived', false);
+
+  const { data: memberships } = await sb.from('bp_project_members')
+    .select('project_id').eq('profile_id', currentUser.id);
+
+  const memberIds = (memberships||[]).map(m => m.project_id)
+    .filter(id => !(owned||[]).find(p => p.id === id));
+
+  let memberProjects = [];
+  if (memberIds.length > 0) {
+    const { data } = await sb.from('bp_projects')
+      .select('*').in('id', memberIds).eq('archived', false);
+    memberProjects = data || [];
+  }
+
+  projects = [...(owned||[]), ...memberProjects];
+  renderProjects();
+  renderTodayPage();
+}
+
+function renderProjects() {
+  const grid = document.getElementById('project-grid');
+  grid.innerHTML = '';
+
+  projects.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'project-card';
+    card.style.setProperty('--project-color', p.cover_color || '#C4622D');
+    card.innerHTML = `
+      <h3>${esc(p.name)}</h3>
+      <p>${esc(p.description||'')}</p>
+      <div class="project-meta">
+        <span>Opprettet ${formatDate(p.created_at)}</span>
+      </div>
+    `;
+    card.onclick = () => openProject(p);
+    grid.appendChild(card);
+  });
+
+  // New project button
+  const add = document.createElement('div');
+  add.className = 'new-project-card';
+  add.textContent = '+ Nytt prosjekt';
+  add.onclick = openNewProjectModal;
+  grid.appendChild(add);
+}
+
+async function openProject(project) {
+  currentProject = project;
+  document.getElementById('project-detail-title').textContent = project.name;
+  document.getElementById('project-detail-sub').textContent = project.description || '';
+  showPage('project');
+  await loadAreas();
+  renderSidebarAreas();
+}
+
+// ─── AREAS ──────────────────────────────────────────────────────────────
+async function loadAreas() {
+  const { data } = await sb.from('bp_areas')
+    .select('*')
+    .eq('project_id', currentProject.id)
+    .order('sort_order');
+  areas = data || [];
+  await loadTasks();
+  renderProjectAreas();
+}
+
+async function loadTasks() {
+  const { data } = await sb.from('bp_tasks')
+    .select('*')
+    .eq('project_id', currentProject.id)
+    .is('parent_task_id', null)
+    .order('created_at');
+  tasks = data || [];
+}
+
+function renderProjectAreas() {
+  const container = document.getElementById('project-areas-container');
+  container.innerHTML = '';
+
+  if (areas.length === 0 && tasks.length === 0) {
+    container.innerHTML = `<div class="empty-state">
+      <p>Ingen områder eller oppgaver ennå.<br>Legg til et område for å komme i gang.</p>
+    </div>`;
+    return;
+  }
+
+  // Tasks without area
+  const noAreaTasks = tasks.filter(t => !t.area_id);
+  if (noAreaTasks.length > 0) {
+    container.appendChild(renderAreaBlock(null, noAreaTasks));
+  }
+
+  areas.forEach(area => {
+    const areaTasks = tasks.filter(t => t.area_id === area.id);
+    container.appendChild(renderAreaBlock(area, areaTasks));
+  });
+}
+
+function renderAreaBlock(area, areaTasks) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'card mt-16';
+
+  const doneTasks = areaTasks.filter(t => t.status === 'done').length;
+  const pct = areaTasks.length > 0 ? Math.round(doneTasks/areaTasks.length*100) : 0;
+
+  wrapper.innerHTML = `
+    <div class="area-header">
+      ${area ? `<div class="area-color-bar" style="background:${area.color_hex}"></div>` : ''}
+      <div class="area-title">${esc(area?.name || 'Generelt')}</div>
+      <span style="margin-left:auto;font-size:13px;color:var(--muted)">${pct}%</span>
+    </div>
+    ${areaTasks.length > 0 ? `<div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>` : ''}
+    <div style="margin-top:12px" id="tasks-${area?.id||'none'}"></div>
+  `;
+
+  const taskList = wrapper.querySelector(`#tasks-${area?.id||'none'}`);
+  areaTasks.forEach(task => {
+    taskList.appendChild(renderTaskRow(task));
+  });
+
+  return wrapper;
+}
+
+function renderTaskRow(task) {
+  const row = document.createElement('div');
+  row.className = 'task-row';
+  const isDone = task.status === 'done';
+
+  const totalCost = task.task_type === 'purchase' && task.quantity && task.price_per_unit
+    ? (task.quantity * task.price_per_unit).toLocaleString('nb-NO') + ' kr'
+    : '';
+
+  row.innerHTML = `
+    <div class="task-check ${isDone?'done':''}" onclick="toggleTask(event,'${task.id}','${isDone?'todo':'done'}')"></div>
+    <div class="task-title ${isDone?'done':''}">${esc(task.title)}</div>
+    ${totalCost ? `<span style="font-size:12px;color:var(--muted)">${totalCost}</span>` : ''}
+    <span class="task-badge ${task.task_type==='purchase'?'badge-purchase':'badge-hours'}">
+      ${task.task_type==='purchase'?'🛒':'⏱'}
+    </span>
+  `;
+  return row;
+}
+
+async function toggleTask(e, taskId, newStatus) {
+  e.stopPropagation();
+  await sb.from('bp_tasks').update({ status: newStatus }).eq('id', taskId);
+  tasks = tasks.map(t => t.id === taskId ? {...t, status: newStatus} : t);
+  renderProjectAreas();
+}
+
+// ─── TODAY PAGE ──────────────────────────────────────────────────────────
+async function renderTodayPage() {
+  const now = new Date();
+  document.getElementById('today-date').textContent = now.toLocaleDateString('nb-NO',{weekday:'long',day:'numeric',month:'long'});
+
+  // Stats
+  let totalTasks = 0, doneTasks = 0, totalBudget = 0;
+  for (const proj of projects) {
+    const { data } = await sb.from('bp_tasks').select('*').eq('project_id', proj.id);
+    if (data) {
+      totalTasks += data.length;
+      doneTasks  += data.filter(t => t.status === 'done').length;
+      data.forEach(t => {
+        if (t.task_type === 'purchase' && t.quantity && t.price_per_unit) {
+          totalBudget += t.quantity * t.price_per_unit;
+        }
+      });
+    }
+  }
+  const pct = totalTasks > 0 ? Math.round(doneTasks/totalTasks*100) : 0;
+
+  document.getElementById('today-stats').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-value">${projects.length}</div>
+      <div class="stat-label">Aktive prosjekter</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">${doneTasks}/${totalTasks}</div>
+      <div class="stat-label">Oppgaver fullført</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">${pct}%</div>
+      <div class="stat-label">Total fremdrift</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">${totalBudget.toLocaleString('nb-NO')}</div>
+      <div class="stat-label">Budsjett (kr)</div>
+    </div>
+  `;
+
+  const container = document.getElementById('today-tasks-container');
+  if (projects.length === 0) {
+    container.innerHTML = `<div class="empty-state"><p>Ingen prosjekter ennå. Opprett ditt første prosjekt!</p>
+      <button class="btn btn-primary" style="width:auto;margin-top:16px" onclick="showPage('projects');openNewProjectModal()">+ Nytt prosjekt</button>
+    </div>`;
+    return;
+  }
+  container.innerHTML = `<div class="card"><div class="card-title">Mine prosjekter</div>
+    ${projects.map(p=>`<div class="task-row" onclick="openProject(${JSON.stringify(p).replace(/"/g,'&quot;')})">
+      <div style="width:10px;height:10px;border-radius:50%;background:${p.cover_color||'var(--accent)'}"></div>
+      <div class="task-title">${esc(p.name)}</div>
+    </div>`).join('')}
+  </div>`;
+}
+
+// ─── SIDEBAR AREAS ───────────────────────────────────────────────────────
+function renderSidebarAreas() {
+  const container = document.getElementById('sidebar-areas');
+  const label = document.getElementById('areas-section-label');
+  container.innerHTML = '';
+
+  if (areas.length === 0) { label.style.display = 'none'; return; }
+  label.style.display = 'block';
+
+  areas.forEach(area => {
+    const btn = document.createElement('button');
+    btn.className = 'sidebar-item';
+    btn.innerHTML = `<div class="area-dot" style="background:${area.color_hex}"></div>${esc(area.name)}`;
+    btn.onclick = () => {
+      document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    };
+    container.appendChild(btn);
+  });
+}
+
+// ─── MODALS ──────────────────────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function openNewProjectModal() {
+  selectedColor = COLORS[0];
+  renderColorPicker('np-colors', COLORS, c => selectedColor = c);
+  openModal('modal-new-project');
+}
+
+function openNewAreaModal() {
+  selectedAreaColor = COLORS[1];
+  renderColorPicker('na-colors', COLORS, c => selectedAreaColor = c);
+  openModal('modal-new-area');
+}
+
+function openNewTaskModal() {
+  // Populate area select
+  const sel = document.getElementById('nt-area');
+  sel.innerHTML = '<option value="">Ingen spesifikt område</option>' +
+    areas.map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join('');
+  openModal('modal-new-task');
+}
+
+function onTaskTypeChange() {
+  const type = document.getElementById('nt-type').value;
+  document.getElementById('nt-hours-fields').classList.toggle('hidden', type !== 'hours');
+  document.getElementById('nt-purchase-fields').classList.toggle('hidden', type !== 'purchase');
+}
+
+function renderColorPicker(containerId, colors, onSelect) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  colors.forEach((c, i) => {
+    const sw = document.createElement('div');
+    sw.className = 'color-swatch' + (i===0?' selected':'');
+    sw.style.background = c;
+    sw.onclick = () => {
+      container.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+      sw.classList.add('selected');
+      onSelect(c);
+    };
+    container.appendChild(sw);
+  });
+}
+
+async function createProject() {
+  const name = document.getElementById('np-name').value.trim();
+  const desc = document.getElementById('np-desc').value.trim();
+  if (!name) return;
+
+  const { data, error } = await sb.from('bp_projects').insert({
+    owner_id: currentUser.id,
+    name,
+    description: desc || null,
+    cover_color: selectedColor,
+  }).select().single();
+
+  if (!error && data) {
+    // Legg til eier som member
+    await sb.from('bp_project_members').insert({
+      project_id: data.id,
+      profile_id: currentUser.id,
+      role: 'owner',
+    });
+    closeModal('modal-new-project');
+    document.getElementById('np-name').value = '';
+    document.getElementById('np-desc').value = '';
+    await loadProjects();
+    showPage('projects');
+  }
+}
+
+async function createArea() {
+  const name = document.getElementById('na-name').value.trim();
+  if (!name || !currentProject) return;
+
+  const { error } = await sb.from('bp_areas').insert({
+    project_id: currentProject.id,
+    name,
+    color_hex: selectedAreaColor,
+    sort_order: areas.length,
+  });
+
+  if (!error) {
+    closeModal('modal-new-area');
+    document.getElementById('na-name').value = '';
+    await loadAreas();
+  }
+}
+
+async function createTask() {
+  const title = document.getElementById('nt-title').value.trim();
+  const type  = document.getElementById('nt-type').value;
+  const areaId = document.getElementById('nt-area').value || null;
+  const start = document.getElementById('nt-start').value || null;
+  if (!title || !currentProject) return;
+
+  const payload = {
+    project_id: currentProject.id,
+    area_id: areaId,
+    title,
+    task_type: type,
+    start_date: start,
+  };
+
+  if (type === 'hours') {
+    payload.estimated_hours = parseFloat(document.getElementById('nt-est-hours').value)||null;
+  } else {
+    payload.quantity       = parseFloat(document.getElementById('nt-qty').value)||null;
+    payload.unit           = document.getElementById('nt-unit').value||null;
+    payload.price_per_unit = parseFloat(document.getElementById('nt-price').value)||null;
+    payload.retailer_url   = document.getElementById('nt-url').value||null;
+  }
+
+  const { error } = await sb.from('bp_tasks').insert(payload);
+  if (!error) {
+    closeModal('modal-new-task');
+    document.getElementById('nt-title').value = '';
+    await loadAreas();
+  }
+}
+
+// ─── UTILS ───────────────────────────────────────────────────────────────
+function esc(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function formatDate(iso) {
+  return new Date(iso).toLocaleDateString('nb-NO',{day:'numeric',month:'short',year:'numeric'});
+}
+
+// Lukk modals ved klikk utenfor
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+});
+</script>
+</body>
+</html>
