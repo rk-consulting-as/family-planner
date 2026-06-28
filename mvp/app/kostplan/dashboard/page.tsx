@@ -404,6 +404,19 @@ export default function KostPlanDashboard() {
   )
 }
 
+// Suspense-wrapper kreves av Next.js 15 når useSearchParams() brukes
+export default function KostPlanDashboardPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#6B7280', fontSize: 14 }}>
+        Laster KostPlan…
+      </div>
+    }>
+      <KostPlanDashboard />
+    </Suspense>
+  )
+}
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div style={{ marginBottom: 12 }}>
