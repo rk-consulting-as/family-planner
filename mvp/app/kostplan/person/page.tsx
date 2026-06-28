@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { createKpClient as createClient } from '@/lib/supabase/kp-client'
 import { useRouter } from 'next/navigation'
 
 type HealthGoal = string

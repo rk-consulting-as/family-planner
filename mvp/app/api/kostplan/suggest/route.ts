@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { callClaude, safeParseJson } from '@/lib/ai/anthropic'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyDB = any
 
 // Helsemål-beskrivelser som sendes til Claude
 const GOAL_CONTEXT: Record<string, { nb: string; dietary_focus: string }> = {

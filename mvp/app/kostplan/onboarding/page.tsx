@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { createKpClient as createClient } from '@/lib/supabase/kp-client'
 import { useRouter } from 'next/navigation'
 
 type NutritionFocus = 'iron' | 'folate' | 'vitamin_d' | 'protein' | 'fiber' | 'calcium' | 'omega3'

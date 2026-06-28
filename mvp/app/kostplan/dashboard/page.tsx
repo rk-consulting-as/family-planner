@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useEffect, useState, useCallback, Suspense } from 'react'
+import { createKpClient as createClient } from '@/lib/supabase/kp-client'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack'
