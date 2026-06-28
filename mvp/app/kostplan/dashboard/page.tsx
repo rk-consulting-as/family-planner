@@ -44,7 +44,7 @@ function getMonday(): string {
   return d.toISOString().slice(0, 10)
 }
 
-export default function KostPlanDashboard() {
+function KostPlanDashboard() {
   const [persons, setPersons]         = useState<Person[]>([])
   const [activePerson, setActive]     = useState<Person | null>(null)
   const [dayPlans, setDayPlans]       = useState<DayPlan[]>([])
