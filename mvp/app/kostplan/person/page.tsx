@@ -69,37 +69,33 @@ export default function NewPersonPage() {
     if (!name.trim()) return
     setLoading(true)
     setError('')
-    const { data: { user } } = await sb.auth.getUser()
-    if (!user) {
-      setError('Ikke innlogget – logg inn igjen')
+
+    const res = await fetch('/api/kostplan/person', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        linked_profile_id: linkedProfile || null,
+        name: name.trim(),
+        avatar_emoji: emoji,
+        color_hex: color,
+        health_goal: healthGoal,
+        health_notes: healthNotes || null,
+        likes: likes.split(',').map(s => s.trim()).filter(Boolean),
+        dislikes: dislikes.split(',').map(s => s.trim()).filter(Boolean),
+        allergies: allergies.split(',').map(s => s.trim()).filter(Boolean),
+        pickiness_level: pickiness,
+        budget_level: budget,
+        lunchbox_friendly: lunchbox,
+      }),
+    })
+
+    const json = await res.json()
+    if (!res.ok) {
+      setError(json.error ?? 'Noe gikk galt')
       setLoading(false)
       return
     }
-
-    const { data, error: insertError } = await sb.from('kp_persons').insert({
-      created_by: user.id,
-      linked_profile_id: linkedProfile || null,
-      name: name.trim(),
-      avatar_emoji: emoji,
-      color_hex: color,
-      health_goal: healthGoal,
-      health_notes: healthNotes || null,
-      likes: likes.split(',').map(s => s.trim()).filter(Boolean),
-      dislikes: dislikes.split(',').map(s => s.trim()).filter(Boolean),
-      allergies: allergies.split(',').map(s => s.trim()).filter(Boolean),
-      pickiness_level: pickiness,
-      budget_level: budget,
-      lunchbox_friendly: lunchbox,
-    }).select('id').single()
-
-    if (insertError) {
-      setError(insertError.message)
-      setLoading(false)
-      return
-    }
-    if (data) {
-      router.push(`/kostplan/dashboard?person=${data.id}`)
-    }
+    router.push(`/kostplan/dashboard?person=${json.id}`)
     setLoading(false)
   }
 
