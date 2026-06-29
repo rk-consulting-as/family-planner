@@ -69,11 +69,12 @@ function KostPlanDashboard() {
   const monday = getMonday()
 
   const loadWeekPlan = useCallback(async (person: Person) => {
+    const { data: { user } } = await sb.auth.getUser()
     let { data: wp } = await sb.from('kp_week_plans')
       .select('id').eq('person_id', person.id).eq('week_start', monday).single()
     if (!wp) {
       const { data } = await sb.from('kp_week_plans')
-        .insert({ person_id: person.id, week_start: monday }).select('id').single()
+        .insert({ person_id: person.id, week_start: monday, profile_id: user?.id }).select('id').single()
       wp = data
     }
     if (!wp) return
