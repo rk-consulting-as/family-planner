@@ -1,36 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 
 export async function POST(req: NextRequest) {
   try {
     const cookieStore = await cookies()
 
-    const supabase = createServerClient(
+    // Verifiser bruker via SSR-klient
+    const authClient = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
           getAll: () => cookieStore.getAll(),
           setAll: (cookiesToSet) => {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              )
-            } catch {}
+            try { cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options)) } catch {}
           },
         },
       }
     )
 
-    // getUser() verifiserer token mot serveren og laster sesjonen internt
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user } } = await authClient.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Ikke innlogget' }, { status: 401 })
+
+    // Bruk service role key for å omgå RLS — vi har allerede verifisert brukeren
+    const adminClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    )
 
     const body = await req.json()
 
-    // Bruk samme supabase-instans — den har allerede sesjon lastet med riktig JWT
-    const { data, error } = await supabase
+    const { data, error } = await adminClient
       .from('kp_persons')
       .insert({
         created_by: user.id,
