@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { Moon, UtensilsCrossed } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardBody, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -96,6 +97,36 @@ export default async function ProfilPage() {
           Endringer av navn og fødselsdato må godkjennes av en admin.
         </p>
       </div>
+
+      {/* ── Mine apper ── */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Mine apper</CardTitle>
+          <CardDescription>Personlige verktøy og dagbøker.</CardDescription>
+        </CardHeader>
+        <CardBody>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <Link
+              href="/sovndagbok"
+              className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-indigo-50 border border-indigo-100 hover:bg-indigo-100 transition"
+            >
+              <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-white grid place-items-center shadow-sm">
+                <Moon className="w-5 h-5" />
+              </span>
+              <span className="text-label-sm font-bold text-indigo-800 text-center">Søvndagbok</span>
+            </Link>
+            <Link
+              href="/kostplan/dashboard"
+              className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-amber-50 border border-amber-100 hover:bg-amber-100 transition"
+            >
+              <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 text-white grid place-items-center shadow-sm">
+                <UtensilsCrossed className="w-5 h-5" />
+              </span>
+              <span className="text-label-sm font-bold text-amber-800 text-center">Kostplan</span>
+            </Link>
+          </div>
+        </CardBody>
+      </Card>
 
       {p.must_change_password && (
         <Card className="border-amber-300 bg-amber-50">
