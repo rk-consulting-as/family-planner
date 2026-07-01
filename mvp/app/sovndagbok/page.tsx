@@ -86,11 +86,13 @@ export default function SovndagbokPage() {
   const sb         = createClient()
   const saveTimer  = useRef<ReturnType<typeof setTimeout>>()
 
-  const [weekOff,   setWeekOff]   = useState(0)
-  const [activeDay, setActiveDay] = useState(todayIdx)
-  const [entries,   setEntries]   = useState<Map<string, Entry>>(new Map())
-  const [userId,    setUserId]    = useState<string | null>(null)
-  const [saved,     setSaved]     = useState(false)
+  const [weekOff,    setWeekOff]   = useState(0)
+  const [activeDay,  setActiveDay] = useState(todayIdx)
+  const [entries,    setEntries]   = useState<Map<string, Entry>>(new Map())
+  const [userId,     setUserId]    = useState<string | null>(null)
+  const [saved,      setSaved]     = useState(false)
+  const [saving,     setSaving]    = useState(false)
+  const [saveTime,   setSaveTime]  = useState<string | null>(null)
 
   // ── Load week entries ──
   const loadWeek = useCallback(async (uid: string, off: number) => {
@@ -127,6 +129,7 @@ export default function SovndagbokPage() {
   function updateEntry(patch: Partial<Entry>) {
     const updated = { ...curEntry, ...patch }
     setEntries(prev => new Map(prev).set(curDate, updated))
+    setSaving(true)
     clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(async () => {
       if (!userId) return
@@ -134,8 +137,11 @@ export default function SovndagbokPage() {
         { profile_id: userId, ...updated },
         { onConflict: 'profile_id,entry_date' }
       )
+      const now = new Date().toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' })
+      setSaving(false)
       setSaved(true)
-      setTimeout(() => setSaved(false), 2000)
+      setSaveTime(now)
+      setTimeout(() => setSaved(false), 3000)
     }, 600)
   }
 
@@ -154,6 +160,16 @@ export default function SovndagbokPage() {
           <button style={s.back} onClick={() => router.push('/dashboard')}>← Hjem</button>
           <span style={s.logo}>🌙 Søvndagbok</span>
           <span style={{ fontSize: 13, color: 'rgba(255,255,255,.6)', marginLeft: 4 }}>Uke {wnum}</span>
+          {saving && (
+            <span style={{ fontSize: 12, color: 'rgba(255,255,255,.55)', marginLeft: 6 }}>
+              Lagrer…
+            </span>
+          )}
+          {!saving && saveTime && (
+            <span style={{ fontSize: 12, color: 'rgba(134,239,172,.9)', marginLeft: 6 }}>
+              ✓ Lagret {saveTime}
+            </span>
+          )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button style={s.navBtn} onClick={() => setWeekOff(w => w - 1)}>← Forrige</button>
@@ -335,12 +351,13 @@ export default function SovndagbokPage() {
 
       </div>
 
-      {/* ── SAVED TOAST ── */}
+      {/* ── SAVED TOAST (mobil) ── */}
       {saved && (
-        <div style={{ position: 'fixed', bottom: 18, right: 18, background: '#16A34A', color: 'white',
-          padding: '8px 16px', borderRadius: 20, fontSize: 12, fontWeight: 500, zIndex: 99,
-          boxShadow: '0 2px 8px rgba(0,0,0,.2)' }}>
-          Lagret ✓
+        <div style={{ position: 'fixed', bottom: 18, left: '50%', transform: 'translateX(-50%)',
+          background: '#1B3A5C', color: 'white', padding: '8px 18px', borderRadius: 20,
+          fontSize: 12, fontWeight: 500, zIndex: 99, boxShadow: '0 2px 10px rgba(0,0,0,.25)',
+          whiteSpace: 'nowrap' }}>
+          ✓ Lagret automatisk kl. {saveTime}
         </div>
       )}
     </div>
