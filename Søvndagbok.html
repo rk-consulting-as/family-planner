@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Søvndagbok</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, 'Segoe UI', system-ui, sans-serif; background: #F1F5F9; color: #1E293B; font-size: 15px; line-height: 1.5; }
+
+/* HEADER */
+.hdr { background: #1B3A5C; color: white; padding: 0 20px; height: 54px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; gap: 12px; }
+.logo { font-size: 17px; font-weight: 600; white-space: nowrap; }
+.week-nav { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.nbtn { background: rgba(255,255,255,0.13); border: 1px solid rgba(255,255,255,0.22); color: white; border-radius: 7px; padding: 6px 12px; cursor: pointer; font-size: 13px; font-family: inherit; white-space: nowrap; }
+.nbtn:hover { background: rgba(255,255,255,0.22); }
+.wlbl { font-size: 13px; color: rgba(255,255,255,0.7); min-width: 130px; text-align: center; }
+
+/* TABS */
+.tabs { background: white; border-bottom: 1px solid #E2E8F0; display: flex; overflow-x: auto; }
+.tab { padding: 10px 14px; font-size: 13px; color: #64748B; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; background: none; border-top: none; border-left: none; border-right: none; font-family: inherit; }
+.tab.active { color: #1B3A5C; border-bottom-color: #1B3A5C; font-weight: 600; }
+.tab.has-data::after { content: '•'; margin-left: 3px; color: #22C55E; }
+
+/* MAIN */
+.main { max-width: 700px; margin: 0 auto; padding: 18px 14px 48px; }
+
+/* SECTION HEAD */
+.sh { font-size: 11px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.9px; padding-bottom: 7px; border-bottom: 1px solid #E2E8F0; margin-bottom: 12px; margin-top: 20px; }
+.sh:first-child { margin-top: 0; }
+
+/* CARDS */
+.card { background: white; border-radius: 10px; padding: 16px 18px; margin-bottom: 12px; border: 1px solid #E8EDF2; }
+
+/* QUESTIONS */
+.q { margin-bottom: 14px; }
+.q:last-child { margin-bottom: 0; }
+.ql { font-size: 14px; font-weight: 500; color: #1E293B; margin-bottom: 4px; display: flex; align-items: flex-start; gap: 8px; }
+.qn { background: #1B3A5C; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+.qh { font-size: 12px; color: #94A3B8; margin-bottom: 7px; padding-left: 28px; line-height: 1.4; }
+
+/* INPUTS */
+input[type=text], input[type=number], input[type=time], textarea {
+  width: 100%; padding: 9px 12px; border: 1px solid #E2E8F0; border-radius: 8px;
+  font-size: 14px; color: #1E293B; background: #F8FAFC; font-family: inherit; transition: border-color .15s, background .15s;
+}
+input:focus, textarea:focus { outline: none; border-color: #3B82F6; background: white; }
+textarea { min-height: 58px; resize: vertical; }
+.tpair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tpair label { font-size: 12px; color: #64748B; display: block; margin-bottom: 4px; }
+
+/* SCALE */
+.srow { display: flex; gap: 5px; margin-bottom: 3px; }
+.sbtn { flex: 1; padding: 9px 2px; border: 1.5px solid #E2E8F0; border-radius: 8px; background: #F8FAFC;
+  cursor: pointer; font-size: 15px; font-weight: 600; color: #64748B; font-family: inherit; transition: all .12s; }
+.sbtn:hover { border-color: #CBD5E1; }
+.sbtn.active { border-color: #1B3A5C; background: #EFF6FF; color: #1B3A5C; }
+.sends { display: flex; justify-content: space-between; font-size: 11px; color: #94A3B8; }
+
+/* METRICS */
+.mbox { background: #F0F7FF; border: 1px solid #BFDBFE; border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+.mtitle { font-size: 11px; font-weight: 700; color: #1B3A5C; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 10px; }
+.mgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+.mv { text-align: center; }
+.mv-val { font-size: 19px; font-weight: 700; }
+.mv-lbl { font-size: 11px; color: #64748B; }
+.good { color: #16A34A; }
+.warn { color: #D97706; }
+.bad  { color: #DC2626; }
+
+/* SE BAR */
+.se-track { height: 7px; background: #E2E8F0; border-radius: 4px; overflow: hidden; margin-top: 5px; }
+.se-fill  { height: 100%; border-radius: 4px; transition: width .4s; }
+.se-row   { display: flex; justify-content: space-between; font-size: 11px; color: #64748B; margin-bottom: 2px; }
+
+/* TIMELINE */
+.tl-bar   { height: 22px; background: #F1F5F9; border-radius: 6px; overflow: hidden; position: relative; margin-bottom: 3px; }
+.tl-bed   { position: absolute; height: 100%; background: #93C5FD; }
+.tl-sleep { position: absolute; height: 100%; background: #1B3A5C; }
+.tl-ltnc  { position: absolute; height: 100%; background: #FDE68A; }
+.tl-ticks { display: flex; justify-content: space-between; }
+.tl-tk    { font-size: 10px; color: #94A3B8; }
+.tl-legend{ display: flex; gap: 10px; margin-top: 5px; font-size: 11px; color: #64748B; flex-wrap: wrap; }
+.tl-dot   { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 3px; vertical-align: middle; }
+
+/* WEEK OVERVIEW */
+.ov-wrap { background: white; border: 1px solid #E8EDF2; border-radius: 10px; overflow: hidden; margin-bottom: 14px; }
+.ov-hdr  { padding: 11px 16px; border-bottom: 1px solid #E8EDF2; font-size: 13px; font-weight: 600; }
+.ov-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+.ov-day  { padding: 9px 4px; border-right: 1px solid #F1F5F9; text-align: center; cursor: pointer; }
+.ov-day:last-child { border-right: none; }
+.ov-day:hover { background: #F8FAFC; }
+.ov-dn   { font-size: 11px; color: #64748B; margin-bottom: 3px; }
+.ov-se   { font-size: 16px; font-weight: 700; }
+.ov-bar  { height: 4px; border-radius: 2px; margin: 3px auto; width: 75%; }
+.ov-tst  { font-size: 10px; color: #64748B; }
+
+/* PRINT */
+@media print {
+  .hdr, .tabs, .nbtn { display: none !important; }
+  body { background: white; }
+  .card { border: 1px solid #ccc; break-inside: avoid; page-break-inside: avoid; }
+  .mbox { background: #f5f5f5; border: 1px solid #ccc; }
+  .ov-wrap { display: none; }
+}
+
+/* SAVED TOAST */
+.toast { position: fixed; bottom: 18px; right: 18px; background: #16A34A; color: white; padding: 8px 16px;
+  border-radius: 20px; font-size: 12px; font-weight: 500; opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 99; }
+.toast.on { opacity: 1; }
+
+/* TODAY BADGE */
+.today-badge { font-size: 9px; background: #1B3A5C; color: white; padding: 1px 5px; border-radius: 3px; font-weight: 700; margin-left: 4px; vertical-align: middle; }
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="logo">🌙 Søvndagbok <span id="wk-num" style="font-size:13px;opacity:.65;font-weight:400"></span></div>
+  <div class="week-nav">
+    <button class="nbtn" onclick="changeWeek(-1)">← Forrige</button>
+    <span class="wlbl" id="wk-range"></span>
+    <button class="nbtn" onclick="changeWeek(1)">Neste →</button>
+    <button class="nbtn" onclick="window.print()" title="Skriv ut / lagre som PDF">⎙ Skriv ut</button>
+  </div>
+</header>
+
+<div class="tabs" id="tabs-bar"></div>
+
+<div class="main">
+  <div id="week-ov"></div>
+  <div id="day-form"></div>
+</div>
+
+<div class="toast" id="toast">Lagret ✓</div>
+
+<script>
+const DAYS  = ['Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag','Søndag']
+const SHORT = ['Man','Tir','Ons','Tor','Fre','Lør','Søn']
+let weekOff = 0
+let curDay  = 0
+
+// ─── WEEK HELPERS ───────────────────────────────────────────────────────────
+function getMonday(off) {
+  const d = new Date()
+  const dow = d.getDay()
+  d.setDate(d.getDate() + (dow === 0 ? -6 : 1 - dow) + off * 7)
+  d.setHours(0,0,0,0)
+  return d
+}
+function weekKey(off) { return 'svn_' + getMonday(off).toISOString().slice(0,10) }
+function dayDate(off, i) { const m = getMonday(off); m.setDate(m.getDate() + i); return m }
+function fmtDate(d) { return d.toLocaleDateString('nb-NO', { day:'numeric', month:'short' }) }
+function isoWeek(d) {
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
+  t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7))
+  return Math.ceil(((t - new Date(Date.UTC(t.getUTCFullYear(),0,1))) / 86400000 + 1) / 7)
+}
+
+// ─── STORAGE ────────────────────────────────────────────────────────────────
+function skey(off, i) { return weekKey(off) + '_' + i }
+function loadD(off, i) { try { return JSON.parse(localStorage.getItem(skey(off, i)) || 'null') } catch { return null } }
+function saveD(off, i, data) {
+  localStorage.setItem(skey(off, i), JSON.stringify(data))
+  const t = document.getElementById('toast')
+  t.classList.add('on')
+  clearTimeout(window._tt)
+  window._tt = setTimeout(() => t.classList.remove('on'), 1800)
+}
+
+// ─── MATH ───────────────────────────────────────────────────────────────────
+function t2m(t) { if (!t) return null; const [h,m] = t.split(':').map(Number); return h*60+m }
+function m2hm(m) {
+  if (m === null || isNaN(m) || m < 0) return '–'
+  const h = Math.floor(m/60), min = m%60
+  return h > 0 ? (min > 0 ? `${h}t ${min}m` : `${h}t`) : `${min}m`
+}
+function calcM(d) {
+  if (!d) return null
+  const bed  = t2m(d.bedtime)
+  const rise = t2m(d.rise)
+  if (bed === null || rise === null) return null
+  const lat   = Math.max(0, parseInt(d.latency)||0)
+  const wakes = (d.waking_dur||'').split(',').map(s=>parseInt(s.trim())).filter(n=>!isNaN(n)&&n>0)
+  const twake = wakes.reduce((a,b)=>a+b, 0)
+  let tib = rise - bed; if (tib <= 0) tib += 1440
+  const tst = Math.max(0, tib - lat - twake)
+  const se  = tib > 0 ? Math.round(tst/tib*100) : 0
+  return { tib, tst, se, lat, twake, riseAdj: bed+tib }
+}
+function seCls(se) { return se >= 85 ? 'good' : se >= 70 ? 'warn' : 'bad' }
+function seClr(se) { return se >= 85 ? '#16A34A' : se >= 70 ? '#D97706' : '#DC2626' }
+
+// ─── TIMELINE ───────────────────────────────────────────────────────────────
+function renderTL(d, m) {
+  if (!d || !m || !d.bedtime || !d.rise) return ''
+  const START = 19*60, SPAN = 19*60  // 19:00 → 14:00 next day
+  function pct(min) { return Math.min(100, Math.max(0, (min - START) / SPAN * 100)) }
+
+  const bed  = t2m(d.bedtime)
+  const bedP = pct(bed < START ? bed + 1440 : bed)
+  const riseP = pct(m.riseAdj < START ? m.riseAdj + 1440 : m.riseAdj)
+  const latP  = m.lat / SPAN * 100
+  const tstP  = m.tst / SPAN * 100
+  const ticks = ['19','21','23','01','03','05','07','09','11','13']
+
+  return `
+    <div style="margin-top:10px">
+      <div style="font-size:11px;color:#64748B;margin-bottom:4px">Søvnvindu (19:00 → 14:00)</div>
+      <div class="tl-bar">
+        <div class="tl-bed"   style="left:${bedP}%;width:${Math.max(0,riseP-bedP)}%"></div>
+        <div class="tl-ltnc"  style="left:${bedP}%;width:${Math.min(latP,riseP-bedP)}%"></div>
+        <div class="tl-sleep" style="left:${bedP+latP}%;width:${Math.min(tstP,riseP-bedP-latP)}%"></div>
+      </div>
+      <div class="tl-ticks">${ticks.map(t=>`<span class="tl-tk">${t}</span>`).join('')}</div>
+      <div class="tl-legend">
+        <span><span class="tl-dot" style="background:#93C5FD"></span>I seng</span>
+        <span><span class="tl-dot" style="background:#FDE68A"></span>Innsovningstid</span>
+        <span><span class="tl-dot" style="background:#1B3A5C"></span>Søvn (estimert)</span>
+      </div>
+    </div>`
+}
+
+// ─── METRICS ────────────────────────────────────────────────────────────────
+function updateM() {
+  const d = getFormData()
+  const m = calcM(d)
+  const el = document.getElementById('mbox')
+  if (!el) return
+  if (!m) { el.innerHTML = '<div style="font-size:13px;color:#94A3B8">Fyll inn sengetid og oppstigingstid for å se beregninger.</div>'; return }
+  const cls = seCls(m.se), clr = seClr(m.se)
+  el.innerHTML = `
+    <div class="mtitle">📊 Beregnet søvnstatistikk</div>
+    <div class="mgrid">
+      <div class="mv"><div class="mv-val">${m2hm(m.tib)}</div><div class="mv-lbl">Liggetid</div></div>
+      <div class="mv"><div class="mv-val">${m2hm(m.tst)}</div><div class="mv-lbl">Søvntid</div></div>
+      <div class="mv"><div class="mv-val ${cls}">${m.se}%</div><div class="mv-lbl">Søvneffekt.</div></div>
+      <div class="mv"><div class="mv-val">${m2hm(m.lat)}</div><div class="mv-lbl">Innsovning</div></div>
+    </div>
+    <div class="se-row"><span>Søvneffektivitet: <strong class="${cls}">${m.se}%</strong></span><span style="color:#94A3B8">Mål: ≥ 85 %</span></div>
+    <div class="se-track"><div class="se-fill" style="width:${Math.min(m.se,100)}%;background:${clr}"></div></div>
+    ${m.se < 85 ? `<div style="font-size:12px;margin-top:8px;color:#D97706">💡 <strong>Tips:</strong> Søvneffektivitet under 85% er vanlig ved søvnproblemer. CBT-i behandling fokuserer på å øke denne verdien ved søvnrestriksjon og stimuluskontroll.</div>` : `<div style="font-size:12px;margin-top:8px;color:#16A34A">✓ God søvneffektivitet!</div>`}
+    ${renderTL(d, m)}`
+}
+
+// ─── FORM DATA ───────────────────────────────────────────────────────────────
+function g(id) { const el = document.getElementById(id); return el ? el.value : '' }
+function activeScale(name) {
+  const el = document.querySelector(`.sbtn.active[data-n="${name}"]`)
+  return el ? parseInt(el.dataset.v) : null
+}
+function getFormData() {
+  return {
+    functioning:  activeScale('functioning'),
+    naps:         g('naps'),
+    sleep_aids:   g('sleep_aids'),
+    bedtime:      g('bedtime'),
+    lights_off:   g('lights_off'),
+    latency:      g('latency'),
+    waking_count: g('waking_count'),
+    waking_dur:   g('waking_dur'),
+    final_waking: g('final_waking'),
+    rise:         g('rise'),
+    quality:      activeScale('quality'),
+    notes:        g('notes'),
+  }
+}
+function setFormData(d) {
+  if (!d) return
+  const sv = (id, v) => { const el=document.getElementById(id); if(el) el.value = v||'' }
+  sv('naps',         d.naps)
+  sv('sleep_aids',   d.sleep_aids)
+  sv('bedtime',      d.bedtime)
+  sv('lights_off',   d.lights_off)
+  sv('latency',      d.latency)
+  sv('waking_count', d.waking_count)
+  sv('waking_dur',   d.waking_dur)
+  sv('final_waking', d.final_waking)
+  sv('rise',         d.rise)
+  sv('notes',        d.notes)
+  if (d.functioning) setScale('functioning', d.functioning)
+  if (d.quality)     setScale('quality',     d.quality)
+  updateM()
+}
+function setScale(name, val) {
+  document.querySelectorAll(`.sbtn[data-n="${name}"]`).forEach(b =>
+    b.classList.toggle('active', parseInt(b.dataset.v) === val))
+}
+
+// ─── AUTOSAVE ────────────────────────────────────────────────────────────────
+function save() {
+  saveD(weekOff, curDay, getFormData())
+  renderTabs()
+  renderWeekOv()
+}
+
+// ─── SCALE ───────────────────────────────────────────────────────────────────
+function pickScale(name, val) {
+  setScale(name, val)
+  save()
+  updateM()
+}
+
+function scaleBtns(name, labels) {
+  const btns = [1,2,3,4,5].map(i =>
+    `<button class="sbtn" data-n="${name}" data-v="${i}" onclick="pickScale('${name}',${i})">${i}</button>`
+  ).join('')
+  return `<div class="srow">${btns}</div><div class="sends"><span>${labels[0]}</span><span>${labels[1]}</span></div>`
+}
+
+// ─── FORM ────────────────────────────────────────────────────────────────────
+function renderForm(di) {
+  const date = dayDate(weekOff, di)
+  const ds = date.toLocaleDateString('nb-NO', { weekday:'long', day:'numeric', month:'long' })
+  document.getElementById('day-form').innerHTML = `
+    <div style="font-size:13px;color:#64748B;font-weight:500;margin-bottom:14px;text-transform:capitalize">${ds}</div>
+
+    <p class="sh">Fylles ut FØR sengetid</p>
+    <div class="card">
+      <div class="q">
+        <div class="ql"><span class="qn">1</span>Hvordan har du fungert på dagtid?</div>
+        <div class="qh">1 = veldig bra &nbsp;·&nbsp; 5 = veldig dårlig</div>
+        ${scaleBtns('functioning', ['Veldig bra', 'Veldig dårlig'])}
+      </div>
+      <div class="q">
+        <div class="ql"><span class="qn">2</span>Har du tatt blunder i løpet av dagen?</div>
+        <div class="qh">Notér tidspunktene (f.eks. 16:00–16:30, 18:15–18:30)</div>
+        <input type="text" id="naps" placeholder="f.eks. 16:00–16:30" oninput="save()">
+      </div>
+      <div class="q">
+        <div class="ql"><span class="qn">3</span>Har du tatt sovemedisin og/eller alkohol for å sove?</div>
+        <div class="qh">Notér medikament, dose og ev. alkohol</div>
+        <input type="text" id="sleep_aids" placeholder="f.eks. 5 mg Imovane, 1 glass rødvin" oninput="save()">
+      </div>
+    </div>
+
+    <p class="sh">Fylles ut OM MORGENEN</p>
+    <div class="card">
+      <div class="q">
+        <div class="ql"><span class="qn">4</span>Når gikk du til sengs? Når skrudde du av lyset?</div>
+        <div class="tpair" style="margin-top:6px">
+          <div><label>Sengetid</label><input type="time" id="bedtime" oninput="save();updateM()"></div>
+          <div><label>Lyset av</label><input type="time" id="lights_off" oninput="save()"></div>
+        </div>
+      </div>
+      <div class="q">
+        <div class="ql"><span class="qn">5</span>Hvor lang tid tok det fra lyset var av til du sovnet?</div>
+        <div class="qh">Antall minutter</div>
+        <input type="number" id="latency" placeholder="f.eks. 45" min="0" max="360" oninput="save();updateM()">
+      </div>
+      <div class="q">
+        <div class="ql"><span class="qn">6</span>Hvor mange ganger våknet du i løpet av natten?</div>
+        <input type="number" id="waking_count" placeholder="f.eks. 3" min="0" max="30" oninput="save()">
+      </div>
+      <div class="q">
+        <div class="ql"><span class="qn">7</span>Hvor lange var oppvåkningsperiodene?</div>
+        <div class="qh">Minutter per oppvåkning, kommaseparert (f.eks. 15, 30, 80)</div>
+        <input type="text" id="waking_dur" placeholder="f.eks. 15, 30, 80" oninput="save();updateM()">
+      </div>
+      <div class="q">
+        <div class="ql"><span class="qn">8</span>Når våknet du endelig uten å sove igjen?</div>
+        <input type="time" id="final_waking" oninput="save()">
+      </div>
+      <div class="q">
+        <div class="ql"><span class="qn">9</span>Når stod du opp?</div>
+        <input type="time" id="rise" oninput="save();updateM()">
+      </div>
+      <div class="q">
+        <div class="ql"><span class="qn">10</span>Hvordan var siste natts søvn totalt sett?</div>
+        <div class="qh">1 = veldig lett &nbsp;·&nbsp; 5 = veldig dyp</div>
+        ${scaleBtns('quality', ['Veldig lett', 'Veldig dyp'])}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ql" style="font-size:13px;color:#64748B;font-weight:500;margin-bottom:6px">📝 Egne notater</div>
+      <textarea id="notes" placeholder="Drømmer, stress, noe som forstyrret søvnen, tanker rundt natten…" oninput="save()"></textarea>
+    </div>
+
+    <div class="mbox" id="mbox">
+      <div style="font-size:13px;color:#94A3B8">Fyll inn sengetid og oppstigingstid for å se beregninger.</div>
+    </div>`
+
+  setFormData(loadD(weekOff, di))
+}
+
+// ─── WEEK OVERVIEW ───────────────────────────────────────────────────────────
+function renderWeekOv() {
+  let days = ''
+  for (let i = 0; i < 7; i++) {
+    const d  = loadD(weekOff, i)
+    const m  = calcM(d)
+    const dd = dayDate(weekOff, i)
+    const isToday = dd.toDateString() === new Date().toDateString()
+    const isCur   = i === curDay
+    let inner
+    if (m) {
+      const clr = seClr(m.se)
+      inner = `<div class="ov-se ${seCls(m.se)}">${m.se}%</div>
+               <div class="ov-bar" style="background:${clr}22;overflow:hidden">
+                 <div style="height:4px;width:${m.se}%;background:${clr};border-radius:2px"></div>
+               </div>
+               <div class="ov-tst">${m2hm(m.tst)}</div>`
+    } else if (d && (d.bedtime||d.rise||d.functioning)) {
+      inner = `<div style="font-size:11px;color:#94A3B8;margin-top:4px">–</div>`
+    } else {
+      inner = `<div style="font-size:18px;color:#E2E8F0;margin-top:2px">—</div>`
+    }
+    days += `<div class="ov-day" onclick="switchDay(${i})"
+      style="${isCur?'background:#EFF6FF;':isToday?'background:#F0FDF4;':''}">
+      <div class="ov-dn" style="${isCur?'color:#1B3A5C;font-weight:700':isToday?'color:#16A34A;font-weight:600':''}">
+        ${SHORT[i]}${isToday?'<span style="display:block;font-size:8px;color:#16A34A">i dag</span>':''}
+      </div>
+      ${inner}
+    </div>`
+  }
+  document.getElementById('week-ov').innerHTML =
+    `<div class="ov-wrap"><div class="ov-hdr">Ukeoversikt — klikk en dag for å åpne</div>
+    <div class="ov-grid">${days}</div></div>`
+}
+
+// ─── TABS ────────────────────────────────────────────────────────────────────
+function renderTabs() {
+  let html = ''
+  for (let i = 0; i < 7; i++) {
+    const d   = loadD(weekOff, i)
+    const has = d && (d.bedtime || d.rise || d.functioning || d.naps || d.quality)
+    const dd  = dayDate(weekOff, i)
+    const isToday = dd.toDateString() === new Date().toDateString()
+    html += `<button class="tab${i===curDay?' active':''}${has?' has-data':''}" onclick="switchDay(${i})">
+      ${DAYS[i]}${isToday ? '<span class="today-badge">i dag</span>' : ''}
+    </button>`
+  }
+  document.getElementById('tabs-bar').innerHTML = html
+}
+
+// ─── HEADER LABELS ───────────────────────────────────────────────────────────
+function renderHeader() {
+  const m  = getMonday(weekOff)
+  const su = new Date(m); su.setDate(su.getDate()+6)
+  document.getElementById('wk-num').textContent   = 'Uke ' + isoWeek(m)
+  document.getElementById('wk-range').textContent = fmtDate(m) + ' – ' + fmtDate(su)
+}
+
+// ─── NAVIGATION ──────────────────────────────────────────────────────────────
+function switchDay(i) {
+  curDay = i
+  renderTabs()
+  renderForm(i)
+  renderWeekOv()
+}
+
+function changeWeek(dir) {
+  weekOff += dir
+  curDay = 0
+  renderHeader()
+  renderTabs()
+  renderForm(0)
+  renderWeekOv()
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+;(function init() {
+  const dow = new Date().getDay()
+  curDay = dow === 0 ? 6 : dow - 1
+  renderHeader()
+  renderTabs()
+  renderForm(curDay)
+  renderWeekOv()
+})()
+</script>
+</body>
+</html>

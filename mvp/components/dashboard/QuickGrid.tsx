@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import {
-  Calendar, CheckSquare, ShoppingBag, Gift, UtensilsCrossed, ShoppingCart, Grid3X3,
+  Calendar, CheckSquare, ShoppingBag, Gift, UtensilsCrossed, ShoppingCart, Grid3X3, Moon,
 } from "lucide-react";
 
 type Tile = {
@@ -21,6 +21,7 @@ const PRIMARY_TILES: Tile[] = [
   { href: "/gaver", label: "Gaver", icon: Gift, bg: "from-pink-500 to-pink-600", module: "gifts" },
   { href: "/maltidsplan", label: "Måltider", icon: UtensilsCrossed, bg: "from-amber-500 to-amber-600", module: "meals" },
   { href: "/handleliste", label: "Handle", icon: ShoppingCart, bg: "from-orange-500 to-orange-600", module: "shopping" },
+  { href: "/sovndagbok", label: "Søvn", icon: Moon, bg: "from-indigo-500 to-indigo-700" },
 ];
 
 export default function QuickGrid({
