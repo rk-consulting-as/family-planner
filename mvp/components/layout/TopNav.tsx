@@ -81,6 +81,7 @@ const NAV: NavGroup[] = [
     items: [
       { href: "/buildplan/", label: "BuildPlan", icon: HardHat, external: true },
       { href: "/kostplan", label: "KostPlan", icon: Apple },
+      { href: "/sovndagbok", label: "Søvndagbok", icon: Moon },
     ],
   },
 ];
