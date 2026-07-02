@@ -93,6 +93,7 @@ export default function SovndagbokPage() {
   const [saved,      setSaved]     = useState(false)
   const [saving,     setSaving]    = useState(false)
   const [saveTime,   setSaveTime]  = useState<string | null>(null)
+  const [saveErr,    setSaveErr]   = useState(false)
 
   // ── Load week entries ──
   const loadWeek = useCallback(async (uid: string, off: number) => {
@@ -130,13 +131,37 @@ export default function SovndagbokPage() {
     const updated = { ...curEntry, ...patch }
     setEntries(prev => new Map(prev).set(curDate, updated))
     setSaving(true)
+    setSaveErr(false)
     clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(async () => {
       if (!userId) return
-      await sb.from('sovn_entries').upsert(
-        { profile_id: userId, ...updated },
+      // Sanitize: Supabase INTEGER/TIME columns reject empty strings — must be null
+      const payload = {
+        profile_id:   userId,
+        entry_date:   updated.entry_date,
+        functioning:  updated.functioning ?? null,
+        naps:         updated.naps         || null,
+        sleep_aids:   updated.sleep_aids   || null,
+        bedtime:      updated.bedtime      || null,
+        lights_off:   updated.lights_off   || null,
+        latency:      updated.latency !== '' ? (parseInt(updated.latency) || null) : null,
+        waking_count: updated.waking_count !== '' ? (parseInt(updated.waking_count) || null) : null,
+        waking_dur:   updated.waking_dur   || null,
+        final_waking: updated.final_waking || null,
+        rise:         updated.rise         || null,
+        quality:      updated.quality      ?? null,
+        notes:        updated.notes        || null,
+      }
+      const { error } = await sb.from('sovn_entries').upsert(
+        payload,
         { onConflict: 'profile_id,entry_date' }
       )
+      if (error) {
+        console.error('[sovndagbok] save error:', error)
+        setSaving(false)
+        setSaveErr(true)
+        return
+      }
       const now = new Date().toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' })
       setSaving(false)
       setSaved(true)
@@ -165,7 +190,12 @@ export default function SovndagbokPage() {
               Lagrer…
             </span>
           )}
-          {!saving && saveTime && (
+          {!saving && saveErr && (
+            <span style={{ fontSize: 12, color: '#FCA5A5', marginLeft: 6 }}>
+              ⚠ Lagring feilet
+            </span>
+          )}
+          {!saving && !saveErr && saveTime && (
             <span style={{ fontSize: 12, color: 'rgba(134,239,172,.9)', marginLeft: 6 }}>
               ✓ Lagret {saveTime}
             </span>
