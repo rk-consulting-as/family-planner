@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, useTransition, useRef } from 'react'
+import { useState, useEffect, useTransition, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { extractBloodTestFromFile, ExtractedBloodTest } from '@/lib/actions/extract_blood_test'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface BloodMarker {
@@ -106,6 +107,58 @@ export default function BlodproverPage() {
   ])
   const [saveError, setSaveError] = useState('')
   const [saving, setSaving] = useState(false)
+
+  // AI file import state
+  const [aiExtracting, setAiExtracting] = useState(false)
+  const [aiError, setAiError] = useState('')
+  const [aiSuccess, setAiSuccess] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Apply extracted data to form fields
+  const applyExtracted = useCallback((data: ExtractedBloodTest) => {
+    if (data.test_date)   setFormDate(data.test_date)
+    if (data.institution) setFormInstitution(data.institution)
+    if (data.ordered_by)  setFormOrderedBy(data.ordered_by)
+    if (data.notes)       setFormNotes(data.notes)
+    if (data.markers.length > 0) setFormMarkers(data.markers)
+    setAiSuccess(true)
+  }, [])
+
+  async function handleFileAnalyse(file: File) {
+    setAiExtracting(true)
+    setAiError('')
+    setAiSuccess(false)
+
+    const MAX_MB = 8
+    if (file.size > MAX_MB * 1024 * 1024) {
+      setAiError(`Filen er for stor (maks ${MAX_MB} MB). Komprimer bildet eller ta et screenshot.`)
+      setAiExtracting(false)
+      return
+    }
+
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => {
+          const result = reader.result as string
+          // Strip data URL prefix to get raw base64
+          resolve(result.split(',')[1])
+        }
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })
+
+      const result = await extractBloodTestFromFile(base64, file.type)
+      if (result.ok) {
+        applyExtracted(result.data)
+      } else {
+        setAiError(result.error)
+      }
+    } catch {
+      setAiError('Noe gikk galt under analyse. Prøv igjen.')
+    }
+    setAiExtracting(false)
+  }
 
   useEffect(() => {
     let mounted = true
@@ -259,6 +312,58 @@ export default function BlodproverPage() {
       {showForm && (
         <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4">
           <h2 className="font-bold text-slate-700">Registrer blodprøve</h2>
+
+          {/* ── AI FILE IMPORT ── */}
+          <div className={`rounded-xl border-2 border-dashed p-4 transition ${
+            aiSuccess ? 'border-green-300 bg-green-50' : 'border-slate-200 bg-slate-50'
+          }`}>
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                  🤖 Analyser laboratorieresultat med AI
+                </p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Last opp bilde (JPEG, PNG) eller PDF av prøvesvaret — AI trekker ut alle verdier automatisk
+                </p>
+              </div>
+              <label className={`flex-shrink-0 cursor-pointer px-3 py-2 rounded-lg text-sm font-semibold transition ${
+                aiExtracting
+                  ? 'bg-slate-200 text-slate-500 cursor-not-allowed'
+                  : 'bg-[#1B3A5C] text-white hover:bg-[#243f5e]'
+              }`}>
+                {aiExtracting ? (
+                  <span className="flex items-center gap-1.5">
+                    <svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.4 0 0 5.4 0 12h4z" />
+                    </svg>
+                    Analyserer…
+                  </span>
+                ) : aiSuccess ? '📎 Analyser ny fil' : '📎 Velg fil'}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,application/pdf"
+                  className="hidden"
+                  disabled={aiExtracting}
+                  onChange={e => {
+                    const file = e.target.files?.[0]
+                    if (file) handleFileAnalyse(file)
+                    e.target.value = ''
+                  }}
+                />
+              </label>
+            </div>
+
+            {aiError && (
+              <p className="mt-2 text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">⚠ {aiError}</p>
+            )}
+            {aiSuccess && (
+              <p className="mt-2 text-xs text-green-700 font-medium">
+                ✓ Verdier hentet fra fil — kontroller og lagre nedenfor
+              </p>
+            )}
+          </div>
 
           <div className="grid sm:grid-cols-2 gap-3">
             <div>
