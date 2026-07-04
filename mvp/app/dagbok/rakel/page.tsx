@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { calculateNutrition, type NutritionResult } from '@/lib/actions/nutrition'
+import { calculateNutrition, type NutritionResult, type DailyGoals } from '@/lib/actions/nutrition'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface FieldEditor { name: string; at: string }
@@ -132,6 +132,7 @@ export default function RakelDagbokPage() {
   const [saveErr,    setSaveErr]    = useState(false)
   const [profiles,   setProfiles]   = useState<Record<string, string>>({})
   const [meds,       setMeds]       = useState<MedSetup[]>([])
+  const [dailyGoals, setDailyGoals] = useState<DailyGoals | null>(null)
 
   // Meal entry state
   const [mealInput,     setMealInput]     = useState('')
@@ -190,13 +191,18 @@ export default function RakelDagbokPage() {
         .select('display_name').eq('id', user.id).single()
       if (prof) setEditorName((prof as { display_name: string }).display_name)
 
-      // Load medications setup
-      const { data: medsData } = await sb.from('rakel_medication_setup')
-        .select('id, name, dosage, unit, notes, active')
-        .eq('group_id', g.group_id)
-        .eq('active', true)
-        .order('sort_order')
+      // Load medications + nutrition profile in parallel
+      const [{ data: medsData }, { data: profData }] = await Promise.all([
+        sb.from('rakel_medication_setup')
+          .select('id, name, dosage, unit, notes, active')
+          .eq('group_id', g.group_id).eq('active', true).order('sort_order'),
+        sb.from('rakel_nutrition_profile')
+          .select('daily_goals').eq('group_id', g.group_id).maybeSingle(),
+      ])
       setMeds((medsData as MedSetup[]) ?? [])
+      if (profData && (profData as { daily_goals: DailyGoals | null }).daily_goals) {
+        setDailyGoals((profData as { daily_goals: DailyGoals }).daily_goals)
+      }
 
       loadWeek(g.group_id, 0)
     }
@@ -358,7 +364,7 @@ export default function RakelDagbokPage() {
           </button>
           {isAdmin && (
             <button style={s.navBtn} onClick={() => router.push('/dagbok/rakel/medisin')}>
-              💊 Medisiner
+              ⚙️ Innstillinger
             </button>
           )}
           <button style={s.navBtn} onClick={() => setWeekOff(w => w - 1)}>← Forrige</button>
@@ -537,35 +543,50 @@ export default function RakelDagbokPage() {
           {curEntry.meals.length > 0 && (
             <div style={{ marginBottom: 14 }}>
               {curEntry.meals.map(meal => (
-                <div key={meal.id} style={{ borderLeft: '3px solid #E2E8F0', paddingLeft: 12, marginBottom: 12 }}>
+                <div key={meal.id} style={{ borderLeft: '3px solid #E2E8F0', paddingLeft: 12, marginBottom: 14 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 14, color: '#1E293B', marginBottom: 3 }}>{meal.description}</div>
-                      <div style={{ fontSize: 10, color: '#94A3B8' }}>
-                        {meal.logged_by} · {fmtTime(meal.logged_at)}
-                      </div>
+                      <div style={{ fontSize: 10, color: '#94A3B8' }}>{meal.logged_by} · {fmtTime(meal.logged_at)}</div>
                     </div>
                     <button onClick={() => deleteMeal(meal.id)}
                       style={{ fontSize: 16, color: '#CBD5E1', background: 'none', border: 'none',
                         cursor: 'pointer', padding: '0 4px', lineHeight: 1 }}>×</button>
                   </div>
-                  {/* Nutrition */}
                   {mealCalcId === meal.id ? (
                     <div style={{ marginTop: 6, fontSize: 12, color: '#94A3B8' }}>⏳ Beregner næring…</div>
                   ) : meal.nutrition ? (
-                    <div style={{ display: 'flex', gap: 10, marginTop: 6, flexWrap: 'wrap' }}>
-                      {[
-                        { label: 'Kcal',    val: meal.nutrition.kcal,    color: '#F59E0B' },
-                        { label: 'Protein', val: meal.nutrition.protein,  color: '#10B981', unit: 'g' },
-                        { label: 'Karbo',   val: meal.nutrition.carbs,    color: '#3B82F6', unit: 'g' },
-                        { label: 'Fett',    val: meal.nutrition.fat,      color: '#8B5CF6', unit: 'g' },
-                      ].map(n => (
-                        <span key={n.label} style={{ fontSize: 11, background: n.color + '15',
-                          color: n.color, padding: '2px 8px', borderRadius: 999,
-                          border: `1px solid ${n.color}40`, fontWeight: 600 }}>
-                          {n.label}: {n.val}{n.unit ?? ''}
-                        </span>
-                      ))}
+                    <div style={{ marginTop: 8 }}>
+                      {/* Primary row */}
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 5 }}>
+                        {[
+                          { label: 'Kcal',    val: meal.nutrition.kcal,          color: '#F59E0B', unit: '' },
+                          { label: 'Protein', val: meal.nutrition.protein,        color: '#10B981', unit: 'g' },
+                          { label: 'Karbo',   val: meal.nutrition.carbs,          color: '#3B82F6', unit: 'g' },
+                          { label: 'Fett',    val: meal.nutrition.fat,            color: '#8B5CF6', unit: 'g' },
+                        ].map(n => (
+                          <span key={n.label} style={{ fontSize: 11, background: n.color + '15',
+                            color: n.color, padding: '2px 8px', borderRadius: 999,
+                            border: `1px solid ${n.color}40`, fontWeight: 600 }}>
+                            {n.label}: {n.val}{n.unit}
+                          </span>
+                        ))}
+                      </div>
+                      {/* Secondary row */}
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        {[
+                          { label: 'Sukker',      val: meal.nutrition.sugar,         color: '#EC4899', unit: 'g' },
+                          { label: 'Fiber',       val: meal.nutrition.fiber,          color: '#84CC16', unit: 'g' },
+                          { label: 'Met.fett',    val: meal.nutrition.saturated_fat,  color: '#F97316', unit: 'g' },
+                          { label: 'Salt',        val: meal.nutrition.sodium,         color: '#64748B', unit: 'mg' },
+                        ].map(n => (
+                          <span key={n.label} style={{ fontSize: 10, color: n.color,
+                            padding: '1px 7px', borderRadius: 999, background: n.color + '10',
+                            border: `1px solid ${n.color}30` }}>
+                            {n.label}: {n.val}{n.unit}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   ) : (
                     <div style={{ marginTop: 6, fontSize: 12, color: '#CBD5E1' }}>Ingen næringsdata</div>
@@ -573,31 +594,93 @@ export default function RakelDagbokPage() {
                 </div>
               ))}
 
-              {/* Daily nutrition totals */}
+              {/* Daily totals + progress vs goals */}
               {curEntry.meals.some(m => m.nutrition) && (() => {
                 const tot = curEntry.meals.reduce((acc, m) => {
                   if (!m.nutrition) return acc
-                  return { kcal: acc.kcal + m.nutrition.kcal, protein: acc.protein + m.nutrition.protein,
-                    carbs: acc.carbs + m.nutrition.carbs, fat: acc.fat + m.nutrition.fat }
-                }, { kcal: 0, protein: 0, carbs: 0, fat: 0 })
+                  return {
+                    kcal:          acc.kcal          + m.nutrition.kcal,
+                    protein:       acc.protein       + m.nutrition.protein,
+                    carbs:         acc.carbs         + m.nutrition.carbs,
+                    sugar:         acc.sugar         + m.nutrition.sugar,
+                    fiber:         acc.fiber         + m.nutrition.fiber,
+                    fat:           acc.fat           + m.nutrition.fat,
+                    saturated_fat: acc.saturated_fat + m.nutrition.saturated_fat,
+                    sodium:        acc.sodium        + m.nutrition.sodium,
+                  }
+                }, { kcal:0, protein:0, carbs:0, sugar:0, fiber:0, fat:0, saturated_fat:0, sodium:0 })
+
+                const rows: { key: keyof typeof tot; label: string; color: string; unit: string }[] = [
+                  { key: 'kcal',          label: 'Kalorier',     color: '#F59E0B', unit: 'kcal' },
+                  { key: 'protein',       label: 'Protein',      color: '#10B981', unit: 'g' },
+                  { key: 'carbs',         label: 'Karbohydrat',  color: '#3B82F6', unit: 'g' },
+                  { key: 'sugar',         label: 'Sukker',       color: '#EC4899', unit: 'g' },
+                  { key: 'fiber',         label: 'Kostfiber',    color: '#84CC16', unit: 'g' },
+                  { key: 'fat',           label: 'Fett',         color: '#8B5CF6', unit: 'g' },
+                  { key: 'saturated_fat', label: 'Mettet fett',  color: '#F97316', unit: 'g' },
+                  { key: 'sodium',        label: 'Natrium',      color: '#64748B', unit: 'mg' },
+                ]
+
                 return (
-                  <div style={{ background: '#F8FAFC', borderRadius: 8, padding: '10px 14px', marginBottom: 10,
+                  <div style={{ background: '#F8FAFC', borderRadius: 10, padding: '12px 14px', marginBottom: 10,
                     border: '1px solid #E2E8F0' }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: '#64748B', marginBottom: 6 }}>
-                      DAGSTOTALT
-                    </div>
-                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                      {[
-                        { label: 'Kcal',    val: tot.kcal,    color: '#F59E0B' },
-                        { label: 'Protein', val: tot.protein,  color: '#10B981', unit: 'g' },
-                        { label: 'Karbo',   val: tot.carbs,    color: '#3B82F6', unit: 'g' },
-                        { label: 'Fett',    val: tot.fat,      color: '#8B5CF6', unit: 'g' },
-                      ].map(n => (
-                        <span key={n.label} style={{ fontSize: 13, color: n.color, fontWeight: 700 }}>
-                          {n.label}: {n.val}{n.unit ?? ''}
-                        </span>
-                      ))}
-                    </div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#64748B',
+                      letterSpacing: '.06em', marginBottom: 10 }}>DAGSTOTALT</div>
+
+                    {dailyGoals ? (
+                      // Progress bars
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                        {rows.map(row => {
+                          const actual = tot[row.key]
+                          const goal   = dailyGoals[row.key]
+                          const pct    = goal > 0 ? Math.min((actual / goal) * 100, 120) : 0
+                          const over   = goal > 0 && actual > goal * 1.1
+                          const low    = goal > 0 && actual < goal * 0.7
+                          const barColor = over ? '#DC2626' : low ? '#F59E0B' : row.color
+                          return (
+                            <div key={row.key}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between',
+                                fontSize: 11, color: '#64748B', marginBottom: 2 }}>
+                                <span style={{ fontWeight: 600 }}>{row.label}</span>
+                                <span>
+                                  <span style={{ color: barColor, fontWeight: 700 }}>{actual}{row.unit}</span>
+                                  <span style={{ color: '#CBD5E1' }}> / {goal}{row.unit}</span>
+                                  <span style={{ color: barColor, marginLeft: 4 }}>
+                                    ({Math.round((actual / goal) * 100)}%)
+                                  </span>
+                                  {over && <span style={{ color: '#DC2626', marginLeft: 4 }}>↑ over</span>}
+                                </span>
+                              </div>
+                              <div style={{ height: 6, background: '#E2E8F0', borderRadius: 999, overflow: 'hidden' }}>
+                                <div style={{ height: '100%', width: `${pct}%`, background: barColor,
+                                  borderRadius: 999, transition: 'width .4s' }} />
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      // Plain totals if no goals set
+                      <div>
+                        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 6 }}>
+                          {rows.slice(0, 4).map(n => (
+                            <span key={n.key} style={{ fontSize: 13, color: n.color, fontWeight: 700 }}>
+                              {n.label}: {tot[n.key]}{n.unit}
+                            </span>
+                          ))}
+                        </div>
+                        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                          {rows.slice(4).map(n => (
+                            <span key={n.key} style={{ fontSize: 12, color: n.color }}>
+                              {n.label}: {tot[n.key]}{n.unit}
+                            </span>
+                          ))}
+                        </div>
+                        <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 8 }}>
+                          💡 Sett opp næringsprofil under ⚙️-innstillinger for å se fremgang mot dagsmål.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )
               })()}
