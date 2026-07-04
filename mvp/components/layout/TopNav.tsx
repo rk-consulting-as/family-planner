@@ -11,7 +11,7 @@ import {
   CheckCheck, ShoppingBag, Bell, Wallet, MessageSquare, UtensilsCrossed,
   ShoppingCart, Gift, Briefcase, Mail, ChevronDown, Menu, X, Sparkles,
   BookOpen, Camera, Sun, Moon, LayoutGrid, HardHat, Apple, BookHeart,
-  ClipboardList, BookMarked, FileBarChart2,
+  ClipboardList, BookMarked, FileBarChart2, FlaskConical,
 } from "lucide-react";
 
 type LeafItem = {
@@ -60,6 +60,7 @@ const NAV: NavGroup[] = [
       { href: "/utredning",            label: "Oversikt",    icon: ClipboardList },
       { href: "/dagbok/rakel",         label: "Dagbok",      icon: BookMarked    },
       { href: "/dagbok/rakel/rapport", label: "Rapport",     icon: FileBarChart2 },
+      { href: "/utredning/tester",     label: "Tester",      icon: FlaskConical  },
     ],
   },
   {

@@ -3,7 +3,7 @@ import { getActiveContext } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import {
   ClipboardList, Calendar, Users, Activity,
-  BookOpen, FileBarChart2, ArrowRight, AlertCircle,
+  BookOpen, FileBarChart2, ArrowRight, AlertCircle, FlaskConical,
 } from "lucide-react";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -393,11 +393,12 @@ export default async function UtredningPage() {
       {/* ── SNARVEIER ── */}
       <div className="bg-white rounded-2xl border border-slate-200 p-4">
         <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Snarveier</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {[
             { href: `/prosjekter/${project.id}`, icon: "🕐", label: "Tidslinje", sub: `${milestones.length} hendelser` },
             { href: "/dagbok/rakel", icon: "📓", label: "Dagbok", sub: `${dagbokDays}/14 dager` },
             { href: "/dagbok/rakel/rapport", icon: "📊", label: "Rapport", sub: "Print / PDF" },
+            { href: "/utredning/tester", icon: "🧪", label: "Tester", sub: "AQ-50 og mer" },
             { href: "/sovndagbok", icon: "🌙", label: "Søvndagbok", sub: "Søvnlogg" },
           ].map(item => (
             <Link key={item.href} href={item.href}
