@@ -3,7 +3,7 @@ import { getActiveContext } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import {
   ClipboardList, Calendar, Users, Activity,
-  BookOpen, FileBarChart2, ArrowRight, AlertCircle, FlaskConical,
+  BookOpen, FileBarChart2, ArrowRight, AlertCircle, FlaskConical, Droplets,
 } from "lucide-react";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -74,6 +74,7 @@ export default async function UtredningPage() {
     { data: milestonesRaw },
     { data: partiesRaw },
     { data: dagbokRaw },
+    { data: bloodTestsRaw },
   ] = await Promise.all([
     sb.from("project_milestones")
       .select("id, title, description, kind, status, occurred_at, due_at, ai_extracted")
@@ -91,15 +92,22 @@ export default async function UtredningPage() {
       .gte("entry_date", localDateStr(new Date(Date.now() - 14 * 86400000)))
       .lte("entry_date", today)
       .order("entry_date", { ascending: true }),
+    sb.from("rakel_blood_tests")
+      .select("id, test_date, institution, values")
+      .eq("group_id", ctx.group.id)
+      .order("test_date", { ascending: false })
+      .limit(5),
   ]);
 
   type MS = { id: string; title: string; description: string | null; kind: string; status: string; occurred_at: string | null; due_at: string | null; ai_extracted: boolean };
   type Party = { id: string; name: string; role: string | null; organization: string | null; contact_info: string | null; notes: string | null; is_internal: boolean };
   type DagbokRow = { entry_date: string; day_score: number | null; mood_tags: string[] };
+  type BloodTestMini = { id: string; test_date: string; institution: string | null; values: Array<{ marker: string; value: number; unit: string; ref_min: number | null; ref_max: number | null }> };
 
-  const milestones = (milestonesRaw || []) as MS[];
-  const parties    = (partiesRaw || []) as Party[];
-  const dagbok     = (dagbokRaw || []) as DagbokRow[];
+  const milestones  = (milestonesRaw || []) as MS[];
+  const parties     = (partiesRaw || []) as Party[];
+  const dagbok      = (dagbokRaw || []) as DagbokRow[];
+  const bloodTests  = (bloodTestsRaw || []) as BloodTestMini[];
 
   // ── KPI-beregninger ──
   const upcoming = milestones.filter(m =>
@@ -167,10 +175,10 @@ export default async function UtredningPage() {
             {project.status === "active" ? "Aktiv" : "Pauset"}
           </span>
           <Link
-            href={`/prosjekter/${project.id}`}
+            href="/utredning/dokumentasjon"
             className="text-xs text-white/70 hover:text-white underline flex items-center gap-1"
           >
-            Åpne prosjekt <ArrowRight className="w-3 h-3" />
+            Dokumentasjon <ArrowRight className="w-3 h-3" />
           </Link>
         </div>
       </div>
@@ -383,11 +391,71 @@ export default async function UtredningPage() {
               ))}
             </div>
           )}
-          <Link href={`/prosjekter/${project.id}`}
+          <Link href="/utredning/dokumentasjon"
             className="mt-3 text-xs text-brand-600 hover:underline flex items-center gap-1">
             Administrer instanser <ArrowRight className="w-3 h-3" />
           </Link>
         </div>
+      </div>
+
+      {/* ── BLODPRØVER MINI ── */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-4">
+        <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+          <Droplets className="w-3.5 h-3.5" /> Blodprøver — siste prøvetakinger
+        </h2>
+        {bloodTests.length === 0 ? (
+          <p className="text-sm text-slate-400 text-center py-4">Ingen blodprøver registrert ennå</p>
+        ) : (
+          <div className="space-y-2">
+            {bloodTests.map(bt => {
+              const anomalies = bt.values.filter(m => {
+                if (m.ref_min !== null && m.value < m.ref_min) return true;
+                if (m.ref_max !== null && m.value > m.ref_max) return true;
+                return false;
+              }).length;
+              return (
+                <div key={bt.id} className="flex items-center gap-3 py-1.5 border-b border-slate-100 last:border-0">
+                  <div className="text-center bg-blue-50 rounded-lg px-2 py-1 min-w-[38px] flex-shrink-0">
+                    <div className="text-sm font-black text-[#1B3A5C] leading-none">
+                      {new Date(bt.test_date + "T12:00:00").getDate()}
+                    </div>
+                    <div className="text-[9px] uppercase text-slate-500">
+                      {new Date(bt.test_date + "T12:00:00").toLocaleDateString("nb-NO", { month: "short" })}
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-semibold text-slate-700">{bt.institution || "Blodprøve"}</span>
+                      {anomalies > 0 && (
+                        <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">
+                          ⚠ {anomalies} utenfor ref.
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-1 mt-1 flex-wrap">
+                      {bt.values.slice(0, 3).map((m, i) => {
+                        const low = m.ref_min !== null && m.value < m.ref_min;
+                        const high = m.ref_max !== null && m.value > m.ref_max;
+                        return (
+                          <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                            high ? "bg-red-100 text-red-700" : low ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"
+                          }`}>
+                            {m.marker}: {m.value} {m.unit}
+                          </span>
+                        );
+                      })}
+                      {bt.values.length > 3 && <span className="text-[10px] text-slate-400">+{bt.values.length - 3}</span>}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        <Link href="/utredning/blodprover"
+          className="mt-3 text-xs text-brand-600 hover:underline flex items-center gap-1">
+          Se alle blodprøver <ArrowRight className="w-3 h-3" />
+        </Link>
       </div>
 
       {/* ── SNARVEIER ── */}
@@ -395,11 +463,11 @@ export default async function UtredningPage() {
         <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Snarveier</h2>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {[
-            { href: `/prosjekter/${project.id}`, icon: "🕐", label: "Tidslinje", sub: `${milestones.length} hendelser` },
+            { href: "/utredning/dokumentasjon", icon: "📁", label: "Dokumentasjon", sub: `${milestones.length} hendelser` },
             { href: "/dagbok/rakel", icon: "📓", label: "Dagbok", sub: `${dagbokDays}/14 dager` },
             { href: "/dagbok/rakel/rapport", icon: "📊", label: "Rapport", sub: "Print / PDF" },
+            { href: "/utredning/blodprover", icon: "🩸", label: "Blodprøver", sub: `${bloodTests.length} prøver` },
             { href: "/utredning/tester", icon: "🧪", label: "Tester", sub: "AQ-50 og mer" },
-            { href: "/sovndagbok", icon: "🌙", label: "Søvndagbok", sub: "Søvnlogg" },
           ].map(item => (
             <Link key={item.href} href={item.href}
               className="flex flex-col items-center text-center p-3 rounded-xl bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 transition gap-1">

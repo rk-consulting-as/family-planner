@@ -11,7 +11,7 @@ import {
   CheckCheck, ShoppingBag, Bell, Wallet, MessageSquare, UtensilsCrossed,
   ShoppingCart, Gift, Briefcase, Mail, ChevronDown, Menu, X, Sparkles,
   BookOpen, Camera, Sun, Moon, LayoutGrid, HardHat, Apple, BookHeart,
-  ClipboardList, BookMarked, FileBarChart2, FlaskConical,
+  ClipboardList, BookMarked, FileBarChart2, FlaskConical, FolderOpen, Droplets,
 } from "lucide-react";
 
 type LeafItem = {
@@ -57,10 +57,12 @@ const NAV: NavGroup[] = [
     label: "Utredning",
     icon: ClipboardList,
     items: [
-      { href: "/utredning",            label: "Oversikt",    icon: ClipboardList, module: "utredning" },
-      { href: "/dagbok/rakel",         label: "Dagbok",      icon: BookMarked,    module: "utredning" },
-      { href: "/dagbok/rakel/rapport", label: "Rapport",     icon: FileBarChart2, module: "utredning" },
-      { href: "/utredning/tester",     label: "Tester",      icon: FlaskConical,  module: "utredning" },
+      { href: "/utredning",                   label: "Oversikt",       icon: ClipboardList, module: "utredning" },
+      { href: "/utredning/dokumentasjon",     label: "Dokumentasjon",  icon: FolderOpen,    module: "utredning" },
+      { href: "/dagbok/rakel",                label: "Dagbok",         icon: BookMarked,    module: "utredning" },
+      { href: "/dagbok/rakel/rapport",        label: "Rapport",        icon: FileBarChart2, module: "utredning" },
+      { href: "/utredning/blodprover",        label: "Blodprøver",     icon: Droplets,      module: "utredning" },
+      { href: "/utredning/tester",            label: "Tester",         icon: FlaskConical,  module: "utredning" },
     ],
   },
   {
