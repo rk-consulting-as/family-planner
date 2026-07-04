@@ -220,6 +220,10 @@ export default function RakelDagbokPage() {
           {!saving && !saveErr && saveTime && <span style={{ fontSize: 12, color: 'rgba(134,239,172,.9)', marginLeft: 6 }}>✓ Lagret {saveTime}</span>}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button style={{ ...s.navBtn, background: 'rgba(255,255,255,.95)', color: '#1B3A5C', fontWeight: 600 }}
+            onClick={() => router.push('/dagbok/rakel/rapport')}>
+            📊 Rapport
+          </button>
           <button style={s.navBtn} onClick={() => setWeekOff(w => w - 1)}>← Forrige</button>
           <span style={{ fontSize: 13, color: 'rgba(255,255,255,.7)', minWidth: 130, textAlign: 'center' }}>
             {fmtD(mon)} – {fmtD(sun)}
