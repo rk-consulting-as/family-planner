@@ -3,33 +3,69 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { calculateNutrition, type NutritionResult } from '@/lib/actions/nutrition'
 
 // ── Types ──────────────────────────────────────────────────────────────────
+interface FieldEditor { name: string; at: string }
+
+interface Meal {
+  id: string
+  description: string
+  logged_by: string       // display_name
+  logged_at: string       // ISO
+  nutrition: NutritionResult | null
+}
+
+interface MedTaken {
+  taken: boolean
+  logged_by: string
+  logged_at: string
+}
+
+interface MedSetup {
+  id: string
+  name: string
+  dosage: string | null
+  unit: string | null
+  notes: string | null
+  active: boolean
+}
+
 interface Entry {
-  entry_date:      string
-  day_score:       number | null
-  mood_tags:       string[]
-  positive:        string
-  negative:        string
-  school_note:     string
-  has_episode:     boolean
-  abc_trigger:     string
-  abc_behavior:    string
-  abc_helped:      string
-  sleep_note:      string
-  social_note:     string
-  sensory_note:    string
-  transition_note: string
-  notes:           string
-  last_edited_by:  string | null
+  entry_date:       string
+  day_score:        number | null
+  mood_tags:        string[]
+  positive:         string
+  negative:         string
+  school_note:      string
+  has_episode:      boolean
+  abc_trigger:      string
+  abc_behavior:     string
+  abc_helped:       string
+  // Sleep (structured)
+  bedtime:          string    // "HH:MM"
+  waketime:         string
+  risetime:         string
+  sleep_note:       string    // optional free text
+  // Other observations
+  social_note:      string
+  sensory_note:     string
+  transition_note:  string
+  notes:            string
+  // New JSONB fields
+  meals:            Meal[]
+  medications_taken: Record<string, MedTaken>   // med_id → taken info
+  field_editors:    Record<string, FieldEditor>  // field_name → last editor
+  last_edited_by:   string | null
 }
 
 function emptyEntry(date: string): Entry {
   return {
     entry_date: date, day_score: null, mood_tags: [], positive: '', negative: '',
     school_note: '', has_episode: false, abc_trigger: '', abc_behavior: '',
-    abc_helped: '', sleep_note: '', social_note: '', sensory_note: '',
-    transition_note: '', notes: '', last_edited_by: null,
+    abc_helped: '', bedtime: '', waketime: '', risetime: '', sleep_note: '',
+    social_note: '', sensory_note: '', transition_note: '', notes: '',
+    meals: [], medications_taken: {}, field_editors: {}, last_edited_by: null,
   }
 }
 
@@ -38,37 +74,32 @@ const DAYS  = ['Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag','Søndag
 const SHORT = ['Man','Tir','Ons','Tor','Fre','Lør','Søn']
 
 const MOOD_TAGS = [
-  { id: 'glad',       label: '😊 Glad',        color: '#16A34A' },
-  { id: 'rolig',      label: '😌 Rolig',        color: '#0284C7' },
-  { id: 'engstelig',  label: '😰 Engstelig',    color: '#D97706' },
-  { id: 'trist',      label: '😢 Trist',        color: '#6366F1' },
-  { id: 'sint',       label: '😠 Sint',          color: '#DC2626' },
-  { id: 'urolig',     label: '😤 Urolig',        color: '#EA580C' },
-  { id: 'sliten',     label: '😴 Sliten',        color: '#9333EA' },
-  { id: 'hyperaktiv', label: '⚡ Hyperaktiv',    color: '#0891B2' },
-  { id: 'fokusert',   label: '🎯 Fokusert',      color: '#059669' },
-  { id: 'sosiabel',   label: '🤝 Sosiabel',      color: '#10B981' },
+  { id: 'glad',       label: '😊 Glad',      color: '#16A34A' },
+  { id: 'rolig',      label: '😌 Rolig',      color: '#0284C7' },
+  { id: 'engstelig',  label: '😰 Engstelig',  color: '#D97706' },
+  { id: 'trist',      label: '😢 Trist',      color: '#6366F1' },
+  { id: 'sint',       label: '😠 Sint',        color: '#DC2626' },
+  { id: 'urolig',     label: '😤 Urolig',      color: '#EA580C' },
+  { id: 'sliten',     label: '😴 Sliten',      color: '#9333EA' },
+  { id: 'hyperaktiv', label: '⚡ Hyperaktiv',  color: '#0891B2' },
+  { id: 'fokusert',   label: '🎯 Fokusert',    color: '#059669' },
+  { id: 'sosiabel',   label: '🤝 Sosiabel',    color: '#10B981' },
 ]
 
-const SCORE_LABELS = ['Veldig vanskelig dag', 'Utfordrende', 'Middels', 'God dag', 'Utmerket dag']
-const SCORE_COLORS = ['#DC2626', '#EA580C', '#D97706', '#16A34A', '#059669']
+const SCORE_LABELS = ['Veldig vanskelig dag','Utfordrende','Middels','God dag','Utmerket dag']
+const SCORE_COLORS = ['#DC2626','#EA580C','#D97706','#16A34A','#059669']
 
 // ── Week helpers ────────────────────────────────────────────────────────────
 function getMonday(off = 0): Date {
-  const d   = new Date()
-  const dow = d.getDay()
+  const d = new Date(); const dow = d.getDay()
   d.setDate(d.getDate() + (dow === 0 ? -6 : 1 - dow) + off * 7)
-  d.setHours(0, 0, 0, 0)
-  return d
+  d.setHours(0, 0, 0, 0); return d
 }
 function dayDate(off: number, idx: number): Date {
   const m = getMonday(off); m.setDate(m.getDate() + idx); return m
 }
 function dateStr(d: Date): string {
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
 }
 function isoWeek(d: Date): number {
   const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
@@ -76,23 +107,35 @@ function isoWeek(d: Date): number {
   return Math.ceil(((t.getTime() - new Date(Date.UTC(t.getUTCFullYear(), 0, 1)).getTime()) / 86400000 + 1) / 7)
 }
 function todayIdx(): number { const d = new Date().getDay(); return d === 0 ? 6 : d - 1 }
+function fmtTime(iso: string): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  return d.toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' })
+}
 
 // ── Main component ──────────────────────────────────────────────────────────
 export default function RakelDagbokPage() {
   const router    = useRouter()
   const sb        = createClient()
   const saveTimer = useRef<ReturnType<typeof setTimeout>>()
+  const dirtyFields = useRef<Set<string>>(new Set())
 
-  const [weekOff,   setWeekOff]   = useState(0)
-  const [activeDay, setActiveDay] = useState(todayIdx)
-  const [entries,   setEntries]   = useState<Map<string, Entry>>(new Map())
-  const [userId,    setUserId]    = useState<string | null>(null)
-  const [groupId,   setGroupId]   = useState<string | null>(null)
-  const [editorName,setEditorName]= useState<string>('')
-  const [saving,    setSaving]    = useState(false)
-  const [saveTime,  setSaveTime]  = useState<string | null>(null)
-  const [saveErr,   setSaveErr]   = useState(false)
-  const [profiles,  setProfiles]  = useState<Record<string, string>>({})
+  const [weekOff,    setWeekOff]    = useState(0)
+  const [activeDay,  setActiveDay]  = useState(todayIdx)
+  const [entries,    setEntries]    = useState<Map<string, Entry>>(new Map())
+  const [userId,     setUserId]     = useState<string | null>(null)
+  const [groupId,    setGroupId]    = useState<string | null>(null)
+  const [isAdmin,    setIsAdmin]    = useState(false)
+  const [editorName, setEditorName] = useState('')
+  const [saving,     setSaving]     = useState(false)
+  const [saveTime,   setSaveTime]   = useState<string | null>(null)
+  const [saveErr,    setSaveErr]    = useState(false)
+  const [profiles,   setProfiles]   = useState<Record<string, string>>({})
+  const [meds,       setMeds]       = useState<MedSetup[]>([])
+
+  // Meal entry state
+  const [mealInput,     setMealInput]     = useState('')
+  const [mealCalcId,    setMealCalcId]    = useState<string | null>(null)  // which meal is being calculated
 
   // ── Load week entries ──
   const loadWeek = useCallback(async (gid: string, off: number) => {
@@ -103,7 +146,17 @@ export default function RakelDagbokPage() {
       .gte('entry_date', dateStr(mon))
       .lte('entry_date', dateStr(sun))
     const map = new Map<string, Entry>()
-    ;(data || []).forEach((row: Entry) => map.set(row.entry_date, row))
+    ;(data || []).forEach((row: Record<string, unknown>) => {
+      const e = row as Entry
+      // Ensure JSONB arrays/objects are correctly typed
+      if (!Array.isArray(e.meals)) e.meals = []
+      if (!e.medications_taken || typeof e.medications_taken !== 'object') e.medications_taken = {}
+      if (!e.field_editors || typeof e.field_editors !== 'object') e.field_editors = {}
+      e.bedtime  = (e.bedtime  as string) ?? ''
+      e.waketime = (e.waketime as string) ?? ''
+      e.risetime = (e.risetime as string) ?? ''
+      map.set(e.entry_date, e)
+    })
     setEntries(map)
   }, [sb])
 
@@ -114,33 +167,38 @@ export default function RakelDagbokPage() {
       if (!user) { router.push('/sign-in'); return }
       setUserId(user.id)
 
-      // Hent group_id og profiler for gruppen
       const { data: gm } = await sb.from('group_members')
-        .select('group_id, profiles!inner(id, display_name)')
-        .eq('profile_id', user.id)
-        .limit(1)
-        .single()
+        .select('group_id, role, profiles!inner(id, display_name)')
+        .eq('profile_id', user.id).limit(1).single()
 
       if (!gm) return
-      const gid = (gm as { group_id: string }).group_id
-      setGroupId(gid)
+      const g = gm as { group_id: string; role: string }
+      setGroupId(g.group_id)
+      setIsAdmin(['owner', 'admin', 'parent'].includes(g.role))
 
-      // Hent alle profilene i gruppen for "sist redigert av"
+      // Profiles map for "redigert av"
       const { data: members } = await sb.from('group_members')
         .select('profile_id, profiles!inner(id, display_name)')
-        .eq('group_id', gid)
+        .eq('group_id', g.group_id)
       const map: Record<string, string> = {}
       ;(members || []).forEach((m: { profile_id: string; profiles: { display_name: string } }) => {
         map[m.profile_id] = m.profiles.display_name
       })
       setProfiles(map)
 
-      // Eget navn
       const { data: prof } = await sb.from('profiles')
         .select('display_name').eq('id', user.id).single()
       if (prof) setEditorName((prof as { display_name: string }).display_name)
 
-      loadWeek(gid, 0)
+      // Load medications setup
+      const { data: medsData } = await sb.from('rakel_medication_setup')
+        .select('id, name, dosage, unit, notes, active')
+        .eq('group_id', g.group_id)
+        .eq('active', true)
+        .order('sort_order')
+      setMeds((medsData as MedSetup[]) ?? [])
+
+      loadWeek(g.group_id, 0)
     }
     init()
   }, [sb, router, loadWeek])
@@ -149,47 +207,71 @@ export default function RakelDagbokPage() {
     if (groupId) loadWeek(groupId, weekOff)
   }, [weekOff, groupId, loadWeek])
 
-  // ── Current entry ──
   const curDate  = dateStr(dayDate(weekOff, activeDay))
   const curEntry: Entry = entries.get(curDate) ?? emptyEntry(curDate)
 
   // ── Save ──
-  function updateEntry(patch: Partial<Entry>) {
+  function updateEntry(patch: Partial<Entry>, trackFields = true) {
+    if (trackFields) {
+      Object.keys(patch).forEach(k => {
+        if (!['field_editors','last_edited_by','meals','medications_taken'].includes(k)) {
+          dirtyFields.current.add(k)
+        }
+      })
+    }
     const updated = { ...curEntry, ...patch }
     setEntries(prev => new Map(prev).set(curDate, updated))
-    setSaving(true)
-    setSaveErr(false)
+    setSaving(true); setSaveErr(false)
     clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(async () => {
       if (!groupId || !userId) return
+
+      // Build updated field_editors for dirty fields
+      const fe = { ...updated.field_editors }
+      const now = new Date().toISOString()
+      dirtyFields.current.forEach(field => {
+        fe[field] = { name: editorName, at: now }
+      })
+      dirtyFields.current.clear()
+
       const payload = {
-        group_id:        groupId,
-        entry_date:      updated.entry_date,
-        day_score:       updated.day_score ?? null,
-        mood_tags:       updated.mood_tags,
-        positive:        updated.positive        || null,
-        negative:        updated.negative        || null,
-        school_note:     updated.school_note     || null,
-        has_episode:     updated.has_episode,
-        abc_trigger:     updated.abc_trigger     || null,
-        abc_behavior:    updated.abc_behavior    || null,
-        abc_helped:      updated.abc_helped      || null,
-        sleep_note:      updated.sleep_note      || null,
-        social_note:     updated.social_note     || null,
-        sensory_note:    updated.sensory_note    || null,
-        transition_note: updated.transition_note || null,
-        notes:           updated.notes           || null,
-        last_edited_by:  userId,
+        group_id: groupId,
+        entry_date:       updated.entry_date,
+        day_score:        updated.day_score ?? null,
+        mood_tags:        updated.mood_tags,
+        positive:         updated.positive        || null,
+        negative:         updated.negative        || null,
+        school_note:      updated.school_note     || null,
+        has_episode:      updated.has_episode,
+        abc_trigger:      updated.abc_trigger     || null,
+        abc_behavior:     updated.abc_behavior    || null,
+        abc_helped:       updated.abc_helped      || null,
+        bedtime:          updated.bedtime         || null,
+        waketime:         updated.waketime        || null,
+        risetime:         updated.risetime        || null,
+        sleep_note:       updated.sleep_note      || null,
+        social_note:      updated.social_note     || null,
+        sensory_note:     updated.sensory_note    || null,
+        transition_note:  updated.transition_note || null,
+        notes:            updated.notes           || null,
+        meals:            updated.meals,
+        medications_taken: updated.medications_taken,
+        field_editors:    fe,
+        last_edited_by:   userId,
       }
       const { error } = await sb.from('rakel_dagbok').upsert(
         payload, { onConflict: 'group_id,entry_date' }
       )
-      if (error) {
-        console.error('[rakel-dagbok] save error:', error)
-        setSaving(false); setSaveErr(true); return
-      }
-      const now = new Date().toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' })
-      setSaving(false); setSaveTime(now)
+      if (error) { setSaving(false); setSaveErr(true); return }
+      // Update field_editors in state
+      setEntries(prev => {
+        const m = new Map(prev)
+        const e = m.get(curDate)
+        if (e) m.set(curDate, { ...e, field_editors: fe })
+        return m
+      })
+      const t = new Date().toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' })
+      setSaving(false); setSaveTime(t)
     }, 700)
   }
 
@@ -200,11 +282,61 @@ export default function RakelDagbokPage() {
     updateEntry({ mood_tags: tags })
   }
 
+  // ── Meals ──
+  async function addMeal() {
+    if (!mealInput.trim() || !editorName) return
+    const meal: Meal = {
+      id: crypto.randomUUID(),
+      description: mealInput.trim(),
+      logged_by:   editorName,
+      logged_at:   new Date().toISOString(),
+      nutrition:   null,
+    }
+    const updated = [...curEntry.meals, meal]
+    setMealInput('')
+    updateEntry({ meals: updated }, false)
+
+    // Calculate nutrition in background
+    setMealCalcId(meal.id)
+    const res = await calculateNutrition(meal.description)
+    setMealCalcId(null)
+    if (res.ok) {
+      const withNutr = updated.map(m => m.id === meal.id ? { ...m, nutrition: res.data } : m)
+      updateEntry({ meals: withNutr }, false)
+    }
+  }
+
+  function deleteMeal(id: string) {
+    updateEntry({ meals: curEntry.meals.filter(m => m.id !== id) }, false)
+  }
+
+  // ── Medications ──
+  function toggleMed(medId: string, currentTaken: boolean) {
+    const mt = { ...curEntry.medications_taken }
+    if (currentTaken) {
+      delete mt[medId]
+    } else {
+      mt[medId] = { taken: true, logged_by: editorName, logged_at: new Date().toISOString() }
+    }
+    updateEntry({ medications_taken: mt }, false)
+  }
+
   const mon  = getMonday(weekOff)
   const sun  = new Date(mon); sun.setDate(sun.getDate() + 6)
   const wnum = isoWeek(mon)
   const fmtD = (d: Date) => d.toLocaleDateString('nb-NO', { day: 'numeric', month: 'short' })
   const lastEditor = curEntry.last_edited_by ? (profiles[curEntry.last_edited_by] ?? '') : ''
+
+  // Helper: who last edited a specific field
+  function fieldEditor(field: string) {
+    const e = curEntry.field_editors?.[field]
+    if (!e) return null
+    return (
+      <span style={{ fontSize: 10, color: '#94A3B8', display: 'block', marginTop: 3 }}>
+        ✏ {e.name} · {fmtTime(e.at)}
+      </span>
+    )
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: '#F1F5F9', display: 'flex', flexDirection: 'column' }}>
@@ -224,6 +356,11 @@ export default function RakelDagbokPage() {
             onClick={() => router.push('/dagbok/rakel/rapport')}>
             📊 Rapport
           </button>
+          {isAdmin && (
+            <button style={s.navBtn} onClick={() => router.push('/dagbok/rakel/medisin')}>
+              💊 Medisiner
+            </button>
+          )}
           <button style={s.navBtn} onClick={() => setWeekOff(w => w - 1)}>← Forrige</button>
           <span style={{ fontSize: 13, color: 'rgba(255,255,255,.7)', minWidth: 130, textAlign: 'center' }}>
             {fmtD(mon)} – {fmtD(sun)}
@@ -258,11 +395,9 @@ export default function RakelDagbokPage() {
           <div style={{ fontSize: 12, fontWeight: 600, color: '#64748B', marginBottom: 10 }}>UKEOVERSIKT</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 4 }}>
             {DAYS.map((_, i) => {
-              const d    = dayDate(weekOff, i)
-              const e    = entries.get(dateStr(d))
-              const sc   = e?.day_score ?? null
-              const isTd = dateStr(d) === dateStr(new Date())
-              const isCur = i === activeDay
+              const d = dayDate(weekOff, i); const e = entries.get(dateStr(d))
+              const sc = e?.day_score ?? null
+              const isTd = dateStr(d) === dateStr(new Date()); const isCur = i === activeDay
               return (
                 <div key={i} onClick={() => setActiveDay(i)}
                   style={{ textAlign: 'center', padding: '8px 4px', borderRadius: 8, cursor: 'pointer',
@@ -273,13 +408,9 @@ export default function RakelDagbokPage() {
                   {sc ? (
                     <>
                       <div style={{ fontSize: 18, fontWeight: 700, color: SCORE_COLORS[sc - 1] }}>{sc}</div>
-                      <div style={{ fontSize: 9, color: '#94A3B8', lineHeight: 1.2 }}>
-                        {SCORE_LABELS[sc - 1].split(' ')[0]}
-                      </div>
+                      <div style={{ fontSize: 9, color: '#94A3B8', lineHeight: 1.2 }}>{SCORE_LABELS[sc-1].split(' ')[0]}</div>
                     </>
-                  ) : (
-                    <div style={{ fontSize: 16, color: '#E2E8F0', marginTop: 4 }}>—</div>
-                  )}
+                  ) : <div style={{ fontSize: 16, color: '#E2E8F0', marginTop: 4 }}>—</div>}
                 </div>
               )
             })}
@@ -312,8 +443,7 @@ export default function RakelDagbokPage() {
             ))}
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#94A3B8', marginTop: 6 }}>
-            <span>1 = Veldig vanskelig</span>
-            <span>5 = Utmerket dag</span>
+            <span>1 = Veldig vanskelig</span><span>5 = Utmerket dag</span>
           </div>
           {curEntry.day_score && (
             <div style={{ textAlign: 'center', fontSize: 13, color: SCORE_COLORS[curEntry.day_score - 1], fontWeight: 600, marginTop: 8 }}>
@@ -325,7 +455,7 @@ export default function RakelDagbokPage() {
         {/* ── STEMNING ── */}
         <div style={s.sh}>Stemning og energi</div>
         <div style={s.card}>
-          <div style={{ fontSize: 12, color: '#94A3B8', marginBottom: 10 }}>Velg alle som passer — man kan ha flere stemninger på én dag.</div>
+          <div style={{ fontSize: 12, color: '#94A3B8', marginBottom: 10 }}>Velg alle som passer.</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
             {MOOD_TAGS.map(tag => {
               const active = curEntry.mood_tags.includes(tag.id)
@@ -345,53 +475,240 @@ export default function RakelDagbokPage() {
         {/* ── OBSERVASJONER ── */}
         <div style={s.sh}>Observasjoner</div>
         <div style={s.card}>
-          <QItem num={1} label="✅ Positive opplevelser" hint="Hva gikk bra? Hva mestret Rakel? Hva ga glede?">
+          <QItem num={1} label="✅ Positive opplevelser" hint="Hva gikk bra? Hva mestret Rakel?">
             <textarea style={{ ...s.input, minHeight: 72, resize: 'vertical' }}
               value={curEntry.positive}
               onChange={e => updateEntry({ positive: e.target.value })}
-              placeholder="F.eks: Lekte godt med søster, ro under middag, sa fra verbalt i stedet for å reagere…" />
+              placeholder="F.eks: Lekte godt med søster, ro under middag…" />
+            {fieldEditor('positive')}
           </QItem>
           <QItem num={2} label="⚠️ Utfordrende opplevelser" hint="Hva var vanskelig? Hva utløste reaksjoner?">
             <textarea style={{ ...s.input, minHeight: 72, resize: 'vertical' }}
               value={curEntry.negative}
               onChange={e => updateEntry({ negative: e.target.value })}
-              placeholder="F.eks: Ville ikke skifte klær, reagerte sterkt på lyd, nektet å avslutte…" />
+              placeholder="F.eks: Ville ikke skifte klær, reagerte sterkt på lyd…" />
+            {fieldEditor('negative')}
           </QItem>
-          <QItem num={3} label="🏫 Skole / barnehage / aktivitet" hint="Hvordan gikk det? Noe tilbakemelding fra lærere/ansatte?">
+          <QItem num={3} label="🏫 Skole / barnehage / aktivitet" hint="Noe tilbakemelding fra lærere/ansatte?">
             <textarea style={{ ...s.input, minHeight: 56, resize: 'vertical' }}
               value={curEntry.school_note}
               onChange={e => updateEntry({ school_note: e.target.value })}
-              placeholder="F.eks: Rolig dag på skolen, klarte gruppearbeid, hadde konflikter i friminuttet…" />
+              placeholder="F.eks: Rolig dag på skolen, klarte gruppearbeid…" />
+            {fieldEditor('school_note')}
           </QItem>
         </div>
+
+        {/* ── SØVN (strukturert) ── */}
+        <div style={s.sh}>Søvn</div>
+        <div style={s.card}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 14 }}>
+            <div>
+              <label style={s.sublabel}>🌙 La seg</label>
+              <input type="time" style={s.input} value={curEntry.bedtime}
+                onChange={e => updateEntry({ bedtime: e.target.value })} />
+              {fieldEditor('bedtime')}
+            </div>
+            <div>
+              <label style={s.sublabel}>👁 Våknet</label>
+              <input type="time" style={s.input} value={curEntry.waketime}
+                onChange={e => updateEntry({ waketime: e.target.value })} />
+              {fieldEditor('waketime')}
+            </div>
+            <div>
+              <label style={s.sublabel}>☀️ Sto opp</label>
+              <input type="time" style={s.input} value={curEntry.risetime}
+                onChange={e => updateEntry({ risetime: e.target.value })} />
+              {fieldEditor('risetime')}
+            </div>
+          </div>
+          <div>
+            <label style={s.sublabel}>Notat om søvnkvalitet (valgfritt)</label>
+            <input style={s.input} value={curEntry.sleep_note}
+              onChange={e => updateEntry({ sleep_note: e.target.value })}
+              placeholder="F.eks: Urolig natt, våknet flere ganger, sov godt…" />
+            {fieldEditor('sleep_note')}
+          </div>
+        </div>
+
+        {/* ── MÅLTIDER ── */}
+        <div style={s.sh}>Måltider</div>
+        <div style={s.card}>
+          {/* Existing meals */}
+          {curEntry.meals.length > 0 && (
+            <div style={{ marginBottom: 14 }}>
+              {curEntry.meals.map(meal => (
+                <div key={meal.id} style={{ borderLeft: '3px solid #E2E8F0', paddingLeft: 12, marginBottom: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 14, color: '#1E293B', marginBottom: 3 }}>{meal.description}</div>
+                      <div style={{ fontSize: 10, color: '#94A3B8' }}>
+                        {meal.logged_by} · {fmtTime(meal.logged_at)}
+                      </div>
+                    </div>
+                    <button onClick={() => deleteMeal(meal.id)}
+                      style={{ fontSize: 16, color: '#CBD5E1', background: 'none', border: 'none',
+                        cursor: 'pointer', padding: '0 4px', lineHeight: 1 }}>×</button>
+                  </div>
+                  {/* Nutrition */}
+                  {mealCalcId === meal.id ? (
+                    <div style={{ marginTop: 6, fontSize: 12, color: '#94A3B8' }}>⏳ Beregner næring…</div>
+                  ) : meal.nutrition ? (
+                    <div style={{ display: 'flex', gap: 10, marginTop: 6, flexWrap: 'wrap' }}>
+                      {[
+                        { label: 'Kcal',    val: meal.nutrition.kcal,    color: '#F59E0B' },
+                        { label: 'Protein', val: meal.nutrition.protein,  color: '#10B981', unit: 'g' },
+                        { label: 'Karbo',   val: meal.nutrition.carbs,    color: '#3B82F6', unit: 'g' },
+                        { label: 'Fett',    val: meal.nutrition.fat,      color: '#8B5CF6', unit: 'g' },
+                      ].map(n => (
+                        <span key={n.label} style={{ fontSize: 11, background: n.color + '15',
+                          color: n.color, padding: '2px 8px', borderRadius: 999,
+                          border: `1px solid ${n.color}40`, fontWeight: 600 }}>
+                          {n.label}: {n.val}{n.unit ?? ''}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ marginTop: 6, fontSize: 12, color: '#CBD5E1' }}>Ingen næringsdata</div>
+                  )}
+                </div>
+              ))}
+
+              {/* Daily nutrition totals */}
+              {curEntry.meals.some(m => m.nutrition) && (() => {
+                const tot = curEntry.meals.reduce((acc, m) => {
+                  if (!m.nutrition) return acc
+                  return { kcal: acc.kcal + m.nutrition.kcal, protein: acc.protein + m.nutrition.protein,
+                    carbs: acc.carbs + m.nutrition.carbs, fat: acc.fat + m.nutrition.fat }
+                }, { kcal: 0, protein: 0, carbs: 0, fat: 0 })
+                return (
+                  <div style={{ background: '#F8FAFC', borderRadius: 8, padding: '10px 14px', marginBottom: 10,
+                    border: '1px solid #E2E8F0' }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: '#64748B', marginBottom: 6 }}>
+                      DAGSTOTALT
+                    </div>
+                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                      {[
+                        { label: 'Kcal',    val: tot.kcal,    color: '#F59E0B' },
+                        { label: 'Protein', val: tot.protein,  color: '#10B981', unit: 'g' },
+                        { label: 'Karbo',   val: tot.carbs,    color: '#3B82F6', unit: 'g' },
+                        { label: 'Fett',    val: tot.fat,      color: '#8B5CF6', unit: 'g' },
+                      ].map(n => (
+                        <span key={n.label} style={{ fontSize: 13, color: n.color, fontWeight: 700 }}>
+                          {n.label}: {n.val}{n.unit ?? ''}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })()}
+            </div>
+          )}
+
+          {/* Add meal */}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input style={{ ...s.input, flex: 1 }}
+              value={mealInput}
+              onChange={e => setMealInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && addMeal()}
+              placeholder="F.eks: 2 pølser i lompe med ketchup, glass melk…" />
+            <button
+              style={{ padding: '9px 14px', background: '#1B3A5C', color: 'white', border: 'none',
+                borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                fontFamily: 'inherit', whiteSpace: 'nowrap' }}
+              onClick={addMeal}
+              disabled={!mealInput.trim()}>
+              + Legg til
+            </button>
+          </div>
+          <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 5 }}>
+            AI beregner næring automatisk. Trykk Enter eller klikk "+ Legg til".
+          </p>
+        </div>
+
+        {/* ── MEDISIN ── */}
+        {meds.length > 0 && (
+          <>
+            <div style={s.sh}>Medisin i dag</div>
+            <div style={s.card}>
+              {meds.map(med => {
+                const medState = curEntry.medications_taken[med.id]
+                const taken = !!medState?.taken
+                return (
+                  <div key={med.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '10px 0', borderBottom: '1px solid #F1F5F9' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <button onClick={() => toggleMed(med.id, taken)}
+                          style={{ width: 22, height: 22, border: `2px solid ${taken ? '#16A34A' : '#CBD5E1'}`,
+                            borderRadius: 6, background: taken ? '#16A34A' : 'transparent',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            cursor: 'pointer', flexShrink: 0 }}>
+                          {taken && <span style={{ color: 'white', fontSize: 12 }}>✓</span>}
+                        </button>
+                        <div>
+                          <span style={{ fontSize: 14, color: '#1E293B', fontWeight: taken ? 600 : 400 }}>
+                            💊 {med.name}
+                          </span>
+                          {med.dosage && (
+                            <span style={{ fontSize: 12, color: '#94A3B8', marginLeft: 6 }}>
+                              {med.dosage} {med.unit}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {med.notes && <p style={{ fontSize: 11, color: '#94A3B8', margin: '3px 0 0 30px' }}>{med.notes}</p>}
+                    </div>
+                    {taken && medState && (
+                      <span style={{ fontSize: 10, color: '#16A34A' }}>
+                        ✏ {medState.logged_by} · {fmtTime(medState.logged_at)}
+                      </span>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </>
+        )}
+        {meds.length === 0 && isAdmin && (
+          <>
+            <div style={s.sh}>Medisin</div>
+            <div style={{ ...s.card, textAlign: 'center', padding: '20px 16px' }}>
+              <p style={{ color: '#94A3B8', fontSize: 14, margin: '0 0 10px' }}>
+                Ingen medisiner konfigurert ennå.
+              </p>
+              <button style={{ padding: '7px 14px', background: '#1B3A5C', color: 'white', border: 'none',
+                borderRadius: 7, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
+                onClick={() => router.push('/dagbok/rakel/medisin')}>
+                💊 Legg til medisiner
+              </button>
+            </div>
+          </>
+        )}
 
         {/* ── STØTTENDE OBSERVASJONER ── */}
         <div style={s.sh}>Støttende observasjoner</div>
         <div style={s.card}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
-              <label style={s.sublabel}>😴 Søvn sist natt</label>
-              <input style={s.input} value={curEntry.sleep_note}
-                onChange={e => updateEntry({ sleep_note: e.target.value })}
-                placeholder="F.eks: Sov dårlig, våknet mye…" />
-            </div>
-            <div>
               <label style={s.sublabel}>🤝 Sosial kontakt</label>
               <input style={s.input} value={curEntry.social_note}
                 onChange={e => updateEntry({ social_note: e.target.value })}
                 placeholder="F.eks: Lekte med venner, trakk seg tilbake…" />
+              {fieldEditor('social_note')}
             </div>
             <div>
               <label style={s.sublabel}>👂 Sanseobservasjoner</label>
               <input style={s.input} value={curEntry.sensory_note}
                 onChange={e => updateEntry({ sensory_note: e.target.value })}
-                placeholder="F.eks: Reagerte på lyder, ville ikke ha på seg klær…" />
+                placeholder="F.eks: Reagerte på lyder, klær…" />
+              {fieldEditor('sensory_note')}
             </div>
-            <div>
+            <div style={{ gridColumn: '1 / -1' }}>
               <label style={s.sublabel}>🔄 Overganger</label>
               <input style={s.input} value={curEntry.transition_note}
                 onChange={e => updateEntry({ transition_note: e.target.value })}
                 placeholder="F.eks: Vanskelig å slutte med iPad, bra overgang til middag…" />
+              {fieldEditor('transition_note')}
             </div>
           </div>
         </div>
@@ -416,66 +733,41 @@ export default function RakelDagbokPage() {
               Det skjedde noe spesifikt i dag jeg vil dokumentere
             </button>
           </div>
-
           {curEntry.has_episode && (
             <div style={{ borderLeft: '3px solid #1B3A5C', paddingLeft: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div>
-                <label style={{ ...s.sublabel, color: '#1B3A5C', fontWeight: 600 }}>
-                  A — Antecedent: Hva skjedde rett før?
-                </label>
-                <div style={{ fontSize: 11, color: '#94A3B8', marginBottom: 5 }}>
-                  Situasjon, sted, tid, hvem var til stede, hva ble sagt/gjort
+              {[
+                { field: 'abc_trigger',  color: '#1B3A5C', label: 'A — Antecedent: Hva skjedde rett før?',           ph: 'Situasjon, sted, hvem var til stede…' },
+                { field: 'abc_behavior', color: '#DC2626', label: 'B — Behavior: Hva skjedde? Hvordan reagerte Rakel?', ph: 'Beskriv atferden konkret og nøytralt…' },
+                { field: 'abc_helped',   color: '#16A34A', label: 'C — Consequence: Hva hjalp?',                     ph: 'Hva gjorde dere? Hva roet situasjonen?' },
+              ].map(({ field, color, label, ph }) => (
+                <div key={field}>
+                  <label style={{ ...s.sublabel, color, fontWeight: 600 }}>{label}</label>
+                  <textarea style={{ ...s.input, minHeight: 64, resize: 'vertical' }}
+                    value={(curEntry as Record<string, unknown>)[field] as string}
+                    onChange={e => updateEntry({ [field]: e.target.value })}
+                    placeholder={ph} />
+                  {fieldEditor(field)}
                 </div>
-                <textarea style={{ ...s.input, minHeight: 64, resize: 'vertical' }}
-                  value={curEntry.abc_trigger}
-                  onChange={e => updateEntry({ abc_trigger: e.target.value })}
-                  placeholder="F.eks: Vi var på butikken, det var mye folk og lyd. Ble bedt om å vente…" />
-              </div>
-              <div>
-                <label style={{ ...s.sublabel, color: '#DC2626', fontWeight: 600 }}>
-                  B — Behavior: Hva skjedde? Hvordan reagerte Rakel?
-                </label>
-                <div style={{ fontSize: 11, color: '#94A3B8', marginBottom: 5 }}>
-                  Beskriv atferden konkret og nøytralt — hva gjorde og sa hun?
-                </div>
-                <textarea style={{ ...s.input, minHeight: 64, resize: 'vertical' }}
-                  value={curEntry.abc_behavior}
-                  onChange={e => updateEntry({ abc_behavior: e.target.value })}
-                  placeholder="F.eks: Begynte å gråte, la seg på gulvet, skrek i ca. 10 minutter, ville ikke reise seg…" />
-              </div>
-              <div>
-                <label style={{ ...s.sublabel, color: '#16A34A', fontWeight: 600 }}>
-                  C — Consequence: Hva hjalp? Hva ble konsekvensen?
-                </label>
-                <div style={{ fontSize: 11, color: '#94A3B8', marginBottom: 5 }}>
-                  Hva gjorde dere? Hva roet situasjonen? Varighet?
-                </div>
-                <textarea style={{ ...s.input, minHeight: 64, resize: 'vertical' }}
-                  value={curEntry.abc_helped}
-                  onChange={e => updateEntry({ abc_helped: e.target.value })}
-                  placeholder="F.eks: Gikk ut, ga tid og ro. Etter 5 minutter klarte hun å gå inn igjen…" />
-              </div>
+              ))}
             </div>
           )}
         </div>
 
         {/* ── FRITEKST ── */}
         <div style={s.card}>
-          <div style={{ fontSize: 13, fontWeight: 500, color: '#64748B', marginBottom: 6 }}>
-            📝 Andre notater
-          </div>
+          <div style={{ fontSize: 13, fontWeight: 500, color: '#64748B', marginBottom: 6 }}>📝 Andre notater</div>
           <textarea style={{ ...s.input, minHeight: 64, resize: 'vertical', fontFamily: 'inherit' }}
             value={curEntry.notes}
             onChange={e => updateEntry({ notes: e.target.value })}
             placeholder="Noe annet du vil huske eller formidle videre…" />
+          {fieldEditor('notes')}
         </div>
 
         {/* ── INFO-BOKS ── */}
         <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 10, padding: '12px 16px', marginTop: 4 }}>
           <div style={{ fontSize: 12, color: '#1E40AF', lineHeight: 1.6 }}>
-            <strong>💡 Tips:</strong> Dagboken lagres automatisk. Både du og Hilde kan skrive på samme dag.
-            ABC-modellen er spesielt nyttig å ta med til møter med HABU, ABUP og PPT — den viser konkrete
-            mønstre i hva som utløser reaksjoner og hva som hjelper.
+            <strong>💡 Tips:</strong> Dagboken lagres automatisk. Klikk ✏ under et felt for å se hvem som sist redigerte det.
+            Næring beregnes automatisk av AI når du legger til et måltid.
           </div>
         </div>
 
