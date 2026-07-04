@@ -8,6 +8,11 @@ import {
   BloodTestSession,
   BloodMarkerExtracted,
 } from '@/lib/actions/extract_blood_test'
+import {
+  analyzeBloodTrends,
+  BloodAnalysis,
+  UrgencyLevel,
+} from '@/lib/actions/analyze_blood_trends'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface BloodMarker {
@@ -173,7 +178,10 @@ export default function BlodproverPage() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'history' | 'trends'>('history')
+  const [activeTab, setActiveTab] = useState<'history' | 'trends' | 'analyse'>('history')
+  const [analysis, setAnalysis] = useState<BloodAnalysis | null>(null)
+  const [analysisLoading, setAnalysisLoading] = useState(false)
+  const [analysisError, setAnalysisError] = useState('')
 
   // Manual form state
   const [formDate, setFormDate] = useState(new Date().toISOString().slice(0, 10))
@@ -218,10 +226,34 @@ export default function BlodproverPage() {
         .from('rakel_blood_tests').select('*')
         .eq('group_id', gm.group_id)
         .order('test_date', { ascending: false })
-      if (mounted) { setTests((data || []) as BloodTest[]); setLoading(false) }
+      if (!mounted) return
+      setTests((data || []) as BloodTest[])
+      setLoading(false)
+
+      // Load saved analysis
+      const { data: saved } = await sb
+        .from('rakel_blood_analysis')
+        .select('analysis')
+        .eq('group_id', gm.group_id)
+        .maybeSingle()
+      if (saved?.analysis && mounted) setAnalysis(saved.analysis as BloodAnalysis)
     })()
     return () => { mounted = false }
   }, [])
+
+  async function runAnalysis() {
+    if (!groupId || tests.length === 0) return
+    setAnalysisLoading(true)
+    setAnalysisError('')
+    const result = await analyzeBloodTrends(tests, groupId)
+    if (result.ok) {
+      setAnalysis(result.data)
+      setActiveTab('analyse')
+    } else {
+      setAnalysisError(result.error)
+    }
+    setAnalysisLoading(false)
+  }
 
   // ── AI file import ───────────────────────────────────────────────────────
   async function handleFileAnalyse(file: File) {
@@ -616,17 +648,41 @@ export default function BlodproverPage() {
         </div>
       )}
 
-      {/* ── TABS ── */}
+      {/* ── TABS + ANALYSE BUTTON ── */}
       {tests.length > 0 && (
-        <div className="flex gap-1 p-1 bg-slate-100 rounded-xl w-fit">
-          {(['history', 'trends'] as const).map(tab => (
-            <button key={tab} onClick={() => setActiveTab(tab)}
-              className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition ${
-                activeTab === tab ? 'bg-white shadow text-[#1B3A5C]' : 'text-slate-500 hover:text-slate-700'
-              }`}>
-              {tab === 'history' ? '📋 Historikk' : '📈 Trender'}
-            </button>
-          ))}
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex gap-1 p-1 bg-slate-100 rounded-xl">
+            {(['history', 'trends', 'analyse'] as const).map(tab => (
+              <button key={tab} onClick={() => setActiveTab(tab)}
+                className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition ${
+                  activeTab === tab ? 'bg-white shadow text-[#1B3A5C]' : 'text-slate-500 hover:text-slate-700'
+                }`}>
+                {tab === 'history' ? '📋 Historikk' : tab === 'trends' ? '📈 Trender' : '🔬 Analyse'}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={runAnalysis}
+            disabled={analysisLoading || tests.length === 0}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-semibold transition ${
+              analysisLoading
+                ? 'bg-slate-200 text-slate-500 cursor-not-allowed'
+                : 'bg-violet-600 text-white hover:bg-violet-700'
+            }`}
+          >
+            {analysisLoading ? (
+              <>
+                <svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.4 0 0 5.4 0 12h4z" />
+                </svg>
+                Analyserer…
+              </>
+            ) : (
+              <>🤖 {analysis ? 'Oppdater analyse' : 'Analyser trender'}</>
+            )}
+          </button>
+          {analysisError && <p className="text-xs text-red-600">{analysisError}</p>}
         </div>
       )}
 
@@ -955,6 +1011,156 @@ export default function BlodproverPage() {
           })}
         </div>
       )}
+
+      {/* ── ANALYSE TAB ── */}
+      {activeTab === 'analyse' && (
+        <div className="space-y-4">
+          {!analysis && !analysisLoading && (
+            <div className="text-center py-16 text-slate-400">
+              <div className="text-4xl mb-3">🔬</div>
+              <p className="font-medium text-slate-600">Ingen analyse utført ennå</p>
+              <p className="text-sm mt-1">
+                Klikk <strong>«🤖 Analyser trender»</strong> for å få en medisinsk vurdering av blodprøvehistorikken
+              </p>
+            </div>
+          )}
+
+          {analysis && <AnalysisPanel analysis={analysis} />}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Urgency config ────────────────────────────────────────────────────────────
+const URGENCY_CONFIG: Record<UrgencyLevel, { label: string; color: string; bg: string; border: string; icon: string }> = {
+  normal:  { label: 'Alt OK',            color: 'text-green-700',  bg: 'bg-green-50',  border: 'border-green-200', icon: '✅' },
+  watch:   { label: 'Følg med',          color: 'text-amber-700',  bg: 'bg-amber-50',  border: 'border-amber-200', icon: '👁' },
+  concern: { label: 'Diskuter med lege', color: 'text-orange-700', bg: 'bg-orange-50', border: 'border-orange-200', icon: '⚠️' },
+  urgent:  { label: 'Kontakt lege',      color: 'text-red-700',    bg: 'bg-red-50',    border: 'border-red-200',   icon: '🚨' },
+}
+
+const TREND_ICONS: Record<string, string> = {
+  improving:       '↗ Bedring',
+  stable:          '→ Stabil',
+  declining:       '↘ Synkende',
+  fluctuating:     '↕ Varierende',
+  single_reading:  '· Enkeltmåling',
+}
+
+const STATUS_STYLE: Record<string, string> = {
+  normal:    'bg-green-100 text-green-800',
+  borderline:'bg-amber-100 text-amber-800',
+  abnormal:  'bg-red-100 text-red-800',
+}
+
+// ── Analysis panel component ──────────────────────────────────────────────────
+function AnalysisPanel({ analysis }: { analysis: BloodAnalysis }) {
+  const [expanded, setExpanded] = useState<Set<number>>(new Set([0]))
+  const urg = URGENCY_CONFIG[analysis.urgency_level] ?? URGENCY_CONFIG.watch
+
+  function toggleFinding(i: number) {
+    setExpanded(prev => {
+      const next = new Set(prev)
+      next.has(i) ? next.delete(i) : next.add(i)
+      return next
+    })
+  }
+
+  const genDate = new Date(analysis.generated_at).toLocaleDateString('nb-NO', {
+    day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  })
+
+  return (
+    <div className="space-y-4">
+      {/* Overall card */}
+      <div className={`rounded-2xl border-2 p-5 ${urg.bg} ${urg.border}`}>
+        <div className="flex items-start gap-3">
+          <span className="text-2xl flex-shrink-0">{urg.icon}</span>
+          <div className="flex-1">
+            <div className="flex items-center gap-2 flex-wrap mb-2">
+              <span className={`text-sm font-bold px-2.5 py-0.5 rounded-full ${urg.bg} ${urg.color} border ${urg.border}`}>
+                {urg.label}
+              </span>
+              <span className="text-xs text-slate-500">{analysis.data_coverage}</span>
+            </div>
+            <p className={`text-sm font-medium leading-relaxed ${urg.color}`}>
+              {analysis.overall_assessment}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Findings */}
+      {analysis.findings.length > 0 && (
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+            <h3 className="font-bold text-slate-700 text-sm">
+              Funn og vurderinger ({analysis.findings.length})
+            </h3>
+            <span className="text-xs text-slate-400">Klikk for detaljer</span>
+          </div>
+          <div className="divide-y divide-slate-100">
+            {analysis.findings.map((f, i) => {
+              const isOpen = expanded.has(i)
+              return (
+                <div key={i}>
+                  <button
+                    className="w-full text-left px-4 py-3 hover:bg-slate-50 transition flex items-center gap-3"
+                    onClick={() => toggleFinding(i)}
+                  >
+                    <span className={`flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${STATUS_STYLE[f.status] ?? STATUS_STYLE.normal}`}>
+                      {f.status === 'normal' ? 'Normal' : f.status === 'borderline' ? 'Grenseverdi' : 'Avvikende'}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-sm text-slate-800">{f.marker}</span>
+                        <span className="text-xs text-slate-500">{TREND_ICONS[f.trend] ?? f.trend}</span>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5 truncate">{f.values_summary}</p>
+                    </div>
+                    <span className="text-slate-400 flex-shrink-0 text-sm">{isOpen ? '▲' : '▼'}</span>
+                  </button>
+
+                  {isOpen && (
+                    <div className="px-4 pb-4 space-y-3 bg-slate-50/50">
+                      <div className="rounded-xl bg-white border border-slate-200 p-3 space-y-2">
+                        <div>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-0.5">Klinisk betydning</p>
+                          <p className="text-sm text-slate-700 leading-relaxed">{f.clinical_significance}</p>
+                        </div>
+                        <div className="border-t border-slate-100 pt-2">
+                          <p className="text-[10px] font-bold text-violet-500 uppercase tracking-wide mb-0.5">For Rakel konkret</p>
+                          <p className="text-sm text-slate-700 leading-relaxed">{f.patient_impact}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Recommendations */}
+      {analysis.recommendations.length > 0 && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-4">
+          <h3 className="font-bold text-slate-700 text-sm mb-3">Anbefalinger</h3>
+          <ul className="space-y-2">
+            {analysis.recommendations.map((r, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
+                <span className="text-violet-500 font-bold flex-shrink-0 mt-0.5">→</span>
+                {r}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <p className="text-[10px] text-slate-400 text-center">
+        Generert {genDate} · AI-analyse er veiledende og erstatter ikke medisinsk faglig vurdering
+      </p>
     </div>
   )
 }

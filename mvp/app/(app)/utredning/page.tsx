@@ -75,6 +75,7 @@ export default async function UtredningPage() {
     { data: partiesRaw },
     { data: dagbokRaw },
     { data: bloodTestsRaw },
+    { data: bloodAnalysisRaw },
   ] = await Promise.all([
     sb.from("project_milestones")
       .select("id, title, description, kind, status, occurred_at, due_at, ai_extracted")
@@ -97,16 +98,22 @@ export default async function UtredningPage() {
       .eq("group_id", ctx.group.id)
       .order("test_date", { ascending: false })
       .limit(5),
+    sb.from("rakel_blood_analysis")
+      .select("analysis, updated_at")
+      .eq("group_id", ctx.group.id)
+      .maybeSingle(),
   ]);
 
   type MS = { id: string; title: string; description: string | null; kind: string; status: string; occurred_at: string | null; due_at: string | null; ai_extracted: boolean };
   type Party = { id: string; name: string; role: string | null; organization: string | null; contact_info: string | null; notes: string | null; is_internal: boolean };
   type DagbokRow = { entry_date: string; day_score: number | null; mood_tags: string[] };
   type BloodTestMini = { id: string; test_date: string; institution: string | null; values: Array<{ marker: string; value: number; unit: string; ref_min: number | null; ref_max: number | null }> };
+  type BloodAnalysisMini = { urgency_level: string; overall_assessment: string; findings: Array<{ marker: string; status: string; trend: string }>; generated_at: string };
 
-  const milestones  = (milestonesRaw || []) as MS[];
-  const parties     = (partiesRaw || []) as Party[];
-  const dagbok      = (dagbokRaw || []) as DagbokRow[];
+  const milestones    = (milestonesRaw || []) as MS[];
+  const parties       = (partiesRaw || []) as Party[];
+  const dagbok        = (dagbokRaw || []) as DagbokRow[];
+  const bloodAnalysis = (bloodAnalysisRaw?.analysis ?? null) as BloodAnalysisMini | null;
   const bloodTests  = (bloodTestsRaw || []) as BloodTestMini[];
 
   // ── KPI-beregninger ──
@@ -397,6 +404,54 @@ export default async function UtredningPage() {
           </Link>
         </div>
       </div>
+
+      {/* ── BLODPRØVE ANALYSE KPI ── */}
+      {bloodAnalysis && (() => {
+        const URGENCY: Record<string, { label: string; bg: string; border: string; color: string; icon: string }> = {
+          normal:  { label: "Alt OK",            bg: "bg-green-50",  border: "border-green-200", color: "text-green-700",  icon: "✅" },
+          watch:   { label: "Følg med",          bg: "bg-amber-50",  border: "border-amber-200", color: "text-amber-700",  icon: "👁" },
+          concern: { label: "Diskuter med lege", bg: "bg-orange-50", border: "border-orange-200",color: "text-orange-700", icon: "⚠️" },
+          urgent:  { label: "Kontakt lege",      bg: "bg-red-50",    border: "border-red-200",   color: "text-red-700",   icon: "🚨" },
+        };
+        const urg = URGENCY[bloodAnalysis.urgency_level] ?? URGENCY.watch;
+        const abnormal = bloodAnalysis.findings.filter((f: { status: string }) => f.status !== "normal");
+        return (
+          <div className={`rounded-2xl border-2 p-4 ${urg.bg} ${urg.border}`}>
+            <div className="flex items-start gap-3">
+              <span className="text-2xl flex-shrink-0">{urg.icon}</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <h2 className={`text-sm font-bold ${urg.color}`}>Blodprøveanalyse · {urg.label}</h2>
+                  {abnormal.length > 0 && (
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${urg.bg} ${urg.color} border ${urg.border}`}>
+                      {abnormal.length} markør{abnormal.length !== 1 ? "er" : ""} krever oppmerksomhet
+                    </span>
+                  )}
+                </div>
+                <p className={`text-sm leading-snug ${urg.color} opacity-80`}>
+                  {bloodAnalysis.overall_assessment.slice(0, 180)}{bloodAnalysis.overall_assessment.length > 180 ? "…" : ""}
+                </p>
+                {abnormal.length > 0 && (
+                  <div className="flex gap-1.5 mt-2 flex-wrap">
+                    {abnormal.slice(0, 4).map((f: { marker: string; status: string; trend: string }, i: number) => (
+                      <span key={i} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                        f.status === "abnormal" ? "bg-red-100 text-red-700 border-red-200" : "bg-amber-100 text-amber-700 border-amber-200"
+                      }`}>
+                        {f.marker}
+                      </span>
+                    ))}
+                    {abnormal.length > 4 && <span className="text-[10px] text-slate-400">+{abnormal.length - 4}</span>}
+                  </div>
+                )}
+              </div>
+              <Link href="/utredning/blodprover"
+                className={`flex-shrink-0 text-xs font-semibold ${urg.color} underline flex items-center gap-0.5 whitespace-nowrap`}>
+                Se analyse <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── BLODPRØVER MINI ── */}
       <div className="bg-white rounded-2xl border border-slate-200 p-4">
