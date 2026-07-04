@@ -13,7 +13,7 @@ export interface NutritionResult {
 
 export interface DailyGoals extends NutritionResult {}
 
-async function callClaude(prompt: string, maxTokens = 200): Promise<string | null> {
+async function callClaude(prompt: string, maxTokens = 512): Promise<string | null> {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) return null
 
@@ -26,7 +26,7 @@ async function callClaude(prompt: string, maxTokens = 200): Promise<string | nul
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
+        model: 'claude-sonnet-4-6',
         max_tokens: maxTokens,
         messages: [{ role: 'user', content: prompt }],
       }),
@@ -58,14 +58,34 @@ export async function calculateNutrition(
   if (!process.env.ANTHROPIC_API_KEY) return { ok: false, error: 'ANTHROPIC_API_KEY mangler' }
 
   const text = await callClaude(
-    `Beregn næringsinnhold for dette måltidet basert på norske matvaretabeller:
+    `Du er ernæringsekspert med full kunnskap om norske matvaretabeller (matvaretabellen.no) og næringsinnhold i norske merkevarer.
+
+OPPGAVE: Beregn næringsinnhold for dette måltidet NØYAKTIG:
 "${mealDescription}"
 
-Svar KUN med JSON (ingen forklaring, ingen markdown):
-{"kcal":480,"protein":16,"carbs":48,"sugar":6,"fiber":3,"fat":20,"saturated_fat":7,"sodium":620}
+METODE – følg disse stegene nøye:
+1. Del opp i enkeltingredienser med realistisk porsjonsstørrelse for norske forhold
+2. For norske merkevarer (Nordfjord, Gilde, Prior, REMA 1000, etc.): bruk produsentens deklarerte verdier
+3. For generiske råvarer: bruk matvaretabellen.no-verdier
+4. Beregn ingrediens for ingrediens, summer til totalt
 
-Alle tall er heltall. kcal = totale kalorier. sodium i mg, resten i gram.`,
-    256
+NORSKE REFERANSEVERDIER (bruk disse som utgangspunkt):
+- Grillpølse/medisterpølse (1 stk ca 130g): 320 kcal, 10g protein, 5g karbo, 28g fett, 800mg sodium
+- Lompe (1 stk ca 50g): 100 kcal, 2g protein, 22g karbo, 0.5g fett
+- Wienerbrød/pølsebrød (1 stk): 120 kcal, 4g protein, 22g karbo, 2g fett
+- Pizza (porsjon 200g): 450-520 kcal avhengig av topping
+- Brødskive (35g): 85 kcal, 3g protein, 14g karbo, 1g fett
+- Smør på brød (10g): 74 kcal, 0g protein, 0g karbo, 8g fett
+- Melk 1dl: 46 kcal, 3.4g protein, 4.7g karbo, 1.5g fett
+- Egg (1 stk 60g): 88 kcal, 7.5g protein, 0.5g karbo, 6.5g fett
+- Yoghurt naturell (100g): 62 kcal, 3.5g protein, 4.7g karbo, 3g fett
+
+Svar KUN med JSON (ingen forklaring, ingen markdown):
+{"kcal":430,"protein":12,"carbs":27,"sugar":3,"fiber":1,"fat":29,"saturated_fat":10,"sodium":820}
+
+Alle tall er heltall. kcal = totale kalorier. sodium i mg, resten i gram.
+VIKTIG: Ikke overestimer — bruk realistiske norske porsjonsstørrelser.`,
+    512
   )
 
   const data = parseJson<NutritionResult>(text)
