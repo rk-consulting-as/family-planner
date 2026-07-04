@@ -64,7 +64,12 @@ function getMonday(off = 0): Date {
 function dayDate(off: number, idx: number): Date {
   const m = getMonday(off); m.setDate(m.getDate() + idx); return m
 }
-function dateStr(d: Date): string { return d.toISOString().slice(0, 10) }
+function dateStr(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
 function isoWeek(d: Date): number {
   const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
   t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7))
@@ -302,8 +307,12 @@ export default function RakelDagbokPage() {
               </button>
             ))}
           </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#94A3B8', marginTop: 6 }}>
+            <span>1 = Veldig vanskelig</span>
+            <span>5 = Utmerket dag</span>
+          </div>
           {curEntry.day_score && (
-            <div style={{ textAlign: 'center', fontSize: 13, color: SCORE_COLORS[curEntry.day_score - 1], fontWeight: 500 }}>
+            <div style={{ textAlign: 'center', fontSize: 13, color: SCORE_COLORS[curEntry.day_score - 1], fontWeight: 600, marginTop: 8 }}>
               {SCORE_LABELS[curEntry.day_score - 1]}
             </div>
           )}

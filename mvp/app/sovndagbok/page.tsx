@@ -72,7 +72,12 @@ function dayDate(off: number, idx: number): Date {
   m.setDate(m.getDate() + idx)
   return m
 }
-function dateStr(d: Date): string { return d.toISOString().slice(0, 10) }
+function dateStr(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
 function isoWeek(d: Date): number {
   const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
   t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7))
