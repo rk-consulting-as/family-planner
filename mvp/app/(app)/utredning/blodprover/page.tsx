@@ -186,6 +186,16 @@ export default function BlodproverPage() {
   const [saveError, setSaveError] = useState('')
   const [saving, setSaving] = useState(false)
 
+  // Edit state
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editDate, setEditDate] = useState('')
+  const [editInstitution, setEditInstitution] = useState('')
+  const [editOrderedBy, setEditOrderedBy] = useState('')
+  const [editNotes, setEditNotes] = useState('')
+  const [editMarkers, setEditMarkers] = useState<BloodMarker[]>([])
+  const [editSaving, setEditSaving] = useState(false)
+  const [editError, setEditError] = useState('')
+
   // AI import state
   const [aiExtracting, setAiExtracting] = useState(false)
   const [aiError, setAiError] = useState('')
@@ -332,6 +342,61 @@ export default function BlodproverPage() {
     if (!confirm('Slett denne blodprøven?')) return
     await sb.from('rakel_blood_tests').delete().eq('id', id)
     setTests(prev => prev.filter(t => t.id !== id))
+    if (editingId === id) setEditingId(null)
+  }
+
+  function startEdit(test: BloodTest) {
+    setEditingId(test.id)
+    setEditDate(test.test_date)
+    setEditInstitution(test.institution ?? '')
+    setEditOrderedBy(test.ordered_by ?? '')
+    setEditNotes(test.notes ?? '')
+    setEditMarkers(test.values.map(m => ({ ...m })))
+    setEditError('')
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setEditError('')
+  }
+
+  function updateEditMarker(idx: number, field: keyof BloodMarker, val: string | number | null) {
+    setEditMarkers(prev => prev.map((m, i) => i === idx ? { ...m, [field]: val } : m))
+  }
+
+  function removeEditMarker(idx: number) {
+    setEditMarkers(prev => prev.filter((_, i) => i !== idx))
+  }
+
+  function addEditMarker() {
+    setEditMarkers(prev => [...prev, { marker: '', value: 0, unit: '', ref_min: null, ref_max: null }])
+  }
+
+  async function handleSaveEdit() {
+    if (!editingId) return
+    setEditSaving(true)
+    setEditError('')
+    const valid = editMarkers.filter(m => m.marker.trim())
+    if (valid.length === 0) { setEditError('Minst én markør må ha navn.'); setEditSaving(false); return }
+    const { data, error } = await sb
+      .from('rakel_blood_tests')
+      .update({
+        test_date:   editDate,
+        institution: editInstitution || null,
+        ordered_by:  editOrderedBy || null,
+        notes:       editNotes || null,
+        values:      valid,
+      })
+      .eq('id', editingId)
+      .select()
+      .single()
+    if (!error && data) {
+      setTests(prev => prev.map(t => t.id === editingId ? data as BloodTest : t))
+      setEditingId(null)
+    } else {
+      setEditError('Kunne ikke lagre. Prøv igjen.')
+    }
+    setEditSaving(false)
   }
 
   // Build trend data across all tests
@@ -615,10 +680,25 @@ export default function BlodproverPage() {
                       )}
                     </div>
                   </div>
-                  <span className="text-slate-400 flex-shrink-0">{isExpanded ? '▲' : '▼'}</span>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      onClick={e => { e.stopPropagation(); handleDelete(test.id) }}
+                      className="p-1.5 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition"
+                      title="Slett prøve"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+                        <path d="M10 11v6M14 11v6" />
+                        <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+                      </svg>
+                    </button>
+                    <span className="text-slate-400">{isExpanded ? '▲' : '▼'}</span>
+                  </div>
                 </button>
 
-                {isExpanded && (
+                {isExpanded && editingId !== test.id && (
                   <div className="border-t border-slate-100 px-4 pb-4 pt-3 space-y-3">
                     {test.notes && (
                       <p className="text-sm text-slate-600 bg-slate-50 rounded-lg p-2">{test.notes}</p>
@@ -664,9 +744,117 @@ export default function BlodproverPage() {
                         })}
                       </tbody>
                     </table>
-                    <div className="flex justify-end">
+                    <div className="flex justify-between items-center">
+                      <button
+                        onClick={() => { startEdit(test); setExpandedId(test.id) }}
+                        className="text-xs font-semibold text-[#1B3A5C] hover:underline flex items-center gap-1"
+                      >
+                        ✏️ Rediger verdier
+                      </button>
                       <button onClick={() => handleDelete(test.id)}
                         className="text-xs text-slate-400 hover:text-red-600 transition">Slett prøve</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── EDIT MODE ── */}
+                {editingId === test.id && (
+                  <div className="border-t border-blue-200 bg-blue-50/40 px-4 pb-4 pt-3 space-y-3">
+                    <p className="text-xs font-bold text-[#1B3A5C] uppercase tracking-wider">Rediger prøve</p>
+
+                    {/* Metadata */}
+                    <div className="grid sm:grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">Dato</label>
+                        <input type="date" value={editDate} onChange={e => setEditDate(e.target.value)}
+                          className="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-sm bg-white" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">Institusjon</label>
+                        <input type="text" value={editInstitution} onChange={e => setEditInstitution(e.target.value)}
+                          className="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-sm bg-white" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">Rekvirert av</label>
+                        <input type="text" value={editOrderedBy} onChange={e => setEditOrderedBy(e.target.value)}
+                          className="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-sm bg-white" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">Notater</label>
+                        <input type="text" value={editNotes} onChange={e => setEditNotes(e.target.value)}
+                          className="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-sm bg-white" />
+                      </div>
+                    </div>
+
+                    {/* Editable marker rows */}
+                    <div>
+                      <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Verdier</p>
+                      <div className="space-y-1.5">
+                        {editMarkers.map((m, idx) => (
+                          <div key={idx} className="flex gap-1.5 items-center flex-wrap sm:flex-nowrap bg-white rounded-lg p-2 border border-slate-200">
+                            <input
+                              type="text" value={m.marker}
+                              onChange={e => updateEditMarker(idx, 'marker', e.target.value)}
+                              placeholder="Markørnavn"
+                              className="flex-1 min-w-[120px] border border-slate-200 rounded px-2 py-1 text-xs"
+                            />
+                            <input
+                              type="number" step="any" value={m.value || ''}
+                              onChange={e => updateEditMarker(idx, 'value', parseFloat(e.target.value) || 0)}
+                              placeholder="Verdi"
+                              className="w-18 border border-slate-200 rounded px-2 py-1 text-xs w-16"
+                            />
+                            <input
+                              type="text" value={m.unit}
+                              onChange={e => updateEditMarker(idx, 'unit', e.target.value)}
+                              placeholder="Enhet"
+                              className="w-14 border border-slate-200 rounded px-2 py-1 text-xs"
+                            />
+                            <input
+                              type="number" step="any" value={m.ref_min ?? ''}
+                              onChange={e => updateEditMarker(idx, 'ref_min', e.target.value ? parseFloat(e.target.value) : null)}
+                              placeholder="Min"
+                              className="w-12 border border-green-200 rounded px-2 py-1 text-xs bg-green-50"
+                              title="Referanse min"
+                            />
+                            <input
+                              type="number" step="any" value={m.ref_max ?? ''}
+                              onChange={e => updateEditMarker(idx, 'ref_max', e.target.value ? parseFloat(e.target.value) : null)}
+                              placeholder="Max"
+                              className="w-12 border border-red-200 rounded px-2 py-1 text-xs bg-red-50"
+                              title="Referanse max"
+                            />
+                            <button
+                              onClick={() => removeEditMarker(idx)}
+                              className="text-slate-300 hover:text-red-500 transition px-1 flex-shrink-0"
+                              title="Fjern markør"
+                            >✕</button>
+                          </div>
+                        ))}
+                      </div>
+                      <button
+                        onClick={addEditMarker}
+                        className="mt-2 text-xs text-brand-600 border border-brand-200 rounded-lg px-3 py-1.5 hover:bg-brand-50 transition"
+                      >
+                        + Legg til markør
+                      </button>
+                    </div>
+
+                    {editError && <p className="text-xs text-red-600">{editError}</p>}
+
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        onClick={handleSaveEdit} disabled={editSaving}
+                        className="flex-1 py-2 bg-[#1B3A5C] text-white rounded-xl text-sm font-semibold hover:bg-[#243f5e] disabled:opacity-50 transition"
+                      >
+                        {editSaving ? 'Lagrer…' : '💾 Lagre endringer'}
+                      </button>
+                      <button
+                        onClick={cancelEdit}
+                        className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-sm font-semibold hover:bg-slate-200 transition"
+                      >
+                        Avbryt
+                      </button>
                     </div>
                   </div>
                 )}
