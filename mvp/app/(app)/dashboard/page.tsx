@@ -12,7 +12,7 @@ import QuickGrid from "@/components/dashboard/QuickGrid";
 import Birthdays, { BirthdayMember } from "@/components/dashboard/Birthdays";
 import DashboardSettings from "@/components/dashboard/DashboardSettings";
 import { formatCurrency, formatMinutes } from "@/lib/utils";
-import { CheckSquare, Calendar, Footprints, Trophy, Users, Flame, ShoppingBag } from "lucide-react";
+import { CheckSquare, Calendar, Footprints, Trophy, Users, Flame, ShoppingBag, FlaskConical } from "lucide-react";
 import { markHabitDone } from "@/lib/actions/habits";
 
 export default async function DashboardPage() {
@@ -162,6 +162,49 @@ export default async function DashboardPage() {
   const pointsBalance = balances?.find((b) => b.type === "points")?.balance ?? 0;
 
   const isAdmin = ctx.role !== "member";
+
+  // Tildelte tester for denne brukeren
+  type AssignedTest = {
+    test_id: string; title: string; short_title: string | null;
+    question_count: number; message: string | null;
+    is_complete: boolean | null; total_score: number | null;
+  };
+  let assignedTests: AssignedTest[] = [];
+  {
+    const { data: myAssignments } = await supabase
+      .from("utredning_assignments")
+      .select("test_id, message")
+      .eq("assigned_to", ctx.user.id)
+      .eq("is_active", true);
+
+    if (myAssignments && myAssignments.length > 0) {
+      const testIds = myAssignments.map(a => a.test_id);
+      const [{ data: utTests }, { data: utResponses }] = await Promise.all([
+        supabase
+          .from("utredning_tests")
+          .select("id, title, short_title, question_count")
+          .in("id", testIds),
+        supabase
+          .from("utredning_responses")
+          .select("test_id, is_complete, total_score")
+          .in("test_id", testIds)
+          .eq("respondent_profile_id", ctx.user.id),
+      ]);
+      const respMap = new Map((utResponses ?? []).map(r => [r.test_id, r]));
+      assignedTests = (utTests ?? []).map(t => {
+        const r = respMap.get(t.id);
+        return {
+          test_id: t.id,
+          title: t.title,
+          short_title: t.short_title,
+          question_count: t.question_count,
+          message: myAssignments.find(a => a.test_id === t.id)?.message ?? null,
+          is_complete: r?.is_complete ?? null,
+          total_score: r?.total_score ?? null,
+        };
+      });
+    }
+  }
 
   // Tidsbasert hilsen
   const nowH = new Date().getHours();
@@ -326,6 +369,55 @@ export default async function DashboardPage() {
                         </div>
                       </div>
                       {n.priority === "high" && <Badge variant="danger">Høy</Badge>}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </CardBody>
+        </Card>
+      )}
+
+      {/* Tildelte tester */}
+      {assignedTests.length > 0 && (
+        <Card data-section="tester">
+          <CardHeader className="flex items-center justify-between">
+            <CardTitle>
+              <FlaskConical className="w-4 h-4 inline mr-1.5 text-violet-500" />
+              Dine tester
+            </CardTitle>
+          </CardHeader>
+          <CardBody>
+            <ul className="space-y-2">
+              {assignedTests.map(t => {
+                const done = t.is_complete === true;
+                const started = t.is_complete === false;
+                return (
+                  <li key={t.test_id}>
+                    <Link
+                      href={`/utredning/tester/${t.test_id}`}
+                      className={`p-3 rounded-xl border flex items-center justify-between hover:opacity-90 transition ${
+                        done
+                          ? "border-emerald-200 bg-emerald-50"
+                          : "border-violet-200 bg-violet-50"
+                      }`}
+                    >
+                      <div className="min-w-0">
+                        <div className="font-semibold text-slate-800 text-sm">
+                          {t.short_title ?? t.title}
+                        </div>
+                        <div className="text-xs text-slate-500 mt-0.5">
+                          {done
+                            ? "✓ Fullført"
+                            : started
+                            ? "Påbegynt — fortsett"
+                            : `${t.question_count} spørsmål · Ikke startet`}
+                          {t.message && ` · ${t.message}`}
+                        </div>
+                      </div>
+                      <Badge variant={done ? "success" : started ? "warning" : "info"}>
+                        {done ? "Fullført" : started ? "Fortsett" : "Start"}
+                      </Badge>
                     </Link>
                   </li>
                 );

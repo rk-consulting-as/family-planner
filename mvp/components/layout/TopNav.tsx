@@ -23,8 +23,8 @@ type LeafItem = {
 };
 
 type NavGroup =
-  | { type: "leaf"; item: LeafItem }
-  | { type: "group"; label: string; icon: typeof Home; items: LeafItem[] };
+  | { type: "leaf"; item: LeafItem; adminOnly?: boolean }
+  | { type: "group"; label: string; icon: typeof Home; items: LeafItem[]; adminOnly?: boolean };
 
 // Topp-nivå: Hjem, Kalender, Chat = direkte. Resten i grupper.
 const NAV: NavGroup[] = [
@@ -56,6 +56,7 @@ const NAV: NavGroup[] = [
     type: "group",
     label: "Utredning",
     icon: ClipboardList,
+    adminOnly: true,
     items: [
       { href: "/utredning",            label: "Oversikt",    icon: ClipboardList },
       { href: "/dagbok/rakel",         label: "Dagbok",      icon: BookMarked    },
@@ -99,11 +100,17 @@ const NAV: NavGroup[] = [
   },
 ];
 
-function filterByPermissions(groups: NavGroup[], permissions?: Record<string, boolean>): NavGroup[] {
+function filterByPermissions(
+  groups: NavGroup[],
+  permissions?: Record<string, boolean>,
+  isAdmin?: boolean,
+): NavGroup[] {
   const itemAllowed = (it: LeafItem) =>
     !it.module || !permissions || permissions[it.module] !== false;
   return groups
     .map((g): NavGroup | null => {
+      // Hide admin-only groups from non-admins
+      if (g.adminOnly && !isAdmin) return null;
       if (g.type === "leaf") return itemAllowed(g.item) ? g : null;
       const filtered = g.items.filter(itemAllowed);
       if (filtered.length === 0) return null;
@@ -306,7 +313,7 @@ export function TopNav({
   isSystemAdmin?: boolean;
   permissions?: Record<string, boolean>;
 }) {
-  const allowedNav = filterByPermissions(NAV, permissions);
+  const allowedNav = filterByPermissions(NAV, permissions, isAdmin);
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
