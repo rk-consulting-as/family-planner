@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Moon, UtensilsCrossed } from "lucide-react";
+import { Moon, UtensilsCrossed, BookHeart } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardBody, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -123,6 +123,15 @@ export default async function ProfilPage() {
                 <UtensilsCrossed className="w-5 h-5" />
               </span>
               <span className="text-label-sm font-bold text-amber-800 text-center">Kostplan</span>
+            </Link>
+            <Link
+              href="/dagbok/rakel"
+              className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-rose-50 border border-rose-100 hover:bg-rose-100 transition"
+            >
+              <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-rose-600 text-white grid place-items-center shadow-sm">
+                <BookHeart className="w-5 h-5" />
+              </span>
+              <span className="text-label-sm font-bold text-rose-800 text-center">Rakels dagbok</span>
             </Link>
           </div>
         </CardBody>

@@ -10,7 +10,7 @@ import {
   Calendar, CheckSquare, Trophy, Footprints, Home, Settings, LogOut, Shield,
   CheckCheck, ShoppingBag, Bell, Wallet, MessageSquare, UtensilsCrossed,
   ShoppingCart, Gift, Briefcase, Mail, ChevronDown, Menu, X, Sparkles,
-  BookOpen, Camera, Sun, Moon, LayoutGrid, HardHat, Apple,
+  BookOpen, Camera, Sun, Moon, LayoutGrid, HardHat, Apple, BookHeart,
 } from "lucide-react";
 
 type LeafItem = {
@@ -82,6 +82,7 @@ const NAV: NavGroup[] = [
       { href: "/buildplan/", label: "BuildPlan", icon: HardHat, external: true },
       { href: "/kostplan", label: "KostPlan", icon: Apple },
       { href: "/sovndagbok", label: "Søvndagbok", icon: Moon },
+      { href: "/dagbok/rakel", label: "Rakels dagbok", icon: BookHeart },
     ],
   },
 ];
