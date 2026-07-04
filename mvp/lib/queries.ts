@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
-import { defaultsForRole, type ModuleAccess, type ModuleKey } from "@/lib/modules";
+import { defaultsForRole, type ModuleAccess, type ModuleKey, type AppRole } from "@/lib/modules";
 
 export type ActiveContext = {
   user: { id: string; email: string | null };
@@ -18,14 +18,14 @@ export type ActiveContext = {
     type: string;
     invite_code: string | null;
   };
-  role: "owner" | "admin" | "member";
+  role: AppRole;
   permissions: ModuleAccess;
   members: Array<{
     profile_id: string;
     display_name: string;
     color_hex: string | null;
     avatar_url: string | null;
-    role: "owner" | "admin" | "member";
+    role: AppRole;
   }>;
 };
 
@@ -75,7 +75,7 @@ export async function getActiveContext(preferredGroupId?: string): Promise<Activ
   const targetId = preferredGroupId || cookieGroupId || memberships[0].group?.id;
 
   type Membership = {
-    role: "owner" | "admin" | "member";
+    role: AppRole;
     group: { id: string; name: string; type: string; invite_code: string | null } | null;
   };
   const typed = memberships as Membership[];
@@ -90,7 +90,7 @@ export async function getActiveContext(preferredGroupId?: string): Promise<Activ
     .eq("group_id", found.group.id);
 
   type MemberRow = {
-    role: "owner" | "admin" | "member";
+    role: AppRole;
     profile: { id: string; display_name: string; color_hex: string | null; avatar_url: string | null } | null;
   };
   const memberList = ((members as MemberRow[] | null) || [])

@@ -23,7 +23,7 @@ async function getServerContext() {
   if (!gm) return null;
 
   const gid = (gm as { group_id: string }).group_id;
-  const isAdmin = (gm as { role: string }).role !== "member";
+  const isAdmin = (gm as { role: string }).role === "owner";
 
   const [{ data: tests }, { data: responses }, { data: groupMembers }, { data: assignments }] =
     await Promise.all([

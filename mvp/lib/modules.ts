@@ -17,15 +17,19 @@ export const MODULES = [
   { key: "projects", label: "Prosjekter", icon: "📁", default_member: false },
   { key: "invitations", label: "Invitasjoner", icon: "✉️", default_member: true },
   { key: "member_info", label: "Andres medlemsinfo", icon: "👤", default_member: false },
+  { key: "utredning", label: "Utredning", icon: "🔬", default_member: false },
 ] as const;
 
 export type ModuleKey = (typeof MODULES)[number]["key"];
 
 export type ModuleAccess = Record<ModuleKey, boolean>;
 
-export function defaultsForRole(role: "owner" | "admin" | "member"): ModuleAccess {
+export type AppRole = "owner" | "admin" | "parent" | "member";
+
+export function defaultsForRole(role: AppRole): ModuleAccess {
   if (role === "owner" || role === "admin") {
     return Object.fromEntries(MODULES.map((m) => [m.key, true])) as ModuleAccess;
   }
+  // parent: same as member defaults — admin can grant extras via per-member overrides
   return Object.fromEntries(MODULES.map((m) => [m.key, m.default_member])) as ModuleAccess;
 }

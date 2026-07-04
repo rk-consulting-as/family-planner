@@ -98,6 +98,7 @@ export default async function MedlemmerPage() {
                       memberId={m.profile_id}
                       memberName={m.display_name}
                       memberRole={m.role}
+                      canEdit={ctx.role === "owner"}
                     />
                     {!isMe && ctx.role === "owner" && m.role !== "owner" && (
                       <>

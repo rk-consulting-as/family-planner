@@ -56,12 +56,11 @@ const NAV: NavGroup[] = [
     type: "group",
     label: "Utredning",
     icon: ClipboardList,
-    adminOnly: true,
     items: [
-      { href: "/utredning",            label: "Oversikt",    icon: ClipboardList },
-      { href: "/dagbok/rakel",         label: "Dagbok",      icon: BookMarked    },
-      { href: "/dagbok/rakel/rapport", label: "Rapport",     icon: FileBarChart2 },
-      { href: "/utredning/tester",     label: "Tester",      icon: FlaskConical  },
+      { href: "/utredning",            label: "Oversikt",    icon: ClipboardList, module: "utredning" },
+      { href: "/dagbok/rakel",         label: "Dagbok",      icon: BookMarked,    module: "utredning" },
+      { href: "/dagbok/rakel/rapport", label: "Rapport",     icon: FileBarChart2, module: "utredning" },
+      { href: "/utredning/tester",     label: "Tester",      icon: FlaskConical,  module: "utredning" },
     ],
   },
   {

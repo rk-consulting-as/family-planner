@@ -11,11 +11,13 @@ export default function PermissionsButton({
   memberId,
   memberName,
   memberRole,
+  canEdit = true,
 }: {
   groupId: string;
   memberId: string;
   memberName: string;
-  memberRole: "owner" | "admin" | "member";
+  memberRole: "owner" | "admin" | "parent" | "member";
+  canEdit?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [perms, setPerms] = useState<Record<string, boolean>>({});
@@ -69,17 +71,23 @@ export default function PermissionsButton({
     });
   }
 
-  if (memberRole !== "member") {
+  // Owner's access is always full — not overrideable per-person
+  if (memberRole === "owner") {
     return (
       <Button
         size="sm"
         variant="ghost"
         disabled
-        title="Admin/parent/eier styres via Rolletillatelser, ikke per-medlem her"
+        title="Eiers tilgang er alltid full — kan ikke overstyres per-person"
       >
-        🔒 Via roller
+        🔒 Eier
       </Button>
     );
+  }
+
+  // Only owners can edit permissions
+  if (!canEdit) {
+    return null;
   }
 
   if (!open) {
