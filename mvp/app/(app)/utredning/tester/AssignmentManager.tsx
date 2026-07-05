@@ -4,6 +4,17 @@ import { createBrowserClient } from "@supabase/ssr";
 import { useState } from "react";
 import { User } from "lucide-react";
 
+// ── Colour tokens ─────────────────────────────────────────────────────────────
+const C = {
+  border:    "#ddeaf5",
+  bg:        "#f6faff",
+  textMuted: "#71787f",
+  text:      "#111d25",
+  green:  { bg: "#e8f5e9", border: "#81c784", text: "#2c6956" },
+  yellow: { bg: "#fffde7", border: "#f9c74f", text: "#765b06" },
+  red:    { bg: "#ffdad6", border: "#ef9a9a", text: "#ba1a1a" },
+};
+
 export interface AssignmentMember {
   profileId: string;
   displayName: string;
@@ -77,23 +88,19 @@ export function AssignmentManager({
   };
 
   return (
-    <div
-      style={{
-        padding: "0.75rem 1.5rem",
-        borderTop: "1px solid rgba(255,255,255,.06)",
-        background: "rgba(0,0,0,.15)",
-      }}
-    >
-      <div
-        style={{
-          color: "rgba(255,255,255,.3)",
-          fontSize: "0.7rem",
-          textTransform: "uppercase",
-          letterSpacing: "0.07em",
-          fontWeight: 600,
-          marginBottom: "0.6rem",
-        }}
-      >
+    <div style={{
+      padding: "0.75rem 1.5rem",
+      borderTop: `1px solid ${C.border}`,
+      background: C.bg,
+    }}>
+      <div style={{
+        color: C.textMuted,
+        fontSize: "0.68rem",
+        textTransform: "uppercase",
+        letterSpacing: "0.07em",
+        fontWeight: 700,
+        marginBottom: "0.6rem",
+      }}>
         Tilgang — hvem ser denne testen
       </div>
 
@@ -111,15 +118,11 @@ export function AssignmentManager({
                 display: "flex",
                 alignItems: "center",
                 gap: "0.35rem",
-                padding: "0.3rem 0.7rem",
+                padding: "0.3rem 0.75rem",
                 borderRadius: "999px",
-                border: isAssigned
-                  ? "1px solid rgba(16,185,129,.6)"
-                  : "1px solid rgba(255,255,255,.12)",
-                background: isAssigned
-                  ? "rgba(16,185,129,.18)"
-                  : "rgba(255,255,255,.04)",
-                color: isAssigned ? "#6ee7b7" : "rgba(255,255,255,.4)",
+                border: isAssigned ? `1px solid ${C.green.border}` : `1px solid ${C.border}`,
+                background: isAssigned ? C.green.bg : "#ffffff",
+                color: isAssigned ? C.green.text : C.textMuted,
                 fontSize: "0.8rem",
                 fontWeight: isAssigned ? 600 : 400,
                 cursor: isLoading ? "wait" : "pointer",
@@ -129,22 +132,14 @@ export function AssignmentManager({
             >
               <User size={11} />
               {m.displayName}
-              {isAssigned && (
-                <span style={{ fontSize: "0.68rem", opacity: 0.8 }}>✓</span>
-              )}
+              {isAssigned && <span style={{ fontSize: "0.68rem" }}>✓</span>}
             </button>
           );
         })}
       </div>
 
       {error && (
-        <div
-          style={{
-            color: "#fca5a5",
-            fontSize: "0.78rem",
-            marginTop: "0.5rem",
-          }}
-        >
+        <div style={{ color: C.red.text, fontSize: "0.78rem", marginTop: "0.5rem" }}>
           ⚠ {error}
         </div>
       )}

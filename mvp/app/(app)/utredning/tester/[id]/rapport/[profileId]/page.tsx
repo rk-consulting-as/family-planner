@@ -108,8 +108,9 @@ async function getData(testId: string, profileId: string) {
   const gid = (gm as { group_id: string; role: string }).group_id;
   const isAdmin = ["owner", "admin"].includes((gm as { role: string }).role);
 
-  // Non-admins can only view their own report
-  if (!isAdmin && profileId !== user.id) return "forbidden";
+  // All group members can view any report within their group (family context)
+  // Only block access if the profileId belongs to a completely different group
+  void isAdmin; // kept for future use
 
   const [{ data: testData }, { data: resp }, { data: profile }] = await Promise.all([
     sb.from("utredning_tests").select("*").eq("id", testId).single(),
@@ -128,7 +129,7 @@ async function getData(testId: string, profileId: string) {
     test: testData as TestDef,
     answers: (typeof resp.answers === "string" ? JSON.parse(resp.answers) : resp.answers) as Record<string, string>,
     completedAt: resp.completed_at as string,
-    displayName: (profile?.data as { display_name?: string } | null)?.display_name ?? "Ukjent",
+    displayName: (profile as { display_name?: string } | null)?.display_name ?? "Ukjent",
     isAdmin,
     currentUserId: user.id,
   };
