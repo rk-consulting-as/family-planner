@@ -6,8 +6,9 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
   ChevronLeft, ChevronRight, CheckCircle2, AlertCircle,
-  RotateCcw, AlertTriangle,
+  RotateCcw, AlertTriangle, HelpCircle, X,
 } from "lucide-react";
+import { TEST_HELP_TEXTS } from "@/lib/test-help-texts";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Question {
@@ -442,6 +443,83 @@ function ResultView({ test, totalScore, subscaleScores, answers, onRetake }: {
   );
 }
 
+// ── Help modal ────────────────────────────────────────────────────────────────
+function HelpModal({ question, helpText, onClose }: {
+  question: Question; helpText: string; onClose: () => void;
+}) {
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        style={{
+          position: "fixed", inset: 0, zIndex: 50,
+          background: "rgba(17,29,37,.35)", backdropFilter: "blur(2px)",
+        }}
+      />
+      {/* Panel */}
+      <div style={{
+        position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 51,
+        background: C.surface, borderRadius: "1.25rem 1.25rem 0 0",
+        padding: "1.5rem 1.5rem 2rem",
+        boxShadow: "0 -8px 32px rgba(17,29,37,.12)",
+        maxWidth: 640, margin: "0 auto",
+        animation: "slideUp .2s ease",
+      }}>
+        {/* Handle */}
+        <div style={{ width: 36, height: 4, background: C.border, borderRadius: 2, margin: "0 auto 1.25rem" }} />
+
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.75rem", marginBottom: "1rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <div style={{
+              width: 28, height: 28, borderRadius: "50%",
+              background: C.primaryLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+            }}>
+              <HelpCircle size={15} color={C.primary} />
+            </div>
+            <span style={{ color: C.primary, fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              Hva betyr dette?
+            </span>
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, color: C.textMuted }}>
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Original question */}
+        <div style={{
+          background: C.surfaceLow, borderRadius: "0.75rem",
+          padding: "0.75rem 1rem", marginBottom: "1rem",
+          borderLeft: `3px solid ${C.primary}`,
+        }}>
+          <p style={{ color: C.textMid, fontSize: "0.875rem", lineHeight: 1.5, margin: 0, fontStyle: "italic" }}>
+            {question.num}. {question.text}
+          </p>
+        </div>
+
+        {/* Help text */}
+        <p style={{ color: C.text, fontSize: "1rem", lineHeight: 1.65, margin: 0 }}>
+          {helpText}
+        </p>
+
+        <button
+          onClick={onClose}
+          style={{
+            marginTop: "1.5rem", width: "100%",
+            padding: "0.75rem", borderRadius: "0.75rem",
+            background: C.primary, border: "none",
+            color: "#fff", fontSize: "0.9rem", fontWeight: 600, cursor: "pointer",
+          }}
+        >
+          Skjønte det!
+        </button>
+      </div>
+      <style>{`@keyframes slideUp { from { transform: translateY(100%) } to { transform: translateY(0) } }`}</style>
+    </>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 export default function TakeTestPage() {
   const { id } = useParams<{ id: string }>();
@@ -457,6 +535,7 @@ export default function TakeTestPage() {
   const [groupId, setGroupId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [helpQ, setHelpQ] = useState<Question | null>(null);
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -672,13 +751,39 @@ export default function TakeTestPage() {
           boxShadow: "0 1px 3px rgba(17,29,37,.04), 0 4px 12px rgba(17,29,37,.04)",
           minHeight: 130,
         }}>
-          <div style={{ color: C.primary, fontSize: "0.72rem", fontWeight: 700, marginBottom: "0.75rem", textTransform: "uppercase", letterSpacing: "0.07em" }}>
-            {subscaleLabel}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem" }}>
+            <div style={{ color: C.primary, fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>
+              {subscaleLabel}
+            </div>
+            {TEST_HELP_TEXTS[test.id]?.[q.num] && (
+              <button
+                onClick={() => setHelpQ(q)}
+                title="Hva betyr dette spørsmålet?"
+                style={{
+                  display: "flex", alignItems: "center", gap: "0.3rem",
+                  background: C.surfaceLow, border: `1px solid ${C.primary}44`,
+                  borderRadius: "999px", padding: "0.25rem 0.6rem 0.25rem 0.4rem",
+                  color: C.primary, fontSize: "0.72rem", fontWeight: 600, cursor: "pointer",
+                }}
+              >
+                <HelpCircle size={13} />
+                Hva menes?
+              </button>
+            )}
           </div>
           <p style={{ color: C.text, fontSize: "1.05rem", lineHeight: 1.65, margin: 0, fontWeight: 500, fontFamily: "Plus Jakarta Sans, sans-serif" }}>
             {q.num}. {q.text}
           </p>
         </div>
+
+        {/* Help modal */}
+        {helpQ && TEST_HELP_TEXTS[test.id]?.[helpQ.num] && (
+          <HelpModal
+            question={helpQ}
+            helpText={TEST_HELP_TEXTS[test.id][helpQ.num]}
+            onClose={() => setHelpQ(null)}
+          />
+        )}
 
         {/* Answer options */}
         <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem", marginBottom: "1.75rem" }}>
