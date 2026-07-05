@@ -71,7 +71,14 @@ function SignInForm() {
               autoComplete="email"
             />
           </Field>
-          <Field label="Passord">
+          <Field
+            label="Passord"
+            labelRight={
+              <Link href="/forgot-password" className="text-xs text-brand-700 hover:underline">
+                Glemt passord?
+              </Link>
+            }
+          >
             <Input
               type="password"
               required

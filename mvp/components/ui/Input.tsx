@@ -48,18 +48,25 @@ export function Label({ className, ...props }: React.LabelHTMLAttributes<HTMLLab
 
 export function Field({
   label,
+  labelRight,
   hint,
   error,
   children,
 }: {
   label?: string;
+  labelRight?: React.ReactNode;
   hint?: string;
   error?: string;
   children: React.ReactNode;
 }) {
   return (
     <div className="space-y-1.5">
-      {label && <Label>{label}</Label>}
+      {(label || labelRight) && (
+        <div className="flex items-center justify-between">
+          {label && <Label>{label}</Label>}
+          {labelRight}
+        </div>
+      )}
       {children}
       {hint && !error && <p className="text-label-sm text-on-surface-variant">{hint}</p>}
       {error && <p className="text-label-sm text-error">{error}</p>}
