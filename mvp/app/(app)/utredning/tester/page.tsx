@@ -266,9 +266,26 @@ export default async function TesterPage() {
                             </span>
                           )}
                         </div>
-                        <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                           {resp?.is_complete && resp.total_score != null ? (
-                            <ScoreBadge score={resp.total_score} cutoffs={cutoffs} />
+                            <>
+                              <ScoreBadge score={resp.total_score} cutoffs={cutoffs} />
+                              {isAdmin && (
+                                <Link
+                                  href={`/utredning/tester/${test.id}/rapport/${pid}`}
+                                  style={{
+                                    fontSize: "0.72rem", fontWeight: 600,
+                                    color: "#a78bfa", textDecoration: "none",
+                                    padding: "0.15rem 0.5rem", borderRadius: "999px",
+                                    background: "rgba(139,92,246,.1)",
+                                    border: "1px solid rgba(139,92,246,.25)",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  Se rapport →
+                                </Link>
+                              )}
+                            </>
                           ) : resp ? (
                             <span style={{ color: "rgba(245,158,11,.7)", fontSize: "0.73rem" }}>Påbegynt</span>
                           ) : (
