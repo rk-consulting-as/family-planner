@@ -226,6 +226,27 @@ export default async function UtredningPage() {
         />
       </div>
 
+      {/* ── SNARVEIER ── */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-4">
+        <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Snarveier</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          {[
+            { href: "/utredning/dokumentasjon", icon: "📁", label: "Dokumentasjon", sub: `${milestones.length} hendelser` },
+            { href: "/dagbok/rakel", icon: "📓", label: "Dagbok", sub: `${dagbokDays}/14 dager` },
+            { href: "/dagbok/rakel/rapport", icon: "📊", label: "Rapport", sub: "Print / PDF" },
+            { href: "/utredning/blodprover", icon: "🩸", label: "Blodprøver", sub: `${bloodTests.length} prøver` },
+            { href: "/utredning/tester", icon: "🧪", label: "Tester", sub: "AQ-50 og mer" },
+          ].map(item => (
+            <Link key={item.href} href={item.href}
+              className="flex flex-col items-center text-center p-3 rounded-xl bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 transition gap-1">
+              <span className="text-2xl">{item.icon}</span>
+              <span className="text-xs font-bold text-slate-700">{item.label}</span>
+              <span className="text-[10px] text-slate-400">{item.sub}</span>
+            </Link>
+          ))}
+        </div>
+      </div>
+
       {/* ── KOMMENDE + OPPGAVER ── */}
       <div className="grid sm:grid-cols-2 gap-4">
 
@@ -511,27 +532,6 @@ export default async function UtredningPage() {
           className="mt-3 text-xs text-brand-600 hover:underline flex items-center gap-1">
           Se alle blodprøver <ArrowRight className="w-3 h-3" />
         </Link>
-      </div>
-
-      {/* ── SNARVEIER ── */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4">
-        <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Snarveier</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          {[
-            { href: "/utredning/dokumentasjon", icon: "📁", label: "Dokumentasjon", sub: `${milestones.length} hendelser` },
-            { href: "/dagbok/rakel", icon: "📓", label: "Dagbok", sub: `${dagbokDays}/14 dager` },
-            { href: "/dagbok/rakel/rapport", icon: "📊", label: "Rapport", sub: "Print / PDF" },
-            { href: "/utredning/blodprover", icon: "🩸", label: "Blodprøver", sub: `${bloodTests.length} prøver` },
-            { href: "/utredning/tester", icon: "🧪", label: "Tester", sub: "AQ-50 og mer" },
-          ].map(item => (
-            <Link key={item.href} href={item.href}
-              className="flex flex-col items-center text-center p-3 rounded-xl bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 transition gap-1">
-              <span className="text-2xl">{item.icon}</span>
-              <span className="text-xs font-bold text-slate-700">{item.label}</span>
-              <span className="text-[10px] text-slate-400">{item.sub}</span>
-            </Link>
-          ))}
-        </div>
       </div>
 
     </div>
