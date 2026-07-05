@@ -137,6 +137,8 @@ export default function RakelDagbokPage() {
   // Meal entry state
   const [mealInput,     setMealInput]     = useState('')
   const [mealCalcId,    setMealCalcId]    = useState<string | null>(null)  // which meal is being calculated
+  const [editNutrId,    setEditNutrId]    = useState<string | null>(null)
+  const [editNutr,      setEditNutr]      = useState<Partial<NutritionResult>>({})
 
   // ── Load week entries ──
   const loadWeek = useCallback(async (gid: string, off: number) => {
@@ -314,6 +316,29 @@ export default function RakelDagbokPage() {
 
   function deleteMeal(id: string) {
     updateEntry({ meals: curEntry.meals.filter(m => m.id !== id) }, false)
+  }
+
+  function startEditNutr(meal: Meal) {
+    setEditNutrId(meal.id)
+    setEditNutr(meal.nutrition ?? {})
+  }
+  function cancelEditNutr() { setEditNutrId(null); setEditNutr({}) }
+  function saveEditNutr(mealId: string) {
+    const withNutr = curEntry.meals.map(m =>
+      m.id === mealId ? { ...m, nutrition: editNutr as NutritionResult } : m
+    )
+    updateEntry({ meals: withNutr }, false)
+    setEditNutrId(null)
+    setEditNutr({})
+  }
+  async function recalcMeal(meal: Meal) {
+    setMealCalcId(meal.id)
+    const res = await calculateNutrition(meal.description)
+    setMealCalcId(null)
+    if (res.ok) {
+      const withNutr = curEntry.meals.map(m => m.id === meal.id ? { ...m, nutrition: res.data } : m)
+      updateEntry({ meals: withNutr }, false)
+    }
   }
 
   // ── Medications ──
@@ -553,12 +578,52 @@ export default function RakelDagbokPage() {
                       style={{ fontSize: 16, color: '#CBD5E1', background: 'none', border: 'none',
                         cursor: 'pointer', padding: '0 4px', lineHeight: 1 }}>×</button>
                   </div>
-                  {mealCalcId === meal.id ? (
+                  {editNutrId === meal.id ? (
+                    <div style={{ marginTop: 8, background: '#F8FAFC', borderRadius: 8, padding: '10px 12px', border: '1px solid #E2E8F0' }}>
+                      <div style={{ fontSize: 11, color: '#64748B', fontWeight: 600, marginBottom: 8 }}>Rediger næringsverdier:</div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginBottom: 10 }}>
+                        {([
+                          { key: 'kcal',          label: 'Kcal',     unit: '' },
+                          { key: 'protein',       label: 'Protein',  unit: 'g' },
+                          { key: 'carbs',         label: 'Karbo',    unit: 'g' },
+                          { key: 'fat',           label: 'Fett',     unit: 'g' },
+                          { key: 'sugar',         label: 'Sukker',   unit: 'g' },
+                          { key: 'fiber',         label: 'Fiber',    unit: 'g' },
+                          { key: 'saturated_fat', label: 'Met.fett', unit: 'g' },
+                          { key: 'sodium',        label: 'Salt',     unit: 'mg' },
+                        ] as { key: keyof NutritionResult; label: string; unit: string }[]).map(f => (
+                          <div key={f.key}>
+                            <label style={{ fontSize: 10, color: '#94A3B8', display: 'block', marginBottom: 2 }}>
+                              {f.label}{f.unit ? ` (${f.unit})` : ''}
+                            </label>
+                            <input type="number" min={0}
+                              style={{ width: '100%', padding: '4px 6px', border: '1px solid #E2E8F0',
+                                borderRadius: 5, fontSize: 13, fontFamily: 'inherit',
+                                boxSizing: 'border-box', background: 'white' }}
+                              value={(editNutr as Record<string, number>)[f.key] ?? 0}
+                              onChange={e => setEditNutr(prev => ({ ...prev, [f.key]: parseInt(e.target.value) || 0 }))} />
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button onClick={() => saveEditNutr(meal.id)}
+                          style={{ padding: '5px 14px', background: '#1B3A5C', color: 'white', border: 'none',
+                            borderRadius: 6, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
+                          Lagre
+                        </button>
+                        <button onClick={cancelEditNutr}
+                          style={{ padding: '5px 10px', background: '#F1F5F9', color: '#64748B', border: 'none',
+                            borderRadius: 6, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
+                          Avbryt
+                        </button>
+                      </div>
+                    </div>
+                  ) : mealCalcId === meal.id ? (
                     <div style={{ marginTop: 6, fontSize: 12, color: '#94A3B8' }}>⏳ Beregner næring…</div>
                   ) : meal.nutrition ? (
                     <div style={{ marginTop: 8 }}>
                       {/* Primary row */}
-                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 5 }}>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 5, alignItems: 'center' }}>
                         {[
                           { label: 'Kcal',    val: meal.nutrition.kcal,          color: '#F59E0B', unit: '' },
                           { label: 'Protein', val: meal.nutrition.protein,        color: '#10B981', unit: 'g' },
@@ -571,6 +636,14 @@ export default function RakelDagbokPage() {
                             {n.label}: {n.val}{n.unit}
                           </span>
                         ))}
+                        <button onClick={() => startEditNutr(meal)} title="Rediger næringsverdier manuelt"
+                          style={{ fontSize: 11, color: '#94A3B8', background: 'none',
+                            border: '1px solid #E2E8F0', borderRadius: 5, padding: '1px 7px',
+                            cursor: 'pointer', lineHeight: 1.6, marginLeft: 2 }}>✏</button>
+                        <button onClick={() => recalcMeal(meal)} title="Beregn næring på nytt med AI"
+                          style={{ fontSize: 11, color: '#94A3B8', background: 'none',
+                            border: '1px solid #E2E8F0', borderRadius: 5, padding: '1px 7px',
+                            cursor: 'pointer', lineHeight: 1.6 }}>🔄</button>
                       </div>
                       {/* Secondary row */}
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -589,7 +662,12 @@ export default function RakelDagbokPage() {
                       </div>
                     </div>
                   ) : (
-                    <div style={{ marginTop: 6, fontSize: 12, color: '#CBD5E1' }}>Ingen næringsdata</div>
+                    <div style={{ marginTop: 6, fontSize: 12, color: '#CBD5E1', display: 'flex', gap: 8, alignItems: 'center' }}>
+                      Ingen næringsdata
+                      <button onClick={() => recalcMeal(meal)}
+                        style={{ fontSize: 11, color: '#94A3B8', background: 'none', border: '1px solid #E2E8F0',
+                          borderRadius: 5, padding: '1px 7px', cursor: 'pointer' }}>🔄 Beregn</button>
+                    </div>
                   )}
                 </div>
               ))}
@@ -704,7 +782,7 @@ export default function RakelDagbokPage() {
             </button>
           </div>
           <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 5 }}>
-            AI beregner næring automatisk. Trykk Enter eller klikk "+ Legg til".
+            Næring estimeres av AI basert på norske matvaretabeller. Trykk ✏ for å korrigere, 🔄 for å beregne på nytt.
           </p>
         </div>
 
