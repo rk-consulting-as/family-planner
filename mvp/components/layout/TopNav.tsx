@@ -48,6 +48,7 @@ const NAV: NavGroup[] = [
     icon: UtensilsCrossed,
     items: [
       { href: "/maltidsplan", label: "Måltider", icon: UtensilsCrossed, module: "meals" },
+      { href: "/maltidsplan/lagrede", label: "Lagrede måltider", icon: BookMarked, module: "meals" },
       { href: "/oppskrifter", label: "Oppskrifter", icon: BookOpen, module: "recipes" },
       { href: "/handleliste", label: "Handleliste", icon: ShoppingCart, module: "shopping" },
     ],

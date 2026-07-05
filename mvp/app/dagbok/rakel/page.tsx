@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { calculateNutrition, type NutritionResult, type DailyGoals } from '@/lib/actions/nutrition'
+import { getSavedMeals, type SavedMeal } from '@/lib/actions/saved_meals'
+import type { FoodSearchResult } from '@/app/api/matvaretabellen/route'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface FieldEditor { name: string; at: string }
@@ -135,10 +137,23 @@ export default function RakelDagbokPage() {
   const [dailyGoals, setDailyGoals] = useState<DailyGoals | null>(null)
 
   // Meal entry state
+  const [savedMeals,    setSavedMeals]    = useState<SavedMeal[]>([])
   const [mealInput,     setMealInput]     = useState('')
+  const [mealMode,      setMealMode]      = useState<'ai' | 'matvaretabellen' | 'lagrede'>('matvaretabellen')
   const [mealCalcId,    setMealCalcId]    = useState<string | null>(null)  // which meal is being calculated
   const [editNutrId,    setEditNutrId]    = useState<string | null>(null)
   const [editNutr,      setEditNutr]      = useState<Partial<NutritionResult>>({})
+  // Matvaretabellen food search
+  const [foodQuery,       setFoodQuery]       = useState('')
+  const [foodSuggestions, setFoodSuggestions] = useState<FoodSearchResult[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [selectedFood,    setSelectedFood]    = useState<FoodSearchResult | null>(null)
+  const [portionIndex,    setPortionIndex]    = useState(0)
+  const [portionGrams,    setPortionGrams]    = useState(100)
+  const [useCustomGrams,  setUseCustomGrams]  = useState(false)
+  const [foodSearching,   setFoodSearching]   = useState(false)
+  const searchTimer = useRef<ReturnType<typeof setTimeout>>()
+  const suggRef     = useRef<HTMLDivElement>(null)
 
   // ── Load week entries ──
   const loadWeek = useCallback(async (gid: string, off: number) => {
@@ -193,18 +208,20 @@ export default function RakelDagbokPage() {
         .select('display_name').eq('id', user.id).single()
       if (prof) setEditorName((prof as { display_name: string }).display_name)
 
-      // Load medications + nutrition profile in parallel
-      const [{ data: medsData }, { data: profData }] = await Promise.all([
+      // Load medications + nutrition profile + saved meals in parallel
+      const [{ data: medsData }, { data: profData }, savedMealsData] = await Promise.all([
         sb.from('rakel_medication_setup')
           .select('id, name, dosage, unit, notes, active')
           .eq('group_id', g.group_id).eq('active', true).order('sort_order'),
         sb.from('rakel_nutrition_profile')
           .select('daily_goals').eq('group_id', g.group_id).maybeSingle(),
+        getSavedMeals(),
       ])
       setMeds((medsData as MedSetup[]) ?? [])
       if (profData && (profData as { daily_goals: DailyGoals | null }).daily_goals) {
         setDailyGoals((profData as { daily_goals: DailyGoals }).daily_goals)
       }
+      setSavedMeals(savedMealsData)
 
       loadWeek(g.group_id, 0)
     }
@@ -339,6 +356,89 @@ export default function RakelDagbokPage() {
       const withNutr = curEntry.meals.map(m => m.id === meal.id ? { ...m, nutrition: res.data } : m)
       updateEntry({ meals: withNutr }, false)
     }
+  }
+
+  // ── Food search (Matvaretabellen) ──
+  function onFoodQueryChange(q: string) {
+    setFoodQuery(q)
+    setSelectedFood(null)
+    clearTimeout(searchTimer.current)
+    if (q.length < 2) { setFoodSuggestions([]); setShowSuggestions(false); return }
+    setFoodSearching(true)
+    searchTimer.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/matvaretabellen?q=${encodeURIComponent(q)}`)
+        const data: FoodSearchResult[] = await res.json()
+        setFoodSuggestions(data)
+        setShowSuggestions(data.length > 0)
+      } catch { /* ignore */ }
+      finally { setFoodSearching(false) }
+    }, 300)
+  }
+
+  function selectFood(food: FoodSearchResult) {
+    setSelectedFood(food)
+    setFoodQuery(food.name)
+    setShowSuggestions(false)
+    setPortionIndex(0)
+    setUseCustomGrams(false)
+    setPortionGrams(food.portions[0]?.grams ?? 100)
+  }
+
+  function foodNutrition(): NutritionResult | null {
+    if (!selectedFood) return null
+    const grams = useCustomGrams ? portionGrams : (selectedFood.portions[portionIndex]?.grams ?? portionGrams)
+    const f = selectedFood.per100g
+    const scale = grams / 100
+    return {
+      kcal:          Math.round(f.kcal          * scale),
+      protein:       Math.round(f.protein       * scale),
+      carbs:         Math.round(f.carbs         * scale),
+      sugar:         Math.round(f.sugar         * scale),
+      fiber:         Math.round(f.fiber         * scale),
+      fat:           Math.round(f.fat           * scale),
+      saturated_fat: Math.round(f.saturated_fat * scale),
+      sodium:        Math.round(f.sodium        * scale),
+    }
+  }
+
+  async function addFoodMeal() {
+    if (!selectedFood || !editorName) return
+    const grams = useCustomGrams ? portionGrams : (selectedFood.portions[portionIndex]?.grams ?? portionGrams)
+    const portionLabel = useCustomGrams
+      ? `${portionGrams} g`
+      : selectedFood.portions[portionIndex]?.label ?? `${grams} g`
+    const description = `${selectedFood.name} (${portionLabel})`
+    const nutrition = foodNutrition()
+
+    const meal: Meal = {
+      id:         crypto.randomUUID(),
+      description,
+      logged_by:  editorName,
+      logged_at:  new Date().toISOString(),
+      nutrition,
+    }
+    updateEntry({ meals: [...curEntry.meals, meal] }, false)
+    // Reset food search
+    setFoodQuery('')
+    setSelectedFood(null)
+    setFoodSuggestions([])
+    setShowSuggestions(false)
+    setPortionIndex(0)
+    setPortionGrams(100)
+    setUseCustomGrams(false)
+  }
+
+  function addSavedMeal(meal: SavedMeal) {
+    if (!editorName) return
+    const entry: Meal = {
+      id:          crypto.randomUUID(),
+      description: meal.name,
+      logged_by:   editorName,
+      logged_at:   new Date().toISOString(),
+      nutrition:   meal.total_nutrition ?? null,
+    }
+    updateEntry({ meals: [...curEntry.meals, entry] }, false)
   }
 
   // ── Medications ──
@@ -765,25 +865,258 @@ export default function RakelDagbokPage() {
             </div>
           )}
 
-          {/* Add meal */}
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input style={{ ...s.input, flex: 1 }}
-              value={mealInput}
-              onChange={e => setMealInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && addMeal()}
-              placeholder="F.eks: 2 pølser i lompe med ketchup, glass melk…" />
-            <button
-              style={{ padding: '9px 14px', background: '#1B3A5C', color: 'white', border: 'none',
-                borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                fontFamily: 'inherit', whiteSpace: 'nowrap' }}
-              onClick={addMeal}
-              disabled={!mealInput.trim()}>
-              + Legg til
+          {/* Mode toggle */}
+          <div style={{ display: 'flex', gap: 5, marginBottom: 10 }}>
+            {savedMeals.length > 0 && (
+              <button onClick={() => setMealMode('lagrede')}
+                style={{ flex: 1, padding: '7px 8px', borderRadius: 7, fontSize: 12, fontWeight: 600,
+                  cursor: 'pointer', fontFamily: 'inherit', border: 'none',
+                  background: mealMode === 'lagrede' ? '#1B3A5C' : '#F1F5F9',
+                  color: mealMode === 'lagrede' ? 'white' : '#64748B' }}>
+                📋 Lagrede
+              </button>
+            )}
+            <button onClick={() => setMealMode('matvaretabellen')}
+              style={{ flex: 1, padding: '7px 8px', borderRadius: 7, fontSize: 12, fontWeight: 600,
+                cursor: 'pointer', fontFamily: 'inherit', border: 'none',
+                background: mealMode === 'matvaretabellen' ? '#1B3A5C' : '#F1F5F9',
+                color: mealMode === 'matvaretabellen' ? 'white' : '#64748B' }}>
+              🔍 Søk
+            </button>
+            <button onClick={() => setMealMode('ai')}
+              style={{ flex: 1, padding: '7px 8px', borderRadius: 7, fontSize: 12, fontWeight: 600,
+                cursor: 'pointer', fontFamily: 'inherit', border: 'none',
+                background: mealMode === 'ai' ? '#1B3A5C' : '#F1F5F9',
+                color: mealMode === 'ai' ? 'white' : '#64748B' }}>
+              🤖 AI
             </button>
           </div>
-          <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 5 }}>
-            Næring estimeres av AI basert på norske matvaretabeller. Trykk ✏ for å korrigere, 🔄 for å beregne på nytt.
-          </p>
+
+          {/* ── Lagrede måltider mode ── */}
+          {mealMode === 'lagrede' && (
+            <div>
+              {savedMeals.length === 0 ? (
+                <p style={{ fontSize: 13, color: '#94A3B8', textAlign: 'center', padding: '12px 0' }}>
+                  Ingen lagrede måltider ennå.{' '}
+                  <a href="/maltidsplan/lagrede" style={{ color: '#1B3A5C' }}>Opprett her →</a>
+                </p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {savedMeals.map(meal => {
+                    const n = meal.total_nutrition
+                    return (
+                      <button key={meal.id} onClick={() => addSavedMeal(meal)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
+                          background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8,
+                          cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', width: '100%' }}>
+                        <span style={{ fontSize: 20, flexShrink: 0 }}>🍽️</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: '#1E293B', marginBottom: 2 }}>
+                            {meal.name}
+                          </div>
+                          {meal.tags?.length > 0 && (
+                            <div style={{ fontSize: 10, color: '#94A3B8', marginBottom: 3 }}>
+                              {meal.tags.join(' · ')}
+                            </div>
+                          )}
+                          {n && (
+                            <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                              {[
+                                { l: 'Kcal', v: n.kcal,    c: '#F59E0B', u: '' },
+                                { l: 'Prot', v: n.protein, c: '#10B981', u: 'g' },
+                                { l: 'Karbo', v: n.carbs,  c: '#3B82F6', u: 'g' },
+                                { l: 'Fett', v: n.fat,     c: '#8B5CF6', u: 'g' },
+                              ].map(x => (
+                                <span key={x.l} style={{ fontSize: 10, color: x.c, fontWeight: 600,
+                                  background: x.c + '15', padding: '1px 6px', borderRadius: 999,
+                                  border: `1px solid ${x.c}35` }}>
+                                  {x.l}: {x.v}{x.u}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <span style={{ fontSize: 18, color: '#CBD5E1', flexShrink: 0 }}>+</span>
+                      </button>
+                    )
+                  })}
+                  <a href="/maltidsplan/lagrede"
+                    style={{ fontSize: 11, color: '#94A3B8', textAlign: 'center', padding: '4px 0',
+                      display: 'block', textDecoration: 'none' }}>
+                    ⚙️ Administrer lagrede måltider
+                  </a>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Matvaretabellen mode ── */}
+          {mealMode === 'matvaretabellen' && (
+            <div>
+              {/* Search input */}
+              <div style={{ position: 'relative', marginBottom: 8 }} ref={suggRef}>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input style={{ ...s.input, flex: 1 }}
+                    value={foodQuery}
+                    onChange={e => onFoodQueryChange(e.target.value)}
+                    onFocus={() => foodSuggestions.length > 0 && setShowSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                    placeholder="Søk matvare… f.eks. grillpølse, melk, brød"
+                    autoComplete="off" />
+                  {foodSearching && (
+                    <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+                      fontSize: 12, color: '#94A3B8' }}>⏳</span>
+                  )}
+                </div>
+                {/* Dropdown */}
+                {showSuggestions && foodSuggestions.length > 0 && (
+                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 20,
+                    background: 'white', border: '1px solid #E2E8F0', borderRadius: 8,
+                    boxShadow: '0 8px 24px rgba(0,0,0,.1)', maxHeight: 260, overflowY: 'auto' }}>
+                    {foodSuggestions.map(food => (
+                      <button key={food.id}
+                        onMouseDown={() => selectFood(food)}
+                        style={{ display: 'block', width: '100%', textAlign: 'left', padding: '9px 14px',
+                          border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                          borderBottom: '1px solid #F1F5F9', fontSize: 13, color: '#1E293B' }}>
+                        <div style={{ fontWeight: 500 }}>{food.name}</div>
+                        <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 1 }}>
+                          {food.per100g.kcal} kcal · {food.per100g.protein}g protein · {food.per100g.carbs}g karbo · {food.per100g.fat}g fett (per 100g)
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Selected food + portion picker */}
+              {selectedFood && (() => {
+                const preview = foodNutrition()
+                const currentGrams = useCustomGrams ? portionGrams : (selectedFood.portions[portionIndex]?.grams ?? 100)
+                return (
+                  <div style={{ background: '#F0F9FF', border: '1px solid #BAE6FD', borderRadius: 10,
+                    padding: '12px 14px', marginBottom: 10 }}>
+                    <div style={{ fontWeight: 600, color: '#0369A1', fontSize: 14, marginBottom: 10 }}>
+                      {selectedFood.name}
+                      <button onClick={() => { setSelectedFood(null); setFoodQuery('') }}
+                        style={{ marginLeft: 8, fontSize: 12, color: '#94A3B8', background: 'none',
+                          border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>✕ Endre</button>
+                    </div>
+
+                    {/* Portion selector */}
+                    <div style={{ marginBottom: 10 }}>
+                      <div style={{ fontSize: 12, color: '#64748B', fontWeight: 600, marginBottom: 6 }}>Velg mengde:</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                        {selectedFood.portions.map((portion, i) => (
+                          <button key={portion.id}
+                            onClick={() => { setPortionIndex(i); setUseCustomGrams(false); setPortionGrams(portion.grams) }}
+                            style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, cursor: 'pointer',
+                              fontFamily: 'inherit', border: 'none',
+                              background: !useCustomGrams && portionIndex === i ? '#0369A1' : '#E0F2FE',
+                              color: !useCustomGrams && portionIndex === i ? 'white' : '#0369A1',
+                              fontWeight: !useCustomGrams && portionIndex === i ? 700 : 400 }}>
+                            {portion.label} ({portion.grams}g)
+                          </button>
+                        ))}
+                        <button
+                          onClick={() => { setUseCustomGrams(true); setPortionGrams(100) }}
+                          style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, cursor: 'pointer',
+                            fontFamily: 'inherit', border: 'none',
+                            background: useCustomGrams ? '#0369A1' : '#E0F2FE',
+                            color: useCustomGrams ? 'white' : '#0369A1',
+                            fontWeight: useCustomGrams ? 700 : 400 }}>
+                          Tilpass gram
+                        </button>
+                      </div>
+                      {useCustomGrams && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <input type="number" min={1} max={2000}
+                            style={{ width: 90, padding: '6px 10px', border: '1px solid #BAE6FD',
+                              borderRadius: 7, fontSize: 14, fontFamily: 'inherit', background: 'white' }}
+                            value={portionGrams}
+                            onChange={e => setPortionGrams(Math.max(1, parseInt(e.target.value) || 1))} />
+                          <span style={{ fontSize: 13, color: '#64748B' }}>gram</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Nutrition preview */}
+                    {preview && (
+                      <div style={{ marginBottom: 10 }}>
+                        <div style={{ fontSize: 11, color: '#0369A1', fontWeight: 600, marginBottom: 5 }}>
+                          Næringsinnhold for {currentGrams}g:
+                        </div>
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
+                          {[
+                            { label: 'Kcal',    val: preview.kcal,    color: '#F59E0B', unit: '' },
+                            { label: 'Protein', val: preview.protein,  color: '#10B981', unit: 'g' },
+                            { label: 'Karbo',   val: preview.carbs,    color: '#3B82F6', unit: 'g' },
+                            { label: 'Fett',    val: preview.fat,      color: '#8B5CF6', unit: 'g' },
+                          ].map(n => (
+                            <span key={n.label} style={{ fontSize: 12, background: n.color + '18',
+                              color: n.color, padding: '3px 10px', borderRadius: 999,
+                              border: `1px solid ${n.color}40`, fontWeight: 700 }}>
+                              {n.label}: {n.val}{n.unit}
+                            </span>
+                          ))}
+                        </div>
+                        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                          {[
+                            { label: 'Sukker',   val: preview.sugar,         color: '#EC4899', unit: 'g' },
+                            { label: 'Fiber',    val: preview.fiber,          color: '#84CC16', unit: 'g' },
+                            { label: 'Met.fett', val: preview.saturated_fat,  color: '#F97316', unit: 'g' },
+                            { label: 'Salt',     val: preview.sodium,         color: '#64748B', unit: 'mg' },
+                          ].map(n => (
+                            <span key={n.label} style={{ fontSize: 10, color: n.color,
+                              padding: '1px 7px', borderRadius: 999, background: n.color + '12',
+                              border: `1px solid ${n.color}30` }}>
+                              {n.label}: {n.val}{n.unit}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <button onClick={addFoodMeal}
+                      style={{ padding: '8px 18px', background: '#0369A1', color: 'white', border: 'none',
+                        borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                      + Legg til måltid
+                    </button>
+                  </div>
+                )
+              })()}
+
+              {foodQuery.length < 2 && !selectedFood && (
+                <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 4 }}>
+                  Offisielle verdier fra Matvaretabellen.no (Mattilsynet). Skriv minst 2 bokstaver for å søke.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* ── AI / Fritekst mode ── */}
+          {mealMode === 'ai' && (
+            <div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input style={{ ...s.input, flex: 1 }}
+                  value={mealInput}
+                  onChange={e => setMealInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && addMeal()}
+                  placeholder="F.eks: 2 pølser i lompe med ketchup, glass melk…" />
+                <button
+                  style={{ padding: '9px 14px', background: '#1B3A5C', color: 'white', border: 'none',
+                    borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                    fontFamily: 'inherit', whiteSpace: 'nowrap' }}
+                  onClick={addMeal}
+                  disabled={!mealInput.trim()}>
+                  + Legg til
+                </button>
+              </div>
+              <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 5 }}>
+                AI estimerer næring basert på beskrivelsen. Trykk ✏ for å korrigere etterpå.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* ── MEDISIN ── */}
