@@ -109,8 +109,7 @@ async function getData(testId: string, profileId: string) {
   const isAdmin = ["owner", "admin"].includes((gm as { role: string }).role);
 
   // All group members can view any report within their group (family context)
-  // Only block access if the profileId belongs to a completely different group
-  void isAdmin; // kept for future use
+  void isAdmin;
 
   const [{ data: testData }, { data: resp }, { data: profile }] = await Promise.all([
     sb.from("utredning_tests").select("*").eq("id", testId).single(),
@@ -138,10 +137,13 @@ async function getData(testId: string, profileId: string) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default async function RapportPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string; profileId: string }>;
+  searchParams: Promise<{ mode?: string }>;
 }) {
   const { id, profileId } = await params;
+  const { mode } = await searchParams;
   const data = await getData(id, profileId);
 
   if (data === "forbidden") redirect("/utredning/tester");
@@ -149,6 +151,171 @@ export default async function RapportPage({
 
   const { test, answers, completedAt, displayName } = data;
 
+  const completedDate = completedAt
+    ? new Date(completedAt).toLocaleDateString("nb-NO", { day: "numeric", month: "long", year: "numeric" })
+    : "Ukjent dato";
+
+  const helpTexts = TEST_HELP_TEXTS[test.id] ?? {};
+
+  // Skjema-modus: clean form view without scores for the psychologist
+  if (mode === "skjema") {
+    const sortedQuestions = [...test.questions].sort((a, b) => a.num - b.num);
+    const answerOptions = test.answer_options;
+
+    return (
+      <div style={{ minHeight: "100vh", background: C.bg }}>
+        <style>{`
+          @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; }
+            @page { margin: 1.8cm; size: A4; }
+            .page-break { page-break-before: always; }
+          }
+          .q-row { break-inside: avoid; }
+        `}</style>
+
+        {/* Top bar */}
+        <div className="no-print" style={{
+          background: C.surface, borderBottom: `1px solid ${C.border}`,
+          padding: "0.85rem 1.5rem", display: "flex", alignItems: "center", gap: "0.75rem",
+          position: "sticky", top: 0, zIndex: 10,
+          boxShadow: "0 1px 3px rgba(17,29,37,.06)",
+        }}>
+          <Link href={`/utredning/tester/${id}/rapport/${profileId}`}
+            style={{ color: C.textMuted, textDecoration: "none", display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.85rem" }}>
+            <ChevronLeft size={16} /> Tilbake til rapport
+          </Link>
+          <span style={{ color: C.border }}>/</span>
+          <span style={{ color: C.text, fontSize: "0.85rem", flex: 1, fontWeight: 600 }}>
+            Skjemautskrift — {displayName}
+          </span>
+          <PrintButton />
+        </div>
+
+        <div style={{ maxWidth: 760, margin: "0 auto", padding: "2rem 1.25rem" }}>
+
+          {/* Form header */}
+          <div style={{ marginBottom: "1.5rem", paddingBottom: "1rem", borderBottom: `2px solid ${C.text}` }}>
+            <h1 style={{ color: C.text, fontSize: "1.4rem", fontWeight: 800, margin: "0 0 0.35rem", fontFamily: "Plus Jakarta Sans, sans-serif" }}>
+              {test.title}
+            </h1>
+            <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap", fontSize: "0.85rem", color: C.textMid }}>
+              <span><strong>Respondent:</strong> {displayName}</span>
+              <span><strong>Fullført:</strong> {completedDate}</span>
+              <span><strong>Antall spørsmål:</strong> {test.question_count}</span>
+              <span><strong>Besvart:</strong> {Object.keys(answers).length} av {test.question_count}</span>
+            </div>
+          </div>
+
+          {/* Answer scale legend */}
+          <div style={{
+            background: C.surfaceLow, borderRadius: "0.6rem", padding: "0.6rem 1rem",
+            marginBottom: "1.5rem", fontSize: "0.78rem", color: C.textMid,
+            display: "flex", alignItems: "center", gap: "1.5rem", flexWrap: "wrap",
+          }} className="no-print">
+            <span style={{ fontWeight: 700 }}>Svarskala:</span>
+            {answerOptions.map(o => (
+              <span key={o.value}>● = {o.label}</span>
+            ))}
+          </div>
+
+          {/* Instruction note for print */}
+          <div style={{ fontSize: "0.75rem", color: C.textMuted, marginBottom: "1.5rem", fontStyle: "italic" }}>
+            Merk: Denne utskriften viser kun spørsmål og avkryssede svar – ingen poengscore er inkludert. Beregnet for videreformidling til fagpersonell.
+          </div>
+
+          {/* Questions */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
+            {sortedQuestions.map((q, idx) => {
+              const ans = answers[String(q.num)];
+              const isUnanswered = !ans;
+
+              return (
+                <div
+                  key={q.num}
+                  className="q-row"
+                  style={{
+                    padding: "0.6rem 0",
+                    borderBottom: `1px solid ${idx % 2 === 0 ? C.border : "transparent"}`,
+                    background: idx % 2 === 0 ? "transparent" : C.surfaceLow,
+                    paddingLeft: "0.4rem",
+                    paddingRight: "0.4rem",
+                  }}
+                >
+                  {/* Question text */}
+                  <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.35rem" }}>
+                    <span style={{ color: C.textMuted, fontWeight: 700, fontSize: "0.8rem", minWidth: 28, flexShrink: 0 }}>
+                      {q.num}.
+                    </span>
+                    <span style={{ color: C.text, fontSize: "0.875rem", lineHeight: 1.5 }}>
+                      {q.text}
+                    </span>
+                  </div>
+
+                  {/* Answer options */}
+                  <div style={{
+                    display: "flex", gap: "0.75rem", flexWrap: "wrap",
+                    paddingLeft: "1.75rem",
+                  }}>
+                    {answerOptions.map(opt => {
+                      const isSelected = ans === opt.value;
+                      return (
+                        <span key={opt.value} style={{
+                          display: "flex", alignItems: "center", gap: "0.3rem",
+                          fontSize: "0.8rem",
+                          color: isSelected ? C.text : C.textMuted,
+                          fontWeight: isSelected ? 700 : 400,
+                        }}>
+                          <span style={{
+                            display: "inline-block",
+                            width: 14, height: 14,
+                            borderRadius: "50%",
+                            border: `2px solid ${isSelected ? C.primary : C.border}`,
+                            background: isSelected ? C.primary : "transparent",
+                            flexShrink: 0,
+                          }} />
+                          {opt.label}
+                        </span>
+                      );
+                    })}
+                    {isUnanswered && (
+                      <span style={{ color: C.yellow.text, fontSize: "0.75rem", fontStyle: "italic" }}>
+                        Ikke besvart
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Footer */}
+          <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: "1rem", marginTop: "1.5rem" }}>
+            <p style={{ color: C.textMuted, fontSize: "0.72rem", lineHeight: 1.6, margin: 0 }}>
+              Kilde: {test.source}<br />
+              Skjemautskrift generert {new Date().toLocaleDateString("nb-NO", { day: "numeric", month: "long", year: "numeric" })}. Poengscore er ikke inkludert i denne versjonen. Klinisk tolkning bør gjøres av kvalifisert helsepersonell.
+            </p>
+          </div>
+
+          {/* Bottom buttons */}
+          <div className="no-print" style={{ marginTop: "1.5rem", display: "flex", gap: "0.75rem" }}>
+            <Link href={`/utredning/tester/${id}/rapport/${profileId}`} style={{
+              display: "flex", alignItems: "center", gap: "0.4rem",
+              padding: "0.65rem 1.25rem", borderRadius: "0.6rem",
+              background: C.surface, border: `1px solid ${C.border}`,
+              color: C.textMid, fontSize: "0.875rem", textDecoration: "none", fontWeight: 500,
+            }}>
+              ← Tilbake til rapport
+            </Link>
+            <PrintButton variant="secondary" />
+          </div>
+
+        </div>
+      </div>
+    );
+  }
+
+  // ── Scored rapport view ───────────────────────────────────────────────────────
   const scoringType = test.scoring_type ?? "direction_based";
   const { total, sub } = calcScore(answers, test.questions, test.answer_options, scoringType);
   const subscaleScores = consolidate(sub, test.subscales);
@@ -156,12 +323,6 @@ export default async function RapportPage({
   const totalCutoff = test.cutoffs.find(c => total >= cutoffMin(c) && total <= cutoffMax(c));
   const colorKey = (totalCutoff?.color ?? "green") as keyof typeof C;
   const tc = C[colorKey] as typeof C.green;
-
-  const completedDate = completedAt
-    ? new Date(completedAt).toLocaleDateString("nb-NO", { day: "numeric", month: "long", year: "numeric" })
-    : "Ukjent dato";
-
-  const helpTexts = TEST_HELP_TEXTS[test.id] ?? {};
 
   // Group questions by subscale
   const bySubscale = new Map<string, Question[]>();
@@ -193,6 +354,18 @@ export default async function RapportPage({
         </Link>
         <span style={{ color: C.border }}>/</span>
         <span style={{ color: C.text, fontSize: "0.85rem", flex: 1, fontWeight: 600 }}>Rapport — {displayName}</span>
+        <Link
+          href={`/utredning/tester/${id}/rapport/${profileId}?mode=skjema`}
+          style={{
+            fontSize: "0.78rem", fontWeight: 600, color: C.textMid, textDecoration: "none",
+            padding: "0.4rem 0.85rem", borderRadius: "0.5rem",
+            background: C.surfaceLow, border: `1px solid ${C.border}`,
+            whiteSpace: "nowrap",
+          }}
+          className="no-print"
+        >
+          📄 Skriv ut som skjema
+        </Link>
         <PrintButton />
       </div>
 
@@ -292,9 +465,7 @@ export default async function RapportPage({
         {Array.from(bySubscale.entries()).map(([subscale, questions]) => (
           <div key={subscale} style={{ marginBottom: "1.5rem" }}>
             {/* Subscale heading */}
-            <div style={{
-              display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.6rem",
-            }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.6rem" }}>
               <div style={{ color: C.primary, fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>
                 {subscale}
               </div>
@@ -302,6 +473,12 @@ export default async function RapportPage({
               <div style={{ color: C.textMuted, fontSize: "0.72rem" }}>
                 {questions.reduce((acc, q) => {
                   const ans = answers[String(q.num)];
+                  const scoringType2 = test.scoring_type ?? "direction_based";
+                  if (scoringType2 === "value_based") {
+                    const optMap: Record<string, number> = {};
+                    for (const o of test.answer_options) if (o.score !== undefined) optMap[o.value] = o.score;
+                    return acc + (ans ? (optMap[ans] ?? 0) : 0);
+                  }
                   return acc + (ans ? (DIR_SCORES[ans]?.[q.direction ?? "agree"] ?? 0) : 0);
                 }, 0)}/{questions.length} poeng
               </div>
@@ -311,7 +488,17 @@ export default async function RapportPage({
             <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
               {questions.map(q => {
                 const ans = answers[String(q.num)];
-                const scored = ans ? (DIR_SCORES[ans]?.[q.direction ?? "agree"] ?? 0) : null;
+                const scoringType2 = test.scoring_type ?? "direction_based";
+                let scored: number | null = null;
+                if (ans) {
+                  if (scoringType2 === "value_based") {
+                    const optMap: Record<string, number> = {};
+                    for (const o of test.answer_options) if (o.score !== undefined) optMap[o.value] = o.score;
+                    scored = optMap[ans] ?? 0;
+                  } else {
+                    scored = DIR_SCORES[ans]?.[q.direction ?? "agree"] ?? 0;
+                  }
+                }
                 const ansLabel = test.answer_options.find(o => o.value === ans)?.label ?? "–";
                 const helpText = helpTexts[q.num];
 
@@ -329,12 +516,9 @@ export default async function RapportPage({
                       alignItems: "start",
                     }}
                   >
-                    {/* Q number */}
                     <span style={{ color: C.textMuted, fontSize: "0.78rem", fontWeight: 700, paddingTop: 1 }}>
                       {q.num}.
                     </span>
-
-                    {/* Question + help */}
                     <div>
                       <p style={{ color: C.text, fontSize: "0.875rem", lineHeight: 1.5, margin: 0 }}>
                         {q.text}
@@ -345,8 +529,6 @@ export default async function RapportPage({
                         </p>
                       )}
                     </div>
-
-                    {/* Answer + score */}
                     <div style={{ textAlign: "right", flexShrink: 0, minWidth: 100 }}>
                       <div style={{
                         fontSize: "0.82rem", fontWeight: 700,
@@ -374,8 +556,8 @@ export default async function RapportPage({
           </p>
         </div>
 
-        {/* Bottom print button */}
-        <div className="no-print" style={{ marginTop: "1.5rem", display: "flex", gap: "0.75rem" }}>
+        {/* Bottom buttons */}
+        <div className="no-print" style={{ marginTop: "1.5rem", display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
           <Link href="/utredning/tester" style={{
             display: "flex", alignItems: "center", gap: "0.4rem",
             padding: "0.65rem 1.25rem", borderRadius: "0.6rem",
@@ -383,6 +565,17 @@ export default async function RapportPage({
             color: C.textMid, fontSize: "0.875rem", textDecoration: "none", fontWeight: 500,
           }}>
             ← Tilbake
+          </Link>
+          <Link
+            href={`/utredning/tester/${id}/rapport/${profileId}?mode=skjema`}
+            style={{
+              display: "flex", alignItems: "center", gap: "0.4rem",
+              padding: "0.65rem 1.25rem", borderRadius: "0.6rem",
+              background: C.surfaceLow, border: `1px solid ${C.border}`,
+              color: C.textMid, fontSize: "0.875rem", textDecoration: "none", fontWeight: 500,
+            }}
+          >
+            📄 Skriv ut som skjema
           </Link>
           <PrintButton variant="secondary" />
         </div>
