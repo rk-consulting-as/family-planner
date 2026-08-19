@@ -12,6 +12,7 @@ import {
   ShoppingCart, Gift, Briefcase, Mail, ChevronDown, Menu, X, Sparkles,
   BookOpen, Camera, Sun, Moon, LayoutGrid, HardHat, Apple, BookHeart,
   ClipboardList, BookMarked, FileBarChart2, FlaskConical, FolderOpen, Droplets,
+  GraduationCap, BookText, Calculator,
 } from "lucide-react";
 
 type LeafItem = {
@@ -51,6 +52,17 @@ const NAV: NavGroup[] = [
       { href: "/maltidsplan/lagrede", label: "Lagrede måltider", icon: BookMarked, module: "meals" },
       { href: "/oppskrifter", label: "Oppskrifter", icon: BookOpen, module: "recipes" },
       { href: "/handleliste", label: "Handleliste", icon: ShoppingCart, module: "shopping" },
+    ],
+  },
+  {
+    type: "group",
+    label: "Skole",
+    icon: GraduationCap,
+    items: [
+      { href: "/skole",              label: "Oversikt",     icon: GraduationCap, module: "skole" },
+      { href: "/skole/ukeplan",      label: "Ukeplan",      icon: Calendar,      module: "skole" },
+      { href: "/skole/lesetrening",  label: "Lesetrening",  icon: BookText,      module: "skole" },
+      { href: "/skole/matte",        label: "Matte-øving",  icon: Calculator,    module: "skole" },
     ],
   },
   {
