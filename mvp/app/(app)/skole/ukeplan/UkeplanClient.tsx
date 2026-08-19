@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   toggleWeekActivity,
@@ -90,12 +90,16 @@ interface Props { weekNum: number; year: number; activities: Activity[] }
 
 export default function UkeplanClient({ weekNum, year, activities: initActs }: Props) {
   const router = useRouter();
-  const [acts, setActs]     = useState(initActs);
-  const [, startTrans]      = useTransition();
-  const [cell, setCell]     = useState<CellCtx | null>(null);
-  const [form, setForm]     = useState(EMPTY_FORM);
-  const [edit, setEdit]     = useState<EditState>(null);
-  const [saving, setSaving] = useState(false);
+  const [acts, setActs]       = useState(initActs);
+  const [, startTrans]        = useTransition();
+  const [cell, setCell]       = useState<CellCtx | null>(null);
+  const [form, setForm]       = useState(EMPTY_FORM);
+  const [edit, setEdit]       = useState<EditState>(null);
+  const [saving, setSaving]   = useState(false);
+  const [saveError, setSaveError] = useState("");
+
+  // Sync when server re-renders with fresh data after revalidatePath
+  useEffect(() => { setActs(initActs); }, [initActs]);
 
   // ── Derived ──────────────────────────────────────────────────────────────────
   const walks      = acts.filter(a => a.activity_type === "walk");
@@ -124,15 +128,19 @@ export default function UkeplanClient({ weekNum, year, activities: initActs }: P
     fd.set("description",   form.description);
     const res = await createWeekActivity(fd);
     setSaving(false);
-    if (res.ok) {
-      const newAct: Activity = {
-        id: `tmp-${Date.now()}`, day_of_week: cell.day,
-        time_slot: cell.slot, activity_type: form.type,
-        title: form.title, description: form.description || null, is_completed: false,
-      };
-      setActs(prev => [...prev, newAct]);
-      setForm({ ...EMPTY_FORM, type: form.type }); // keep type, clear text
+    if (!res.ok) {
+      setSaveError(res.error ?? "Lagring feilet – prøv igjen");
+      return;
     }
+    setSaveError("");
+    const newAct: Activity = {
+      id: res.id ?? `tmp-${Date.now()}`,
+      day_of_week: cell.day, time_slot: cell.slot,
+      activity_type: form.type, title: form.title,
+      description: form.description || null, is_completed: false,
+    };
+    setActs(prev => [...prev, newAct]);
+    setForm({ ...EMPTY_FORM, type: form.type });
   }
 
   async function handleUpdate(e: React.FormEvent) {
@@ -169,6 +177,7 @@ export default function UkeplanClient({ weekNum, year, activities: initActs }: P
   function openCell(day: number, slot: number) {
     setCell({ day, slot });
     setEdit(null);
+    setSaveError("");
     setForm({ ...EMPTY_FORM, type: RAKELS_FASTE[`${day}-${slot}`] ? "notat" : "faglig" });
   }
 
@@ -499,6 +508,11 @@ export default function UkeplanClient({ weekNum, year, activities: initActs }: P
                   <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2}
                     placeholder="Notat / mer info (valgfritt)"
                     style={{ ...inp, resize: "vertical" }} />
+                  {saveError && (
+                    <div style={{ background: C.red.bg, border: `1px solid ${C.red.border}`, borderRadius: "0.5rem", padding: "0.5rem 0.75rem", color: C.red.text, fontSize: "0.8rem" }}>
+                      ⚠ {saveError}
+                    </div>
+                  )}
                   <button type="submit" disabled={saving || !form.title.trim()}
                     style={{ background: saving || !form.title.trim() ? "#a8c7db" : C.primary, color: "#fff", border: "none", borderRadius: "0.625rem", padding: "0.7rem", fontSize: "0.875rem", fontWeight: 700, cursor: saving || !form.title.trim() ? "not-allowed" : "pointer" }}>
                     {saving ? "Lagrer…" : "Legg til"}

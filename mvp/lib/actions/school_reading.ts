@@ -267,26 +267,34 @@ export async function toggleWeekActivity(activityId: string, done: boolean): Pro
 
 // ── Create week activity ──────────────────────────────────────────────────────
 
-export async function createWeekActivity(formData: FormData): Promise<{ ok: boolean }> {
+export async function createWeekActivity(formData: FormData): Promise<{ ok: boolean; error?: string; id?: string }> {
   const ctx = await getActiveContext()
-  if (!ctx) return { ok: false }
+  if (!ctx) return { ok: false, error: 'Ikke innlogget' }
 
   const supabase = await createClient()
-  const { error } = await supabase.from('school_week_activities').insert({
+  const slotRaw = formData.get('time_slot')
+  const slotNum = slotRaw !== null && slotRaw !== '' ? Number(slotRaw) : null
+
+  const { data, error } = await supabase.from('school_week_activities').insert({
     group_id:      ctx.group.id,
     created_by:    ctx.user.id,
     assigned_to:   (formData.get('assigned_to') as string) || null,
     week_number:   Number(formData.get('week_number')),
     year:          Number(formData.get('year')),
     day_of_week:   Number(formData.get('day_of_week')),
-    time_slot:     formData.get('time_slot') ? Number(formData.get('time_slot')) : null,
+    time_slot:     slotNum && slotNum > 0 ? slotNum : null,
     activity_type: (formData.get('activity_type') as string) || 'other',
     title:         formData.get('title') as string,
     description:   (formData.get('description') as string) || null,
-  })
+  }).select('id').single()
+
+  if (error) {
+    console.error('createWeekActivity error:', error)
+    return { ok: false, error: error.message }
+  }
 
   revalidatePath('/skole/ukeplan')
-  return { ok: !error }
+  return { ok: true, id: data?.id }
 }
 
 // ── Update week activity ──────────────────────────────────────────────────────
