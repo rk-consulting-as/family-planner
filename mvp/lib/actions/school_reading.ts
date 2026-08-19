@@ -288,3 +288,40 @@ export async function createWeekActivity(formData: FormData): Promise<{ ok: bool
   revalidatePath('/skole/ukeplan')
   return { ok: !error }
 }
+
+// ── Update week activity ──────────────────────────────────────────────────────
+
+export async function updateWeekActivity(
+  activityId: string,
+  data: { title: string; description: string | null; activity_type: string }
+): Promise<{ ok: boolean }> {
+  const ctx = await getActiveContext()
+  if (!ctx) return { ok: false }
+
+  const supabase = await createClient()
+  const { error } = await supabase.from('school_week_activities')
+    .update({
+      title:         data.title,
+      description:   data.description || null,
+      activity_type: data.activity_type,
+    })
+    .eq('id', activityId)
+
+  revalidatePath('/skole/ukeplan')
+  return { ok: !error }
+}
+
+// ── Delete week activity ──────────────────────────────────────────────────────
+
+export async function deleteWeekActivity(activityId: string): Promise<{ ok: boolean }> {
+  const ctx = await getActiveContext()
+  if (!ctx) return { ok: false }
+
+  const supabase = await createClient()
+  const { error } = await supabase.from('school_week_activities')
+    .delete()
+    .eq('id', activityId)
+
+  revalidatePath('/skole/ukeplan')
+  return { ok: !error }
+}

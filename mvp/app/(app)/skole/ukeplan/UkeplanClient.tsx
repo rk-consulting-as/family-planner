@@ -1,8 +1,14 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { toggleWeekActivity, createWeekActivity } from "@/lib/actions/school_reading";
-import { CheckCircle2, Circle, Plus, X, PenLine } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  toggleWeekActivity,
+  createWeekActivity,
+  updateWeekActivity,
+  deleteWeekActivity,
+} from "@/lib/actions/school_reading";
+import { CheckCircle2, Circle, PenLine, Trash2, X, ChevronLeft, ChevronRight } from "lucide-react";
 
 const C = {
   bg:         "#f6faff",
@@ -14,23 +20,23 @@ const C = {
   textMuted:  "#71787f",
   primary:    "#1c648e",
   green:  { bg: "#e8f5e9", border: "#81c784", text: "#2c6956" },
-  yellow: { bg: "#fffde7", border: "#f9c74f", text: "#765b06" },
+  red:    { bg: "#fde8e8", border: "#f28b82", text: "#b71c1c" },
 };
 
-const RAKELS_FASTE: Record<string, { label: string; color: string; type: string }> = {
-  "1-4": { label: "Engelsk", color: "#bbdefb", type: "faglig" },
-  "2-2": { label: "Engelsk", color: "#bbdefb", type: "faglig" },
-  "3-4": { label: "Språk",   color: "#d1c4e9", type: "faglig" },
-  "4-1": { label: "Engelsk", color: "#bbdefb", type: "faglig" },
-  "4-3": { label: "Matte",   color: "#c8e6c9", type: "faglig" },
-  "4-4": { label: "Språk",   color: "#d1c4e9", type: "faglig" },
-  "5-4": { label: "Matte",   color: "#c8e6c9", type: "faglig" },
-  "5-5": { label: "Matte",   color: "#c8e6c9", type: "faglig" },
+const RAKELS_FASTE: Record<string, { label: string; color: string }> = {
+  "1-4": { label: "Engelsk", color: "#bbdefb" },
+  "2-2": { label: "Engelsk", color: "#bbdefb" },
+  "3-4": { label: "Språk",   color: "#d1c4e9" },
+  "4-1": { label: "Engelsk", color: "#bbdefb" },
+  "4-3": { label: "Matte",   color: "#c8e6c9" },
+  "4-4": { label: "Språk",   color: "#d1c4e9" },
+  "5-4": { label: "Matte",   color: "#c8e6c9" },
+  "5-5": { label: "Matte",   color: "#c8e6c9" },
 };
 
-const DAYS = ["Man", "Tir", "Ons", "Tor", "Fre"];
+const DAYS     = ["Man", "Tir", "Ons", "Tor", "Fre"];
 const DAY_FULL = ["", "Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "Lørdag", "Søndag"];
-const SLOTS = [
+const SLOTS    = [
   { slot: 1, label: "08:15" },
   { slot: 2, label: "09:10" },
   { slot: 3, label: "10:00" },
@@ -40,12 +46,12 @@ const SLOTS = [
 ];
 
 const ACT_COLORS: Record<string, { bg: string; border: string; text: string }> = {
-  walk:    { bg: "#fff9c4", border: "#f9c74f", text: "#765b06" },
-  faglig:  { bg: "#e3f2fd", border: "#64b5f6", text: "#1565c0" },
-  notat:   { bg: "#f3e5f5", border: "#ba68c8", text: "#6a1b9a" },
-  helse:   { bg: "#fce4ec", border: "#f48fb1", text: "#880e4f" },
-  sosialt: { bg: "#f3e5f5", border: "#ce93d8", text: "#6a1b9a" },
-  other:   { bg: "#f5f5f5", border: "#bdbdbd", text: "#424242" },
+  walk:    { bg: "#fff9c4", border: "#f9c74f",  text: "#765b06" },
+  faglig:  { bg: "#e3f2fd", border: "#64b5f6",  text: "#1565c0" },
+  notat:   { bg: "#f3e5f5", border: "#ba68c8",  text: "#6a1b9a" },
+  helse:   { bg: "#fce4ec", border: "#f48fb1",  text: "#880e4f" },
+  sosialt: { bg: "#f3e5f5", border: "#ce93d8",  text: "#6a1b9a" },
+  other:   { bg: "#f5f5f5", border: "#bdbdbd",  text: "#424242" },
 };
 
 const ACT_LABELS: Record<string, string> = {
@@ -67,38 +73,41 @@ type Activity = {
   is_completed: boolean;
 };
 
-type CellContext = {
-  day: number;
-  slot: number;
-  faste?: { label: string; color: string; type: string };
-};
+type CellCtx = { day: number; slot: number };
+type EditState = { id: string; title: string; description: string; activity_type: string } | null;
 
-interface Props {
-  weekNum: number;
-  year: number;
-  activities: Activity[];
+const EMPTY_FORM = { type: "notat", title: "", description: "" };
+
+// Week navigation helper
+function offsetWeek(week: number, year: number, delta: number) {
+  let w = week + delta, y = year;
+  if (w < 1)  { y--; w = 52; }
+  if (w > 52) { y++; w = 1;  }
+  return { w, y };
 }
 
-const EMPTY_FORM = { type: "faglig", title: "", description: "" };
+interface Props { weekNum: number; year: number; activities: Activity[] }
 
 export default function UkeplanClient({ weekNum, year, activities: initActs }: Props) {
-  const [acts, setActs] = useState(initActs);
-  const [, startTransition] = useTransition();
-  const [cell, setCell] = useState<CellContext | null>(null);   // which cell is open
-  const [form, setForm] = useState(EMPTY_FORM);
+  const router = useRouter();
+  const [acts, setActs]     = useState(initActs);
+  const [, startTrans]      = useTransition();
+  const [cell, setCell]     = useState<CellCtx | null>(null);
+  const [form, setForm]     = useState(EMPTY_FORM);
+  const [edit, setEdit]     = useState<EditState>(null);
   const [saving, setSaving] = useState(false);
 
-  function openCell(day: number, slot: number) {
-    const key = `${day}-${slot}`;
-    setCell({ day, slot, faste: RAKELS_FASTE[key] });
-    // Pre-fill type based on cell type
-    setForm({ ...EMPTY_FORM, type: RAKELS_FASTE[key] ? "notat" : "faglig" });
-  }
+  // ── Derived ──────────────────────────────────────────────────────────────────
+  const walks      = acts.filter(a => a.activity_type === "walk");
+  const walksDone  = walks.filter(a => a.is_completed).length;
+  const cellActs   = cell ? acts.filter(a => a.day_of_week === cell.day && a.time_slot === cell.slot) : [];
+  const faste      = cell ? RAKELS_FASTE[`${cell.day}-${cell.slot}`] : undefined;
 
+  // ── Actions ──────────────────────────────────────────────────────────────────
   function toggleDone(id: string, done: boolean, e?: React.MouseEvent) {
     e?.stopPropagation();
     setActs(prev => prev.map(a => a.id === id ? { ...a, is_completed: done } : a));
-    startTransition(async () => { await toggleWeekActivity(id, done); });
+    startTrans(async () => { await toggleWeekActivity(id, done); });
   }
 
   async function handleAdd(e: React.FormEvent) {
@@ -113,67 +122,111 @@ export default function UkeplanClient({ weekNum, year, activities: initActs }: P
     fd.set("activity_type", form.type);
     fd.set("title",         form.title);
     fd.set("description",   form.description);
-
     const res = await createWeekActivity(fd);
     setSaving(false);
     if (res.ok) {
-      setActs(prev => [...prev, {
-        id: `tmp-${Date.now()}`,
-        day_of_week: cell.day,
-        time_slot: cell.slot,
-        activity_type: form.type,
-        title: form.title,
-        description: form.description || null,
-        is_completed: false,
-      }]);
-      setForm({ ...EMPTY_FORM, type: form.type });
+      const newAct: Activity = {
+        id: `tmp-${Date.now()}`, day_of_week: cell.day,
+        time_slot: cell.slot, activity_type: form.type,
+        title: form.title, description: form.description || null, is_completed: false,
+      };
+      setActs(prev => [...prev, newAct]);
+      setForm({ ...EMPTY_FORM, type: form.type }); // keep type, clear text
     }
   }
 
-  const walks     = acts.filter(a => a.activity_type === "walk");
-  const walksDone = walks.filter(a => a.is_completed).length;
+  async function handleUpdate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!edit || !edit.title.trim()) return;
+    setSaving(true);
+    const res = await updateWeekActivity(edit.id, {
+      title:         edit.title,
+      description:   edit.description || null,
+      activity_type: edit.activity_type,
+    });
+    setSaving(false);
+    if (res.ok) {
+      setActs(prev => prev.map(a => a.id === edit.id
+        ? { ...a, title: edit.title, description: edit.description || null, activity_type: edit.activity_type }
+        : a
+      ));
+      setEdit(null);
+    }
+  }
 
-  const inputStyle: React.CSSProperties = {
+  async function handleDelete(id: string) {
+    if (!confirm("Slett denne aktiviteten?")) return;
+    setActs(prev => prev.filter(a => a.id !== id));
+    setEdit(null);
+    startTrans(async () => { await deleteWeekActivity(id); });
+  }
+
+  function openEdit(a: Activity, e: React.MouseEvent) {
+    e.stopPropagation();
+    setEdit({ id: a.id, title: a.title, description: a.description ?? "", activity_type: a.activity_type });
+  }
+
+  function openCell(day: number, slot: number) {
+    setCell({ day, slot });
+    setEdit(null);
+    setForm({ ...EMPTY_FORM, type: RAKELS_FASTE[`${day}-${slot}`] ? "notat" : "faglig" });
+  }
+
+  function navWeek(delta: number) {
+    const { w, y } = offsetWeek(weekNum, year, delta);
+    router.push(`/skole/ukeplan?week=${w}&year=${y}`);
+  }
+
+  // ── Styles ──────────────────────────────────────────────────────────────────
+  const inp: React.CSSProperties = {
     width: "100%", padding: "0.55rem 0.75rem",
     border: `1px solid ${C.border}`, borderRadius: "0.5rem",
     background: C.surface, color: C.text, fontSize: "0.875rem",
     boxSizing: "border-box", outline: "none",
   };
 
-  // Activities in the open cell
-  const cellActs = cell
-    ? acts.filter(a => a.day_of_week === cell.day && a.time_slot === cell.slot)
-    : [];
+  // ── Summary data ─────────────────────────────────────────────────────────────
+  const total     = acts.length;
+  const completed = acts.filter(a => a.is_completed).length;
+  const byType    = Object.keys(ACT_LABELS).map(type => ({
+    type, label: ACT_LABELS[type],
+    count: acts.filter(a => a.activity_type === type).length,
+    done:  acts.filter(a => a.activity_type === type && a.is_completed).length,
+  })).filter(x => x.count > 0);
+  const withNotes = acts.filter(a => a.description);
 
+  // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div style={{ minHeight: "100vh", background: C.bg }}>
-      <div style={{ maxWidth: 900, margin: "0 auto", padding: "2rem 1.25rem" }}>
+      <div style={{ maxWidth: 920, margin: "0 auto", padding: "2rem 1.25rem" }}>
 
-        {/* Header */}
-        <div style={{ marginBottom: "1.25rem" }}>
-          <h1 style={{ color: C.text, fontSize: "1.4rem", fontWeight: 800, margin: 0, fontFamily: "Plus Jakarta Sans, sans-serif" }}>
-            Ukeplan — Uke {weekNum}
-          </h1>
-          <p style={{ color: C.textMuted, fontSize: "0.8rem", margin: "0.2rem 0 0" }}>
-            Rakel · Klikk på en rute for å legge til notat eller aktivitet
-          </p>
+        {/* Week nav header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem" }}>
+          <button onClick={() => navWeek(-1)} style={{ display: "flex", alignItems: "center", gap: "0.25rem", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "0.625rem", padding: "0.45rem 0.875rem", cursor: "pointer", color: C.textMid, fontSize: "0.875rem", fontWeight: 600 }}>
+            <ChevronLeft size={16} /> Forrige
+          </button>
+          <div style={{ textAlign: "center" }}>
+            <h1 style={{ color: C.text, fontSize: "1.3rem", fontWeight: 800, margin: 0, fontFamily: "Plus Jakarta Sans, sans-serif" }}>
+              Uke {weekNum} · {year}
+            </h1>
+            <p style={{ color: C.textMuted, fontSize: "0.75rem", margin: "0.15rem 0 0" }}>
+              Klikk en rute for å legge til eller redigere
+            </p>
+          </div>
+          <button onClick={() => navWeek(1)} style={{ display: "flex", alignItems: "center", gap: "0.25rem", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "0.625rem", padding: "0.45rem 0.875rem", cursor: "pointer", color: C.textMid, fontSize: "0.875rem", fontWeight: 600 }}>
+            Neste <ChevronRight size={16} />
+          </button>
         </div>
 
         {/* Gåtur KPI */}
-        <div style={{
-          background: walksDone >= 3 ? C.green.bg : C.surface,
-          border: `1px solid ${walksDone >= 3 ? C.green.border : C.border}`,
-          borderRadius: "0.875rem", padding: "0.875rem 1.25rem",
-          marginBottom: "1.25rem", display: "flex", alignItems: "center", gap: "0.75rem",
-        }}>
+        <div style={{ background: walksDone >= 3 ? C.green.bg : C.surface, border: `1px solid ${walksDone >= 3 ? C.green.border : C.border}`, borderRadius: "0.875rem", padding: "0.875rem 1.25rem", marginBottom: "1.25rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>
           <span style={{ fontSize: "1.5rem" }}>🚶</span>
           <span style={{ color: walksDone >= 3 ? C.green.text : C.text, fontWeight: 700, fontSize: "0.9rem" }}>
-            Gåturer denne uka: {walksDone}/3{walksDone >= 3 ? " 🎉 Mål nådd!" : ""}
+            Gåturer: {walksDone}/3{walksDone >= 3 ? " 🎉 Mål nådd!" : ""}
           </span>
           <div style={{ flex: 1 }} />
           {walks.map(w => (
-            <button key={w.id} onClick={e => toggleDone(w.id, !w.is_completed, e)}
-              style={{ background: "none", border: "none", cursor: "pointer", padding: "0.25rem" }} title={w.title}>
+            <button key={w.id} onClick={e => toggleDone(w.id, !w.is_completed, e)} style={{ background: "none", border: "none", cursor: "pointer", padding: "0.25rem" }} title={w.title}>
               {w.is_completed ? <CheckCircle2 size={22} color={C.green.text} /> : <Circle size={22} color={C.textMuted} />}
             </button>
           ))}
@@ -181,96 +234,51 @@ export default function UkeplanClient({ weekNum, year, activities: initActs }: P
 
         {/* Grid */}
         <div style={{ overflowX: "auto" }}>
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: `72px repeat(5, 1fr)`,
-            gap: 3, minWidth: 580,
-          }}>
-            {/* Day headers */}
+          <div style={{ display: "grid", gridTemplateColumns: `68px repeat(5, 1fr)`, gap: 3, minWidth: 560 }}>
             <div />
             {DAYS.map(d => (
-              <div key={d} style={{
-                background: C.primary, color: "#fff",
-                padding: "0.5rem", borderRadius: "0.5rem",
-                textAlign: "center", fontWeight: 700, fontSize: "0.8rem",
-              }}>{d}</div>
+              <div key={d} style={{ background: C.primary, color: "#fff", padding: "0.5rem", borderRadius: "0.5rem", textAlign: "center", fontWeight: 700, fontSize: "0.8rem" }}>{d}</div>
             ))}
 
-            {/* Rows */}
             {SLOTS.map(({ slot, label }) => (
               <>
-                <div key={`t${slot}`} style={{
-                  color: C.textMuted, fontSize: "0.72rem", fontWeight: 600,
-                  display: "flex", alignItems: "flex-start", justifyContent: "flex-end",
-                  paddingRight: "0.5rem", paddingTop: "0.625rem",
-                }}>
+                <div key={`t${slot}`} style={{ color: C.textMuted, fontSize: "0.7rem", fontWeight: 600, display: "flex", alignItems: "flex-start", justifyContent: "flex-end", paddingRight: "0.5rem", paddingTop: "0.6rem" }}>
                   {label}
                 </div>
 
-                {DAYS.map((_, dayIdx) => {
-                  const day  = dayIdx + 1;
+                {DAYS.map((_, di) => {
+                  const day  = di + 1;
                   const key  = `${day}-${slot}`;
-                  const faste = RAKELS_FASTE[key];
-                  const cellItems = acts.filter(a => a.day_of_week === day && a.time_slot === slot);
-                  const hasNotes  = cellItems.length > 0;
+                  const fas  = RAKELS_FASTE[key];
+                  const items = acts.filter(a => a.day_of_week === day && a.time_slot === slot);
 
                   return (
-                    <div
-                      key={key}
-                      onClick={() => openCell(day, slot)}
-                      style={{
-                        minHeight: 72, borderRadius: "0.5rem",
-                        background: faste ? faste.color + "88" : C.surface,
-                        border: `1px solid ${faste ? faste.color : C.border}`,
-                        padding: "0.4rem 0.5rem",
-                        cursor: "pointer",
-                        position: "relative",
-                        transition: "filter 0.1s",
-                      }}
+                    <div key={key} onClick={() => openCell(day, slot)}
                       onMouseEnter={e => (e.currentTarget.style.filter = "brightness(0.96)")}
                       onMouseLeave={e => (e.currentTarget.style.filter = "")}
+                      style={{ minHeight: 72, borderRadius: "0.5rem", background: fas ? fas.color + "88" : C.surface, border: `1px solid ${fas ? fas.color : C.border}`, padding: "0.4rem 0.5rem", cursor: "pointer", position: "relative" }}
                     >
-                      {faste && (
-                        <div style={{ color: C.textMid, fontSize: "0.69rem", fontWeight: 700, marginBottom: "0.25rem" }}>
-                          {faste.label}
-                        </div>
-                      )}
-
-                      {cellItems.map(a => {
+                      {fas && <div style={{ color: C.textMid, fontSize: "0.69rem", fontWeight: 700, marginBottom: "0.2rem" }}>{fas.label}</div>}
+                      {items.map(a => {
                         const ac = ACT_COLORS[a.activity_type] ?? ACT_COLORS.other;
                         return (
-                          <div key={a.id} style={{ marginTop: "0.2rem" }}>
+                          <div key={a.id} style={{ marginTop: "0.15rem" }}>
                             <div
                               onClick={e => { e.stopPropagation(); toggleDone(a.id, !a.is_completed); }}
-                              style={{
-                                background: ac.bg, border: `1px solid ${ac.border}`,
-                                borderRadius: "0.35rem", padding: "0.15rem 0.4rem",
-                                fontSize: "0.66rem", color: ac.text, fontWeight: 600,
-                                cursor: "pointer",
-                                textDecoration: a.is_completed ? "line-through" : "none",
-                                opacity: a.is_completed ? 0.6 : 1,
-                              }}
+                              style={{ background: ac.bg, border: `1px solid ${ac.border}`, borderRadius: "0.35rem", padding: "0.15rem 0.4rem", fontSize: "0.66rem", color: ac.text, fontWeight: 600, cursor: "pointer", textDecoration: a.is_completed ? "line-through" : "none", opacity: a.is_completed ? 0.6 : 1 }}
                             >
                               {a.is_completed ? "✓ " : ""}{a.title}
                             </div>
                             {a.description && (
-                              <div style={{ fontSize: "0.6rem", color: C.textMuted, padding: "0.1rem 0.4rem", lineHeight: 1.4 }}>
-                                {a.description.length > 50 ? a.description.slice(0, 50) + "…" : a.description}
+                              <div style={{ fontSize: "0.59rem", color: C.textMuted, padding: "0.05rem 0.4rem", lineHeight: 1.4 }}>
+                                {a.description.length > 45 ? a.description.slice(0, 45) + "…" : a.description}
                               </div>
                             )}
                           </div>
                         );
                       })}
-
-                      {/* Add hint on hover — tiny + icon */}
-                      {!hasNotes && !faste && (
-                        <div style={{
-                          position: "absolute", bottom: 4, right: 4,
-                          color: C.border, fontSize: "1rem", lineHeight: 1,
-                          pointerEvents: "none",
-                        }}>
-                          +
-                        </div>
+                      {!items.length && !fas && (
+                        <div style={{ position: "absolute", bottom: 4, right: 5, color: C.border, fontSize: "0.9rem", pointerEvents: "none" }}>+</div>
                       )}
                     </div>
                   );
@@ -281,118 +289,188 @@ export default function UkeplanClient({ weekNum, year, activities: initActs }: P
         </div>
 
         {/* Legend */}
-        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginTop: "1rem" }}>
-          {[
-            { color: "#bbdefb", label: "Engelsk" },
-            { color: "#d1c4e9", label: "Språk" },
-            { color: "#c8e6c9", label: "Matte" },
-          ].map(l => (
-            <div key={l.label} style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
-              <div style={{ width: 13, height: 13, borderRadius: 3, background: l.color }} />
-              <span style={{ color: C.textMuted, fontSize: "0.75rem" }}>{l.label}</span>
+        <div style={{ display: "flex", gap: "0.875rem", flexWrap: "wrap", marginTop: "0.875rem", alignItems: "center" }}>
+          {[{ color: "#bbdefb", label: "Engelsk" }, { color: "#d1c4e9", label: "Språk" }, { color: "#c8e6c9", label: "Matte" }].map(l => (
+            <div key={l.label} style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
+              <div style={{ width: 12, height: 12, borderRadius: 2, background: l.color }} />
+              <span style={{ color: C.textMuted, fontSize: "0.72rem" }}>{l.label}</span>
             </div>
           ))}
-          <span style={{ color: C.textMuted, fontSize: "0.75rem" }}>· Klikk en aktivitet for å krysse av</span>
+          <span style={{ color: C.border, fontSize: "0.72rem" }}>·</span>
+          <span style={{ color: C.textMuted, fontSize: "0.72rem" }}>Klikk aktivitet for å krysse av / klikk rute for å redigere</span>
         </div>
 
-        {/* Aktiviteter uten tidspunkt */}
-        {acts.filter(a => !a.time_slot).length > 0 && (
-          <div style={{ marginTop: "1.5rem", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "1rem", overflow: "hidden" }}>
-            <div style={{ padding: "0.75rem 1.25rem", borderBottom: `1px solid ${C.border}`, color: C.text, fontWeight: 700, fontSize: "0.875rem" }}>
-              Aktiviteter uten fast tid
-            </div>
-            {acts.filter(a => !a.time_slot).map(a => {
-              const ac = ACT_COLORS[a.activity_type] ?? ACT_COLORS.other;
-              return (
-                <div key={a.id} style={{ display: "flex", alignItems: "flex-start", gap: "0.75rem", padding: "0.75rem 1.25rem", borderBottom: `1px solid ${C.border}` }}>
-                  <button onClick={() => toggleDone(a.id, !a.is_completed)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, marginTop: 2 }}>
-                    {a.is_completed ? <CheckCircle2 size={20} color={C.green.text} /> : <Circle size={20} color={C.textMuted} />}
-                  </button>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ color: a.is_completed ? C.textMuted : C.text, fontSize: "0.875rem", textDecoration: a.is_completed ? "line-through" : "none" }}>
-                      {ACT_LABELS[a.activity_type] ?? a.activity_type} · {a.title}
-                    </div>
-                    {a.description && (
-                      <div style={{ color: C.textMuted, fontSize: "0.78rem", marginTop: "0.2rem" }}>{a.description}</div>
-                    )}
-                  </div>
-                  <span style={{ color: C.textMuted, fontSize: "0.75rem" }}>{DAY_FULL[a.day_of_week]}</span>
+        {/* ── Ukessammendrag ─────────────────────────────────────────────────── */}
+        {total > 0 && (
+          <div style={{ marginTop: "2rem" }}>
+            <h2 style={{ color: C.text, fontSize: "1rem", fontWeight: 700, marginBottom: "0.875rem", fontFamily: "Plus Jakarta Sans, sans-serif" }}>
+              Ukessammendrag
+            </h2>
+
+            {/* Stats row */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "0.625rem", marginBottom: "1.25rem" }}>
+              {/* Total */}
+              <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: "0.875rem", padding: "0.875rem 1rem" }}>
+                <div style={{ color: C.textMuted, fontSize: "0.72rem", fontWeight: 600 }}>Totalt</div>
+                <div style={{ color: C.text, fontSize: "1.4rem", fontWeight: 800, lineHeight: 1.2 }}>{completed}<span style={{ fontSize: "0.875rem", color: C.textMuted }}>/{total}</span></div>
+                <div style={{ color: C.textMuted, fontSize: "0.72rem" }}>fullført</div>
+              </div>
+
+              {/* Gåturer */}
+              <div style={{ background: walksDone >= 3 ? C.green.bg : C.surface, border: `1px solid ${walksDone >= 3 ? C.green.border : C.border}`, borderRadius: "0.875rem", padding: "0.875rem 1rem" }}>
+                <div style={{ color: C.textMuted, fontSize: "0.72rem", fontWeight: 600 }}>Gåturer</div>
+                <div style={{ color: walksDone >= 3 ? C.green.text : C.text, fontSize: "1.4rem", fontWeight: 800, lineHeight: 1.2 }}>{walksDone}<span style={{ fontSize: "0.875rem", color: C.textMuted }}>/3</span></div>
+                <div style={{ color: C.textMuted, fontSize: "0.72rem" }}>{walksDone >= 3 ? "🎉 Mål nådd" : `${3 - walksDone} igjen`}</div>
+              </div>
+
+              {/* By type */}
+              {byType.filter(b => b.type !== "walk").map(b => (
+                <div key={b.type} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: "0.875rem", padding: "0.875rem 1rem" }}>
+                  <div style={{ color: C.textMuted, fontSize: "0.72rem", fontWeight: 600 }}>{b.label}</div>
+                  <div style={{ color: C.text, fontSize: "1.4rem", fontWeight: 800, lineHeight: 1.2 }}>{b.done}<span style={{ fontSize: "0.875rem", color: C.textMuted }}>/{b.count}</span></div>
+                  <div style={{ color: C.textMuted, fontSize: "0.72rem" }}>fullført</div>
                 </div>
-              );
-            })}
+              ))}
+            </div>
+
+            {/* Activities with notes */}
+            {withNotes.length > 0 && (
+              <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: "1rem", overflow: "hidden" }}>
+                <div style={{ padding: "0.75rem 1.25rem", borderBottom: `1px solid ${C.border}`, color: C.text, fontWeight: 700, fontSize: "0.875rem" }}>
+                  📝 Notater og logger denne uka
+                </div>
+                {withNotes.map(a => {
+                  const ac = ACT_COLORS[a.activity_type] ?? ACT_COLORS.other;
+                  return (
+                    <div key={a.id} style={{ display: "flex", gap: "0.75rem", padding: "0.875rem 1.25rem", borderBottom: `1px solid ${C.border}`, alignItems: "flex-start" }}>
+                      <div style={{ flexShrink: 0, marginTop: 2 }}>
+                        {a.is_completed ? <CheckCircle2 size={16} color={C.green.text} /> : <Circle size={16} color={C.textMuted} />}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap", marginBottom: "0.25rem" }}>
+                          <span style={{ color: C.text, fontWeight: 600, fontSize: "0.875rem" }}>{a.title}</span>
+                          <span style={{ fontSize: "0.7rem", padding: "0.1rem 0.45rem", borderRadius: "99px", background: ac.bg, color: ac.text, border: `1px solid ${ac.border}` }}>
+                            {ACT_LABELS[a.activity_type] ?? a.activity_type}
+                          </span>
+                          <span style={{ color: C.textMuted, fontSize: "0.72rem" }}>
+                            {DAY_FULL[a.day_of_week]}{a.time_slot ? ` · ${SLOTS.find(s => s.slot === a.time_slot)?.label}` : ""}
+                          </span>
+                        </div>
+                        <div style={{ color: C.textMid, fontSize: "0.82rem", lineHeight: 1.55 }}>{a.description}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* All activities (no notes) */}
+            {acts.filter(a => !a.description).length > 0 && (
+              <div style={{ marginTop: "0.875rem", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "1rem", overflow: "hidden" }}>
+                <div style={{ padding: "0.75rem 1.25rem", borderBottom: `1px solid ${C.border}`, color: C.text, fontWeight: 700, fontSize: "0.875rem" }}>
+                  Alle aktiviteter
+                </div>
+                {acts.filter(a => !a.description).map(a => {
+                  const ac = ACT_COLORS[a.activity_type] ?? ACT_COLORS.other;
+                  return (
+                    <div key={a.id} style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.625rem 1.25rem", borderBottom: `1px solid ${C.border}` }}>
+                      <button onClick={() => toggleDone(a.id, !a.is_completed)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, flexShrink: 0 }}>
+                        {a.is_completed ? <CheckCircle2 size={17} color={C.green.text} /> : <Circle size={17} color={C.textMuted} />}
+                      </button>
+                      <span style={{ flex: 1, color: a.is_completed ? C.textMuted : C.text, fontSize: "0.85rem", textDecoration: a.is_completed ? "line-through" : "none" }}>
+                        {a.title}
+                      </span>
+                      <span style={{ fontSize: "0.68rem", padding: "0.1rem 0.4rem", borderRadius: "99px", background: ac.bg, color: ac.text, border: `1px solid ${ac.border}` }}>
+                        {ACT_LABELS[a.activity_type] ?? a.activity_type}
+                      </span>
+                      <span style={{ color: C.textMuted, fontSize: "0.72rem" }}>{DAY_FULL[a.day_of_week]}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
       </div>
 
-      {/* Cell modal (bottom sheet) */}
+      {/* ── Cell modal ─────────────────────────────────────────────────────────── */}
       {cell && (
-        <div
-          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 200, padding: "1rem" }}
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 200, padding: "0.75rem" }}
           onClick={e => e.target === e.currentTarget && setCell(null)}
         >
-          <div style={{ background: C.surface, borderRadius: "1.25rem 1.25rem 1rem 1rem", padding: "1.5rem", width: "100%", maxWidth: 520, maxHeight: "85vh", overflowY: "auto" }}>
+          <div style={{ background: C.surface, borderRadius: "1.25rem 1.25rem 1rem 1rem", padding: "1.5rem", width: "100%", maxWidth: 520, maxHeight: "88vh", overflowY: "auto" }}>
 
-            {/* Modal header */}
+            {/* Header */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.25rem" }}>
               <div>
                 <div style={{ color: C.text, fontWeight: 800, fontSize: "1rem" }}>
                   {DAY_FULL[cell.day]} · {SLOTS.find(s => s.slot === cell.slot)?.label}
                 </div>
-                {cell.faste && (
-                  <div style={{
-                    display: "inline-block", marginTop: "0.3rem",
-                    background: cell.faste.color + "88", padding: "0.2rem 0.6rem",
-                    borderRadius: "0.375rem", fontSize: "0.78rem", fontWeight: 700, color: C.textMid,
-                  }}>
-                    {cell.faste.label}
-                  </div>
+                {faste && (
+                  <span style={{ display: "inline-block", marginTop: "0.3rem", background: faste.color + "88", padding: "0.2rem 0.6rem", borderRadius: "0.375rem", fontSize: "0.78rem", fontWeight: 700, color: C.textMid }}>
+                    {faste.label}
+                  </span>
                 )}
               </div>
-              <button onClick={() => setCell(null)} style={{ background: "none", border: "none", cursor: "pointer", padding: "0.25rem" }}>
+              <button onClick={() => { setCell(null); setEdit(null); }} style={{ background: "none", border: "none", cursor: "pointer" }}>
                 <X size={20} color={C.textMuted} />
               </button>
             </div>
 
-            {/* Existing activities in this cell */}
+            {/* Existing activities */}
             {cellActs.length > 0 && (
               <div style={{ marginBottom: "1.25rem" }}>
-                <div style={{ color: C.textMuted, fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.5rem" }}>
-                  Aktiviteter
+                <div style={{ color: C.textMuted, fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.5rem" }}>
+                  Aktiviteter i denne ruten
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                   {cellActs.map(a => {
                     const ac = ACT_COLORS[a.activity_type] ?? ACT_COLORS.other;
+                    const isEditing = edit?.id === a.id;
+
+                    if (isEditing) {
+                      return (
+                        <form key={a.id} onSubmit={handleUpdate} style={{ background: C.surfaceLow, border: `1px solid ${C.border}`, borderRadius: "0.75rem", padding: "0.875rem" }}>
+                          <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap", marginBottom: "0.625rem" }}>
+                            {Object.entries(ACT_LABELS).map(([v, l]) => (
+                              <button key={v} type="button" onClick={() => setEdit(ed => ed ? { ...ed, activity_type: v } : ed)}
+                                style={{ padding: "0.25rem 0.6rem", borderRadius: "99px", fontSize: "0.72rem", fontWeight: 600, border: `1.5px solid ${edit.activity_type === v ? C.primary : C.border}`, background: edit.activity_type === v ? C.surfaceLow : C.surface, color: edit.activity_type === v ? C.primary : C.textMuted, cursor: "pointer" }}>
+                                {l}
+                              </button>
+                            ))}
+                          </div>
+                          <input value={edit.title} onChange={e => setEdit(ed => ed ? { ...ed, title: e.target.value } : ed)} required style={{ ...inp, marginBottom: "0.5rem" }} />
+                          <textarea value={edit.description} onChange={e => setEdit(ed => ed ? { ...ed, description: e.target.value } : ed)} rows={2} placeholder="Notat (valgfritt)" style={{ ...inp, resize: "vertical", marginBottom: "0.625rem" }} />
+                          <div style={{ display: "flex", gap: "0.5rem" }}>
+                            <button type="submit" disabled={saving} style={{ flex: 1, background: C.primary, color: "#fff", border: "none", borderRadius: "0.5rem", padding: "0.55rem", fontSize: "0.85rem", fontWeight: 700, cursor: "pointer" }}>
+                              {saving ? "…" : "Lagre"}
+                            </button>
+                            <button type="button" onClick={() => handleDelete(a.id)} style={{ background: C.red.bg, border: `1px solid ${C.red.border}`, borderRadius: "0.5rem", padding: "0.55rem 0.75rem", cursor: "pointer" }}>
+                              <Trash2 size={15} color={C.red.text} />
+                            </button>
+                            <button type="button" onClick={() => setEdit(null)} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: "0.5rem", padding: "0.55rem 0.75rem", cursor: "pointer" }}>
+                              <X size={15} color={C.textMuted} />
+                            </button>
+                          </div>
+                        </form>
+                      );
+                    }
+
                     return (
-                      <div key={a.id} style={{
-                        display: "flex", alignItems: "flex-start", gap: "0.75rem",
-                        background: a.is_completed ? C.green.bg : ac.bg,
-                        border: `1px solid ${a.is_completed ? C.green.border : ac.border}`,
-                        borderRadius: "0.625rem", padding: "0.625rem 0.875rem",
-                      }}>
-                        <button
-                          onClick={() => toggleDone(a.id, !a.is_completed)}
-                          style={{ background: "none", border: "none", cursor: "pointer", padding: 0, marginTop: 1, flexShrink: 0 }}
-                        >
-                          {a.is_completed
-                            ? <CheckCircle2 size={18} color={C.green.text} />
-                            : <Circle size={18} color={ac.text} />
-                          }
+                      <div key={a.id} style={{ display: "flex", alignItems: "flex-start", gap: "0.75rem", background: a.is_completed ? C.green.bg : ac.bg, border: `1px solid ${a.is_completed ? C.green.border : ac.border}`, borderRadius: "0.625rem", padding: "0.625rem 0.875rem" }}>
+                        <button onClick={() => toggleDone(a.id, !a.is_completed)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, marginTop: 1, flexShrink: 0 }}>
+                          {a.is_completed ? <CheckCircle2 size={18} color={C.green.text} /> : <Circle size={18} color={ac.text} />}
                         </button>
                         <div style={{ flex: 1 }}>
-                          <div style={{
-                            color: a.is_completed ? C.green.text : ac.text,
-                            fontWeight: 600, fontSize: "0.875rem",
-                            textDecoration: a.is_completed ? "line-through" : "none",
-                          }}>
+                          <div style={{ color: a.is_completed ? C.green.text : ac.text, fontWeight: 600, fontSize: "0.875rem", textDecoration: a.is_completed ? "line-through" : "none" }}>
                             {a.title}
                           </div>
-                          {a.description && (
-                            <div style={{ color: C.textMid, fontSize: "0.8rem", marginTop: "0.2rem", lineHeight: 1.5 }}>
-                              {a.description}
-                            </div>
-                          )}
+                          {a.description && <div style={{ color: C.textMid, fontSize: "0.8rem", marginTop: "0.2rem", lineHeight: 1.5 }}>{a.description}</div>}
                         </div>
+                        <button onClick={e => openEdit(a, e)} style={{ background: "none", border: "none", cursor: "pointer", padding: "0.1rem", flexShrink: 0 }} title="Rediger">
+                          <PenLine size={14} color={C.textMuted} />
+                        </button>
                       </div>
                     );
                   })}
@@ -400,68 +478,34 @@ export default function UkeplanClient({ weekNum, year, activities: initActs }: P
               </div>
             )}
 
-            {/* Add form */}
-            <div style={{ borderTop: cellActs.length > 0 ? `1px solid ${C.border}` : "none", paddingTop: cellActs.length > 0 ? "1.25rem" : 0 }}>
-              <div style={{ color: C.textMuted, fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.75rem" }}>
-                <PenLine size={12} style={{ display: "inline", marginRight: 4 }} />
-                {cell.faste ? "Legg til notat / logg" : "Legg til aktivitet"}
+            {/* Add new */}
+            {!edit && (
+              <div style={{ borderTop: cellActs.length > 0 ? `1px solid ${C.border}` : "none", paddingTop: cellActs.length > 0 ? "1.25rem" : 0 }}>
+                <div style={{ color: C.textMuted, fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.75rem" }}>
+                  {cellActs.length > 0 ? "Legg til ny" : (faste ? "Logg hva du gjorde" : "Legg til aktivitet")}
+                </div>
+                <form onSubmit={handleAdd} style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                  <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
+                    {Object.entries(ACT_LABELS).map(([v, l]) => (
+                      <button key={v} type="button" onClick={() => setForm(f => ({ ...f, type: v }))}
+                        style={{ padding: "0.28rem 0.65rem", borderRadius: "99px", fontSize: "0.73rem", fontWeight: 600, border: `1.5px solid ${form.type === v ? C.primary : C.border}`, background: form.type === v ? C.surfaceLow : C.surface, color: form.type === v ? C.primary : C.textMuted, cursor: "pointer" }}>
+                        {l}
+                      </button>
+                    ))}
+                  </div>
+                  <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} required
+                    placeholder={faste ? `F.eks. «Leste kap 3 og svarte på spørsmål»` : "Tittel"}
+                    style={inp} />
+                  <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2}
+                    placeholder="Notat / mer info (valgfritt)"
+                    style={{ ...inp, resize: "vertical" }} />
+                  <button type="submit" disabled={saving || !form.title.trim()}
+                    style={{ background: saving || !form.title.trim() ? "#a8c7db" : C.primary, color: "#fff", border: "none", borderRadius: "0.625rem", padding: "0.7rem", fontSize: "0.875rem", fontWeight: 700, cursor: saving || !form.title.trim() ? "not-allowed" : "pointer" }}>
+                    {saving ? "Lagrer…" : "Legg til"}
+                  </button>
+                </form>
               </div>
-
-              <form onSubmit={handleAdd} style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                {/* Type selector — compact pills */}
-                <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
-                  {Object.entries(ACT_LABELS).map(([v, l]) => (
-                    <button
-                      key={v}
-                      type="button"
-                      onClick={() => setForm(f => ({ ...f, type: v }))}
-                      style={{
-                        padding: "0.3rem 0.7rem", borderRadius: "99px", fontSize: "0.75rem", fontWeight: 600,
-                        border: `1.5px solid ${form.type === v ? C.primary : C.border}`,
-                        background: form.type === v ? C.surfaceLow : C.surface,
-                        color: form.type === v ? C.primary : C.textMuted,
-                        cursor: "pointer",
-                      }}
-                    >
-                      {l}
-                    </button>
-                  ))}
-                </div>
-
-                <div>
-                  <input
-                    value={form.title}
-                    onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                    placeholder={cell.faste ? `F.eks. «Leste kap 3 og svarte på spørsmål»` : `Tittel på aktivitet`}
-                    required
-                    style={inputStyle}
-                  />
-                </div>
-
-                <div>
-                  <textarea
-                    value={form.description}
-                    onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                    placeholder="Notat / mer info (valgfritt) — f.eks. hva som gikk bra, hva var vanskelig"
-                    rows={3}
-                    style={{ ...inputStyle, resize: "vertical", lineHeight: 1.5 }}
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={saving || !form.title.trim()}
-                  style={{
-                    background: saving || !form.title.trim() ? "#a8c7db" : C.primary,
-                    color: "#fff", border: "none", borderRadius: "0.625rem",
-                    padding: "0.7rem", fontSize: "0.875rem", fontWeight: 700,
-                    cursor: saving || !form.title.trim() ? "not-allowed" : "pointer",
-                  }}
-                >
-                  {saving ? "Lagrer…" : "Legg til"}
-                </button>
-              </form>
-            </div>
+            )}
 
           </div>
         </div>

@@ -9,15 +9,20 @@ function getWeekNumber(d: Date) {
   return Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
 }
 
-export default async function UkeplanPage() {
+interface Props {
+  searchParams: Promise<{ week?: string; year?: string }>;
+}
+
+export default async function UkeplanPage({ searchParams }: Props) {
   const ctx = await getActiveContext();
   if (!ctx) return null;
 
-  const sb = await createClient();
+  const sp   = await searchParams;
   const now  = new Date();
-  const week = getWeekNumber(now);
-  const year = now.getFullYear();
+  const week = sp.week ? Number(sp.week) : getWeekNumber(now);
+  const year = sp.year ? Number(sp.year) : now.getFullYear();
 
+  const sb = await createClient();
   const { data: activities } = await sb
     .from("school_week_activities")
     .select("id, day_of_week, time_slot, activity_type, title, description, is_completed")
