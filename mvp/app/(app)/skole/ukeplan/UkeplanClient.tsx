@@ -8,7 +8,8 @@ import {
   updateWeekActivity,
   deleteWeekActivity,
 } from "@/lib/actions/school_reading";
-import { CheckCircle2, Circle, PenLine, Trash2, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { CheckCircle2, Circle, PenLine, Trash2, X, ChevronLeft, ChevronRight, Upload } from "lucide-react";
+import ImportModal from "./ImportModal";
 
 const C = {
   bg:         "#f6faff",
@@ -21,6 +22,7 @@ const C = {
   primary:    "#1c648e",
   green:  { bg: "#e8f5e9", border: "#81c784", text: "#2c6956" },
   red:    { bg: "#fde8e8", border: "#f28b82", text: "#b71c1c" },
+  yellow: { bg: "#fffde7", border: "#f9c74f", text: "#765b06" },
 };
 
 const RAKELS_FASTE: Record<string, { label: string; color: string }> = {
@@ -70,8 +72,13 @@ type Activity = {
   activity_type: string;
   title: string;
   description: string | null;
+  forberedelse: string | null;
+  tema: string | null;
+  mal: string | null;
   is_completed: boolean;
 };
+
+type Notice = { id: string; content: string };
 
 type CellCtx = { day: number; slot: number };
 type EditState = { id: string; title: string; description: string; activity_type: string } | null;
@@ -86,17 +93,18 @@ function offsetWeek(week: number, year: number, delta: number) {
   return { w, y };
 }
 
-interface Props { weekNum: number; year: number; activities: Activity[] }
+interface Props { weekNum: number; year: number; activities: Activity[]; notices: Notice[] }
 
-export default function UkeplanClient({ weekNum, year, activities: initActs }: Props) {
+export default function UkeplanClient({ weekNum, year, activities: initActs, notices }: Props) {
   const router = useRouter();
   const [acts, setActs]       = useState(initActs);
   const [, startTrans]        = useTransition();
   const [cell, setCell]       = useState<CellCtx | null>(null);
   const [form, setForm]       = useState(EMPTY_FORM);
   const [edit, setEdit]       = useState<EditState>(null);
-  const [saving, setSaving]   = useState(false);
+  const [saving, setSaving]     = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [importOpen, setImportOpen] = useState(false);
 
   // Sync when server re-renders with fresh data after revalidatePath
   useEffect(() => { setActs(initActs); }, [initActs]);
@@ -227,6 +235,25 @@ export default function UkeplanClient({ weekNum, year, activities: initActs }: P
           </button>
         </div>
 
+        {/* Import button */}
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "0.875rem" }}>
+          <button onClick={() => setImportOpen(true)} style={{ display: "flex", alignItems: "center", gap: "0.4rem", background: C.surfaceLow, border: `1px solid ${C.border}`, borderRadius: "0.625rem", padding: "0.45rem 0.875rem", cursor: "pointer", color: C.primary, fontSize: "0.8rem", fontWeight: 600 }}>
+            <Upload size={14} /> Last inn Word-ukeplan
+          </button>
+        </div>
+
+        {/* Notices banner */}
+        {notices.length > 0 && (
+          <div style={{ background: C.yellow.bg, border: `1px solid ${C.yellow.border}`, borderRadius: "0.875rem", padding: "0.875rem 1.1rem", marginBottom: "1.25rem" }}>
+            <div style={{ color: C.yellow.text, fontWeight: 700, fontSize: "0.8rem", marginBottom: "0.5rem" }}>📢 Beskjeder uke {weekNum}</div>
+            <ul style={{ margin: 0, paddingLeft: "1.25rem" }}>
+              {notices.map(n => (
+                <li key={n.id} style={{ color: C.yellow.text, fontSize: "0.8rem", lineHeight: 1.6 }}>{n.content}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {/* Gåtur KPI */}
         <div style={{ background: walksDone >= 3 ? C.green.bg : C.surface, border: `1px solid ${walksDone >= 3 ? C.green.border : C.border}`, borderRadius: "0.875rem", padding: "0.875rem 1.25rem", marginBottom: "1.25rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>
           <span style={{ fontSize: "1.5rem" }}>🚶</span>
@@ -281,6 +308,11 @@ export default function UkeplanClient({ weekNum, year, activities: initActs }: P
                             {a.description && (
                               <div style={{ fontSize: "0.59rem", color: C.textMuted, padding: "0.05rem 0.4rem", lineHeight: 1.4 }}>
                                 {a.description.length > 45 ? a.description.slice(0, 45) + "…" : a.description}
+                              </div>
+                            )}
+                            {a.forberedelse && (
+                              <div style={{ fontSize: "0.59rem", color: C.yellow.text, padding: "0.05rem 0.4rem", fontWeight: 600 }}>
+                                📝 {a.forberedelse.length > 35 ? a.forberedelse.slice(0, 35) + "…" : a.forberedelse}
                               </div>
                             )}
                           </div>
@@ -403,6 +435,16 @@ export default function UkeplanClient({ weekNum, year, activities: initActs }: P
 
       </div>
 
+      {/* ── Import modal ───────────────────────────────────────────────────────── */}
+      {importOpen && (
+        <ImportModal
+          weekNum={weekNum}
+          year={year}
+          onClose={() => setImportOpen(false)}
+          onImported={() => router.refresh()}
+        />
+      )}
+
       {/* ── Cell modal ─────────────────────────────────────────────────────────── */}
       {cell && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 200, padding: "0.75rem" }}
@@ -475,7 +517,12 @@ export default function UkeplanClient({ weekNum, year, activities: initActs }: P
                           <div style={{ color: a.is_completed ? C.green.text : ac.text, fontWeight: 600, fontSize: "0.875rem", textDecoration: a.is_completed ? "line-through" : "none" }}>
                             {a.title}
                           </div>
-                          {a.description && <div style={{ color: C.textMid, fontSize: "0.8rem", marginTop: "0.2rem", lineHeight: 1.5 }}>{a.description}</div>}
+                          {a.description && <div style={{ color: C.textMid, fontSize: "0.8rem", marginTop: "0.2rem", lineHeight: 1.5, whiteSpace: "pre-line" }}>{a.description}</div>}
+                          {a.forberedelse && (
+                            <div style={{ marginTop: "0.4rem", background: C.yellow.bg, border: `1px solid ${C.yellow.border}`, borderRadius: "0.375rem", padding: "0.3rem 0.55rem", color: C.yellow.text, fontSize: "0.75rem", fontWeight: 600 }}>
+                              📝 Forberedelse: {a.forberedelse}
+                            </div>
+                          )}
                         </div>
                         <button onClick={e => openEdit(a, e)} style={{ background: "none", border: "none", cursor: "pointer", padding: "0.1rem", flexShrink: 0 }} title="Rediger">
                           <PenLine size={14} color={C.textMuted} />

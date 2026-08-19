@@ -23,20 +23,30 @@ export default async function UkeplanPage({ searchParams }: Props) {
   const year = sp.year ? Number(sp.year) : now.getFullYear();
 
   const sb = await createClient();
-  const { data: activities } = await sb
-    .from("school_week_activities")
-    .select("id, day_of_week, time_slot, activity_type, title, description, is_completed")
-    .eq("group_id", ctx.group.id)
-    .eq("week_number", week)
-    .eq("year", year)
-    .order("day_of_week")
-    .order("time_slot");
+
+  const [{ data: activities }, { data: notices }] = await Promise.all([
+    sb.from("school_week_activities")
+      .select("id, day_of_week, time_slot, activity_type, title, description, forberedelse, tema, mal, is_completed")
+      .eq("group_id", ctx.group.id)
+      .eq("week_number", week)
+      .eq("year", year)
+      .order("day_of_week")
+      .order("time_slot"),
+
+    sb.from("school_week_notices")
+      .select("id, content")
+      .eq("group_id", ctx.group.id)
+      .eq("week_number", week)
+      .eq("year", year)
+      .order("created_at"),
+  ]);
 
   return (
     <UkeplanClient
       weekNum={week}
       year={year}
       activities={(activities ?? []) as any}
+      notices={(notices ?? []) as any}
     />
   );
 }
