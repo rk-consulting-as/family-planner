@@ -20,7 +20,7 @@ export default async function UkeplanPage() {
 
   const { data: activities } = await sb
     .from("school_week_activities")
-    .select("id, day_of_week, time_slot, activity_type, title, is_completed")
+    .select("id, day_of_week, time_slot, activity_type, title, description, is_completed")
     .eq("group_id", ctx.group.id)
     .eq("week_number", week)
     .eq("year", year)
