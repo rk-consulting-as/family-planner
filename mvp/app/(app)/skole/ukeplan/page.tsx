@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getActiveContext } from "@/lib/queries";
+import { getTimetable } from "@/lib/actions/timetable";
 import UkeplanClient from "./UkeplanClient";
 
 function getWeekNumber(d: Date) {
@@ -24,7 +25,7 @@ export default async function UkeplanPage({ searchParams }: Props) {
 
   const sb = await createClient();
 
-  const [{ data: activities }, { data: notices }] = await Promise.all([
+  const [{ data: activities }, { data: notices }, timetable] = await Promise.all([
     sb.from("school_week_activities")
       .select("id, day_of_week, time_slot, activity_type, title, description, forberedelse, tema, mal, is_completed")
       .eq("group_id", ctx.group.id)
@@ -39,6 +40,8 @@ export default async function UkeplanPage({ searchParams }: Props) {
       .eq("week_number", week)
       .eq("year", year)
       .order("created_at"),
+
+    getTimetable(),
   ]);
 
   return (
@@ -47,6 +50,7 @@ export default async function UkeplanPage({ searchParams }: Props) {
       year={year}
       activities={(activities ?? []) as any}
       notices={(notices ?? []) as any}
+      timetable={timetable}
     />
   );
 }
