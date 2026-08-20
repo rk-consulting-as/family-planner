@@ -85,6 +85,52 @@ type EditState = { id: string; title: string; description: string; activity_type
 
 const EMPTY_FORM = { type: "notat", title: "", description: "" };
 
+// ── Time indicator ────────────────────────────────────────────────────────────
+const ROW_H   = 82;  // px per slot row (fixed)
+const PAUSE_H = 34;  // px for matpause separator
+
+// Slot times in minutes from midnight
+const SLOT_TIMES = [
+  { slot: 1, start: 8*60+15, end: 9*60+0   },
+  { slot: 2, start: 9*60+10, end: 9*60+55  },
+  { slot: 3, start: 10*60+0, end: 10*60+48 },
+  // matpause 10:48–11:18
+  { slot: 4, start: 11*60+18, end: 12*60+6  },
+  { slot: 5, start: 12*60+10, end: 12*60+55 },
+  { slot: 6, start: 13*60+5,  end: 13*60+50 },
+];
+
+function getTimeLineTop(nowMin: number): number | null {
+  const SCHOOL_START = 8*60+15;
+  const SCHOOL_END   = 13*60+50;
+  if (nowMin < SCHOOL_START || nowMin > SCHOOL_END) return null;
+
+  for (let i = 0; i < SLOT_TIMES.length; i++) {
+    const s = SLOT_TIMES[i];
+    if (nowMin >= s.start && nowMin <= s.end) {
+      const frac       = (nowMin - s.start) / (s.end - s.start);
+      const pauseAbove = i >= 3 ? PAUSE_H : 0;  // matpause after slot 3
+      return i * ROW_H + pauseAbove + frac * ROW_H;
+    }
+  }
+  // During matpause (10:48–11:18)
+  if (nowMin > 10*60+48 && nowMin < 11*60+18) {
+    const frac = (nowMin - (10*60+48)) / 30;
+    return 3 * ROW_H + frac * PAUSE_H;
+  }
+  return null;
+}
+
+// Is today in the displayed week?
+function isCurrentWeek(weekNum: number, year: number): boolean {
+  const d    = new Date();
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  const wn  = Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return wn === weekNum && date.getUTCFullYear() === year;
+}
+
 // Week navigation helper
 function offsetWeek(week: number, year: number, delta: number) {
   let w = week + delta, y = year;
@@ -105,9 +151,21 @@ export default function UkeplanClient({ weekNum, year, activities: initActs, not
   const [saving, setSaving]     = useState(false);
   const [saveError, setSaveError] = useState("");
   const [importOpen, setImportOpen] = useState(false);
+  const [nowMin, setNowMin]         = useState<number>(() => {
+    const d = new Date(); return d.getHours() * 60 + d.getMinutes();
+  });
 
   // Sync when server re-renders with fresh data after revalidatePath
   useEffect(() => { setActs(initActs); }, [initActs]);
+
+  // Update current time every minute
+  useEffect(() => {
+    const tick = () => {
+      const d = new Date(); setNowMin(d.getHours() * 60 + d.getMinutes());
+    };
+    const id = setInterval(tick, 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   // ── Derived ──────────────────────────────────────────────────────────────────
   const walks      = acts.filter(a => a.activity_type === "walk");
@@ -269,65 +327,118 @@ export default function UkeplanClient({ weekNum, year, activities: initActs, not
         </div>
 
         {/* Grid */}
-        <div style={{ overflowX: "auto" }}>
-          <div style={{ display: "grid", gridTemplateColumns: `68px repeat(5, 1fr)`, gap: 3, minWidth: 560 }}>
-            <div />
-            {DAYS.map(d => (
-              <div key={d} style={{ background: C.primary, color: "#fff", padding: "0.5rem", borderRadius: "0.5rem", textAlign: "center", fontWeight: 700, fontSize: "0.8rem" }}>{d}</div>
-            ))}
+        {(() => {
+          const showLine = isCurrentWeek(weekNum, year);
+          const lineTop  = showLine ? getTimeLineTop(nowMin) : null;
+          // Header row height (day labels)
+          const HEADER_H = 38;
 
-            {SLOTS.map(({ slot, label }) => (
-              <>
-                <div key={`t${slot}`} style={{ color: C.textMuted, fontSize: "0.7rem", fontWeight: 600, display: "flex", alignItems: "flex-start", justifyContent: "flex-end", paddingRight: "0.5rem", paddingTop: "0.6rem" }}>
-                  {label}
-                </div>
+          return (
+            <div style={{ overflowX: "auto" }}>
+              <div style={{ display: "grid", gridTemplateColumns: `68px repeat(5, 1fr)`, gap: 3, minWidth: 560, position: "relative" }}>
 
-                {DAYS.map((_, di) => {
-                  const day  = di + 1;
-                  const key  = `${day}-${slot}`;
-                  const fas  = RAKELS_FASTE[key];
-                  const items = acts.filter(a => a.day_of_week === day && a.time_slot === slot);
+                {/* Day headers */}
+                <div />
+                {DAYS.map(d => (
+                  <div key={d} style={{ background: C.primary, color: "#fff", padding: "0.5rem", borderRadius: "0.5rem", textAlign: "center", fontWeight: 700, fontSize: "0.8rem" }}>{d}</div>
+                ))}
 
-                  return (
-                    <div key={key} onClick={() => openCell(day, slot)}
-                      onMouseEnter={e => (e.currentTarget.style.filter = "brightness(0.96)")}
-                      onMouseLeave={e => (e.currentTarget.style.filter = "")}
-                      style={{ minHeight: 72, borderRadius: "0.5rem", background: fas ? fas.color + "88" : C.surface, border: `1px solid ${fas ? fas.color : C.border}`, padding: "0.4rem 0.5rem", cursor: "pointer", position: "relative" }}
-                    >
-                      {fas && <div style={{ color: C.textMid, fontSize: "0.69rem", fontWeight: 700, marginBottom: "0.2rem" }}>{fas.label}</div>}
-                      {items.map(a => {
-                        const ac = ACT_COLORS[a.activity_type] ?? ACT_COLORS.other;
-                        return (
-                          <div key={a.id} style={{ marginTop: "0.15rem" }}>
-                            <div
-                              onClick={e => { e.stopPropagation(); toggleDone(a.id, !a.is_completed); }}
-                              style={{ background: ac.bg, border: `1px solid ${ac.border}`, borderRadius: "0.35rem", padding: "0.15rem 0.4rem", fontSize: "0.66rem", color: ac.text, fontWeight: 600, cursor: "pointer", textDecoration: a.is_completed ? "line-through" : "none", opacity: a.is_completed ? 0.6 : 1 }}
-                            >
-                              {a.is_completed ? "✓ " : ""}{a.title}
-                            </div>
-                            {a.description && (
-                              <div style={{ fontSize: "0.59rem", color: C.textMuted, padding: "0.05rem 0.4rem", lineHeight: 1.4 }}>
-                                {a.description.length > 45 ? a.description.slice(0, 45) + "…" : a.description}
-                              </div>
-                            )}
-                            {a.forberedelse && (
-                              <div style={{ fontSize: "0.59rem", color: C.yellow.text, padding: "0.05rem 0.4rem", fontWeight: 600 }}>
-                                📝 {a.forberedelse.length > 35 ? a.forberedelse.slice(0, 35) + "…" : a.forberedelse}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                      {!items.length && !fas && (
-                        <div style={{ position: "absolute", bottom: 4, right: 5, color: C.border, fontSize: "0.9rem", pointerEvents: "none" }}>+</div>
-                      )}
+                {/* Slot rows + matpause */}
+                {SLOTS.map(({ slot, label }, slotIdx) => (
+                  <>
+                    {/* Time label */}
+                    <div key={`t${slot}`} style={{ color: C.textMuted, fontSize: "0.7rem", fontWeight: 600, display: "flex", alignItems: "flex-start", justifyContent: "flex-end", paddingRight: "0.5rem", paddingTop: "0.6rem", height: ROW_H }}>
+                      {label}
                     </div>
-                  );
-                })}
-              </>
-            ))}
-          </div>
-        </div>
+
+                    {/* Day cells */}
+                    {DAYS.map((_, di) => {
+                      const day   = di + 1;
+                      const key   = `${day}-${slot}`;
+                      const fas   = RAKELS_FASTE[key];
+                      const items = acts.filter(a => a.day_of_week === day && a.time_slot === slot);
+
+                      return (
+                        <div key={key} onClick={() => openCell(day, slot)}
+                          onMouseEnter={e => (e.currentTarget.style.filter = "brightness(0.96)")}
+                          onMouseLeave={e => (e.currentTarget.style.filter = "")}
+                          style={{ height: ROW_H, borderRadius: "0.5rem", background: fas ? fas.color + "88" : C.surface, border: `1px solid ${fas ? fas.color : C.border}`, padding: "0.4rem 0.5rem", cursor: "pointer", position: "relative", overflow: "hidden" }}
+                        >
+                          {fas && <div style={{ color: C.textMid, fontSize: "0.69rem", fontWeight: 700, marginBottom: "0.2rem" }}>{fas.label}</div>}
+                          {items.map(a => {
+                            const ac = ACT_COLORS[a.activity_type] ?? ACT_COLORS.other;
+                            return (
+                              <div key={a.id} style={{ marginTop: "0.15rem" }}>
+                                <div
+                                  onClick={e => { e.stopPropagation(); toggleDone(a.id, !a.is_completed); }}
+                                  style={{ background: ac.bg, border: `1px solid ${ac.border}`, borderRadius: "0.35rem", padding: "0.15rem 0.4rem", fontSize: "0.66rem", color: ac.text, fontWeight: 600, cursor: "pointer", textDecoration: a.is_completed ? "line-through" : "none", opacity: a.is_completed ? 0.6 : 1 }}
+                                >
+                                  {a.is_completed ? "✓ " : ""}{a.title}
+                                </div>
+                                {a.description && (
+                                  <div style={{ fontSize: "0.59rem", color: C.textMuted, padding: "0.05rem 0.4rem", lineHeight: 1.4 }}>
+                                    {a.description.length > 45 ? a.description.slice(0, 45) + "…" : a.description}
+                                  </div>
+                                )}
+                                {a.forberedelse && (
+                                  <div style={{ fontSize: "0.59rem", color: C.yellow.text, padding: "0.05rem 0.4rem", fontWeight: 600 }}>
+                                    📝 {a.forberedelse.length > 35 ? a.forberedelse.slice(0, 35) + "…" : a.forberedelse}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                          {!items.length && !fas && (
+                            <div style={{ position: "absolute", bottom: 4, right: 5, color: C.border, fontSize: "0.9rem", pointerEvents: "none" }}>+</div>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {/* Matpause separator after slot 3 */}
+                    {slot === 3 && (
+                      <>
+                        {/* Empty time col */}
+                        <div style={{ height: PAUSE_H, display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: "0.5rem" }}>
+                          <span style={{ fontSize: "0.6rem", color: C.textMuted }}>mat</span>
+                        </div>
+                        {/* Pause row spanning all 5 day cols */}
+                        <div style={{ gridColumn: "2 / 7", height: PAUSE_H, display: "flex", alignItems: "center", justifyContent: "center", background: `repeating-linear-gradient(90deg, ${C.border} 0px, ${C.border} 4px, transparent 4px, transparent 12px)`, borderRadius: "0.375rem", gap: "0.5rem" }}>
+                          <span style={{ background: C.surface, padding: "0.15rem 0.6rem", borderRadius: "99px", border: `1px solid ${C.border}`, fontSize: "0.7rem", color: C.textMuted, fontWeight: 600, whiteSpace: "nowrap" }}>
+                            🍱 Matpause · 10:48–11:18
+                          </span>
+                        </div>
+                      </>
+                    )}
+                  </>
+                ))}
+
+                {/* ── Time indicator line ── */}
+                {lineTop !== null && (
+                  <div style={{
+                    position: "absolute",
+                    top: HEADER_H + lineTop,
+                    left: 71,   // after time label col + gap
+                    right: 0,
+                    height: 2,
+                    background: "#e53935",
+                    zIndex: 10,
+                    pointerEvents: "none",
+                    borderRadius: 2,
+                  }}>
+                    {/* Dot on left edge */}
+                    <div style={{ position: "absolute", left: -5, top: -4, width: 10, height: 10, borderRadius: "50%", background: "#e53935" }} />
+                    {/* Time label */}
+                    <div style={{ position: "absolute", right: 4, top: -9, fontSize: "0.65rem", fontWeight: 700, color: "#e53935", background: C.bg, padding: "0 3px", borderRadius: 3 }}>
+                      {String(Math.floor(nowMin / 60)).padStart(2, "0")}:{String(nowMin % 60).padStart(2, "0")}
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Legend */}
         <div style={{ display: "flex", gap: "0.875rem", flexWrap: "wrap", marginTop: "0.875rem", alignItems: "center" }}>
