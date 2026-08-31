@@ -46,12 +46,14 @@ export default function NyLesetreningPage() {
   const [step, setStep]         = useState<"ocr" | "questions" | "">("");
   const [error, setError]       = useState("");
 
+  const MAX_IMAGES = 8;
+
   function handleFiles(files: FileList | null) {
     if (!files) return;
-    const arr = Array.from(files).slice(0, 4 - images.length);
-    const newImages = [...images, ...arr].slice(0, 4);
+    const arr = Array.from(files).slice(0, MAX_IMAGES - images.length);
+    const newImages = [...images, ...arr].slice(0, MAX_IMAGES);
     setImages(newImages);
-    // generate previews
+    // generate previews for newly added images
     newImages.forEach((f, i) => {
       if (previews[i]) return;
       const reader = new FileReader();
@@ -89,7 +91,7 @@ export default function NyLesetreningPage() {
     fd.set("subject",     subject);
     fd.set("week_number", String(weekNum));
     fd.set("year",        String(new Date().getFullYear()));
-    images.forEach((f, i) => fd.set(`image_${i}`, f));
+    images.slice(0, MAX_IMAGES).forEach((f, i) => fd.set(`image_${i}`, f));
 
     setStep("questions");
     const result = await createReadingSession(fd);
@@ -139,7 +141,7 @@ export default function NyLesetreningPage() {
           {/* Image upload */}
           <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: "1rem", padding: "1.25rem", marginBottom: "1.25rem", boxShadow: "0 1px 3px rgba(17,29,37,.04)" }}>
             <label style={{ ...labelStyle, marginBottom: "0.75rem" }}>
-              Bilde(r) av teksten (maks 4)
+              Bilde(r) av teksten (maks {MAX_IMAGES})
             </label>
 
             {/* Previews */}
@@ -168,7 +170,7 @@ export default function NyLesetreningPage() {
               </div>
             )}
 
-            {images.length < 4 && (
+            {images.length < MAX_IMAGES && (
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
@@ -181,10 +183,10 @@ export default function NyLesetreningPage() {
               >
                 <ImagePlus size={28} color={C.primary} />
                 <span style={{ color: C.primary, fontSize: "0.875rem", fontWeight: 600 }}>
-                  {images.length === 0 ? "Klikk for å laste opp bilder" : `+ Legg til bilde (${images.length}/4)`}
+                  {images.length === 0 ? "Klikk for å laste opp bilder" : `+ Legg til bilde (${images.length}/${MAX_IMAGES})`}
                 </span>
                 <span style={{ color: C.textMuted, fontSize: "0.75rem" }}>
-                  JPG, PNG — ta bilde av boksiden
+                  JPG, PNG — ta bilde av boksiden (maks {MAX_IMAGES} sider)
                 </span>
               </button>
             )}

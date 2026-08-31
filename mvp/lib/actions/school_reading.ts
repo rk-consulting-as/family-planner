@@ -80,54 +80,90 @@ Svar KUN med gyldig JSON i dette formatet (ingen markdown, ingen forklaring):
   ]
 }`
 
-const OCR_PROMPT = `Ekstraher all tekst fra dette bildet. Returner KUN den rene teksten uten forklaring eller kommentar.
-Hvis det er en bokside: behold avsnittstruktur.
-Hvis det er en oppgaveside: behold nummerering og struktur.
-Svar kun med den ekstraherte teksten.`
+const COMBINED_PROMPT = `Du er en lærerassistent. Gjør to ting i én operasjon:
 
-// Step 1: Extract text from images via OCR
-export async function extractTextFromImages(
-  imageBase64Array: string[]
-): Promise<string> {
-  const imageContent = imageBase64Array.map(b64 => ({
+DEL 1 – EKSTRAHER TEKST:
+Les alle vedlagte bilder og ekstraher all tekst. Behold avsnittstruktur og nummerering.
+
+DEL 2 – LAG SPØRSMÅL:
+Basert på den ekstraherte teksten, lag NØYAKTIG dette antall spørsmål for en 14-åring i 9. klasse (Rakel, under utredning for autisme og angst – trenger tydelige, konkrete spørsmål):
+
+NIVÅ 1 – Gjenkjenning (4 spørsmål): Flervalg A/B/C/D med ett klart riktig svar fra teksten.
+NIVÅ 2 – Forståelse (3 spørsmål): Krever 1-3 setningers svar. F.eks. "Beskriv hva...", "Forklar hvorfor..."
+NIVÅ 3 – Refleksjon (2 spørsmål): Åpne spørsmål. F.eks. "Hva tror du...", "Hva ville du ha gjort..."
+
+Svar KUN med gyldig JSON (ingen markdown, ingen forklaring):
+{
+  "text_content": "all ekstrahert tekst her",
+  "questions": [
+    {
+      "question_number": 1,
+      "level": 1,
+      "question_text": "Spørsmål?",
+      "answer_options": [{"key":"A","text":"..."},{"key":"B","text":"..."},{"key":"C","text":"..."},{"key":"D","text":"..."}],
+      "correct_answer": "A"
+    },
+    {
+      "question_number": 5,
+      "level": 2,
+      "question_text": "Beskriv...",
+      "answer_options": null,
+      "correct_answer": null
+    },
+    {
+      "question_number": 8,
+      "level": 3,
+      "question_text": "Hva tror du...",
+      "answer_options": null,
+      "correct_answer": null
+    }
+  ]
+}`
+
+// Single API call: OCR + question generation combined
+async function extractAndGenerateQuestions(
+  imageBase64Array: string[],
+  mimeTypes: string[],
+): Promise<{ text_content: string; questions: ReadingQuestion[] }> {
+  const imageContent = imageBase64Array.map((b64, i) => ({
     type: 'image' as const,
     source: {
       type: 'base64' as const,
-      media_type: 'image/jpeg' as const,
+      media_type: (mimeTypes[i] || 'image/jpeg') as 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif',
       data: b64,
     },
   }))
 
   const response = await ai.messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 4000,
+    max_tokens: 6000,
     messages: [{
       role: 'user',
       content: [
         ...imageContent,
-        { type: 'text', text: OCR_PROMPT },
+        { type: 'text', text: COMBINED_PROMPT },
       ],
     }],
   })
 
-  return (response.content[0] as { text: string }).text.trim()
+  const raw = (response.content[0] as { text: string }).text.trim()
+  const json = raw.replace(/^```json?\s*/i, '').replace(/\s*```$/i, '')
+  return JSON.parse(json) as { text_content: string; questions: ReadingQuestion[] }
 }
 
-// Step 2: Generate questions from extracted text
-export async function generateQuestionsFromText(
-  text: string
-): Promise<ReadingQuestion[]> {
+// Keep these exports for backward compat (used in other places)
+export async function extractTextFromImages(imageBase64Array: string[]): Promise<string> {
+  const result = await extractAndGenerateQuestions(imageBase64Array, imageBase64Array.map(() => 'image/jpeg'))
+  return result.text_content
+}
+
+export async function generateQuestionsFromText(text: string): Promise<ReadingQuestion[]> {
   const response = await ai.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 3000,
-    messages: [{
-      role: 'user',
-      content: `TEKST:\n${text.slice(0, 8000)}\n\n${QUESTION_PROMPT}`,
-    }],
+    messages: [{ role: 'user', content: `TEKST:\n${text.slice(0, 8000)}\n\n${COMBINED_PROMPT}` }],
   })
-
   const raw = (response.content[0] as { text: string }).text.trim()
-  // Strip markdown code fences if present
   const json = raw.replace(/^```json?\s*/i, '').replace(/\s*```$/i, '')
   const parsed = JSON.parse(json) as { questions: ReadingQuestion[] }
   return parsed.questions
@@ -150,28 +186,30 @@ export async function createReadingSession(formData: FormData): Promise<{
     const weekNum   = formData.get('week_number') ? Number(formData.get('week_number')) : null
     const year      = formData.get('year') ? Number(formData.get('year')) : new Date().getFullYear()
 
-    // Collect images (up to 4)
+    // Collect images (up to 8)
     const imageBase64s: string[] = []
-    for (let i = 0; i < 4; i++) {
+    const imageMimes: string[] = []
+    for (let i = 0; i < 8; i++) {
       const file = formData.get(`image_${i}`) as File | null
       if (!file || file.size === 0) continue
       const bytes = await file.arrayBuffer()
-      const b64 = Buffer.from(bytes).toString('base64')
-      imageBase64s.push(b64)
+      imageBase64s.push(Buffer.from(bytes).toString('base64'))
+      imageMimes.push(file.type || 'image/jpeg')
     }
 
     if (imageBase64s.length === 0) {
       return { ok: false, error: 'Last opp minst ett bilde' }
     }
 
-    // OCR
-    const textContent = await extractTextFromImages(imageBase64s)
-    if (!textContent || textContent.length < 50) {
-      return { ok: false, error: 'Klarte ikke å lese tekst fra bildet. Prøv et klarere bilde.' }
-    }
+    // Single combined API call: OCR + question generation
+    const { text_content: textContent, questions } = await extractAndGenerateQuestions(imageBase64s, imageMimes)
 
-    // Generate questions
-    const questions = await generateQuestionsFromText(textContent)
+    if (!textContent || textContent.length < 50) {
+      return { ok: false, error: 'Klarte ikke å lese tekst fra bildene. Prøv klarere bilder.' }
+    }
+    if (!questions || questions.length === 0) {
+      return { ok: false, error: 'AI klarte ikke å lage spørsmål. Prøv igjen.' }
+    }
 
     // Store session
     const { data: session, error: sessErr } = await supabase
@@ -203,7 +241,13 @@ export async function createReadingSession(formData: FormData): Promise<{
       correct_answer:  q.correct_answer ?? null,
     }))
 
-    await supabase.from('school_reading_questions').insert(questionRows)
+    const { error: qErr } = await supabase.from('school_reading_questions').insert(questionRows)
+    if (qErr) {
+      console.error('Questions insert error:', qErr)
+      // Session exists but questions failed — clean up and report
+      await supabase.from('school_reading_sessions').delete().eq('id', session.id)
+      return { ok: false, error: `Feil ved lagring av spørsmål: ${qErr.message}` }
+    }
 
     revalidatePath('/skole/lesetrening')
     return { ok: true, sessionId: session.id }
