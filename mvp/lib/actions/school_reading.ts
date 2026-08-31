@@ -80,89 +80,60 @@ Svar KUN med gyldig JSON i dette formatet (ingen markdown, ingen forklaring):
   ]
 }`
 
-const COMBINED_PROMPT = `Du er en lærerassistent. Gjør to ting i én operasjon:
+const OCR_PROMPT = `Ekstraher all tekst fra disse boksidene. Returner KUN den rene teksten.
+Behold avsnittstruktur. Ingen forklaring, ingen kommentarer – bare teksten.`
 
-DEL 1 – EKSTRAHER TEKST:
-Les alle vedlagte bilder og ekstraher all tekst. Behold avsnittstruktur og nummerering.
+const QUESTION_PROMPT_TEXT = `Du er en lærerassistent som lager leseforståelsesoppgaver for en 14-åring i 9. klasse.
+Eleven (Rakel) trenger: tydelige konkrete spørsmål, enkel språklig stil, struktur.
 
-DEL 2 – LAG SPØRSMÅL:
-Basert på den ekstraherte teksten, lag NØYAKTIG dette antall spørsmål for en 14-åring i 9. klasse (Rakel, under utredning for autisme og angst – trenger tydelige, konkrete spørsmål):
+Lag NØYAKTIG 9 spørsmål basert på teksten:
 
-NIVÅ 1 – Gjenkjenning (4 spørsmål): Flervalg A/B/C/D med ett klart riktig svar fra teksten.
-NIVÅ 2 – Forståelse (3 spørsmål): Krever 1-3 setningers svar. F.eks. "Beskriv hva...", "Forklar hvorfor..."
+NIVÅ 1 – Gjenkjenning (4 spørsmål): Flervalg A/B/C/D, ett klart riktig svar fra teksten.
+NIVÅ 2 – Forståelse (3 spørsmål): 1-3 setningers svar. F.eks. "Beskriv hva...", "Forklar hvorfor..."
 NIVÅ 3 – Refleksjon (2 spørsmål): Åpne spørsmål. F.eks. "Hva tror du...", "Hva ville du ha gjort..."
 
-Svar KUN med gyldig JSON (ingen markdown, ingen forklaring):
-{
-  "text_content": "all ekstrahert tekst her",
-  "questions": [
-    {
-      "question_number": 1,
-      "level": 1,
-      "question_text": "Spørsmål?",
-      "answer_options": [{"key":"A","text":"..."},{"key":"B","text":"..."},{"key":"C","text":"..."},{"key":"D","text":"..."}],
-      "correct_answer": "A"
-    },
-    {
-      "question_number": 5,
-      "level": 2,
-      "question_text": "Beskriv...",
-      "answer_options": null,
-      "correct_answer": null
-    },
-    {
-      "question_number": 8,
-      "level": 3,
-      "question_text": "Hva tror du...",
-      "answer_options": null,
-      "correct_answer": null
-    }
-  ]
-}`
+Svar KUN med gyldig JSON (ingen markdown):
+{"questions":[{"question_number":1,"level":1,"question_text":"?","answer_options":[{"key":"A","text":"..."},{"key":"B","text":"..."},{"key":"C","text":"..."},{"key":"D","text":"..."}],"correct_answer":"A"},{"question_number":5,"level":2,"question_text":"Beskriv...","answer_options":null,"correct_answer":null},{"question_number":8,"level":3,"question_text":"Hva tror du...","answer_options":null,"correct_answer":null}]}`
 
-// Single API call: OCR + question generation combined
-async function extractAndGenerateQuestions(
+// Step 1: OCR — extract text from all images in one call
+export async function extractTextFromImages(
   imageBase64Array: string[],
-  mimeTypes: string[],
-): Promise<{ text_content: string; questions: ReadingQuestion[] }> {
-  const imageContent = imageBase64Array.map((b64, i) => ({
+  mimeTypes?: string[],
+): Promise<string> {
+  // Claude supports max 20 images, batch if needed
+  const batch = imageBase64Array.slice(0, 10)
+  const imageContent = batch.map((b64, i) => ({
     type: 'image' as const,
     source: {
       type: 'base64' as const,
-      media_type: (mimeTypes[i] || 'image/jpeg') as 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif',
+      media_type: ((mimeTypes?.[i] || 'image/jpeg') as 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif'),
       data: b64,
     },
   }))
 
   const response = await ai.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 6000,
+    model: 'claude-haiku-4-5-20251001',   // faster/cheaper for OCR only
+    max_tokens: 8000,
     messages: [{
       role: 'user',
-      content: [
-        ...imageContent,
-        { type: 'text', text: COMBINED_PROMPT },
-      ],
+      content: [...imageContent, { type: 'text', text: OCR_PROMPT }],
     }],
   })
 
-  const raw = (response.content[0] as { text: string }).text.trim()
-  const json = raw.replace(/^```json?\s*/i, '').replace(/\s*```$/i, '')
-  return JSON.parse(json) as { text_content: string; questions: ReadingQuestion[] }
+  return (response.content[0] as { text: string }).text.trim()
 }
 
-// Keep these exports for backward compat (used in other places)
-export async function extractTextFromImages(imageBase64Array: string[]): Promise<string> {
-  const result = await extractAndGenerateQuestions(imageBase64Array, imageBase64Array.map(() => 'image/jpeg'))
-  return result.text_content
-}
-
+// Step 2: Generate questions from extracted text
 export async function generateQuestionsFromText(text: string): Promise<ReadingQuestion[]> {
   const response = await ai.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 3000,
-    messages: [{ role: 'user', content: `TEKST:\n${text.slice(0, 8000)}\n\n${COMBINED_PROMPT}` }],
+    messages: [{
+      role: 'user',
+      content: `TEKST:\n${text.slice(0, 10000)}\n\n${QUESTION_PROMPT_TEXT}`,
+    }],
   })
+
   const raw = (response.content[0] as { text: string }).text.trim()
   const json = raw.replace(/^```json?\s*/i, '').replace(/\s*```$/i, '')
   const parsed = JSON.parse(json) as { questions: ReadingQuestion[] }
@@ -201,12 +172,14 @@ export async function createReadingSession(formData: FormData): Promise<{
       return { ok: false, error: 'Last opp minst ett bilde' }
     }
 
-    // Single combined API call: OCR + question generation
-    const { text_content: textContent, questions } = await extractAndGenerateQuestions(imageBase64s, imageMimes)
-
+    // Step 1: OCR (fast — Haiku model)
+    const textContent = await extractTextFromImages(imageBase64s, imageMimes)
     if (!textContent || textContent.length < 50) {
       return { ok: false, error: 'Klarte ikke å lese tekst fra bildene. Prøv klarere bilder.' }
     }
+
+    // Step 2: Generate questions (Sonnet — text only, no images)
+    const questions = await generateQuestionsFromText(textContent)
     if (!questions || questions.length === 0) {
       return { ok: false, error: 'AI klarte ikke å lage spørsmål. Prøv igjen.' }
     }

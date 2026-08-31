@@ -93,13 +93,24 @@ export default function NyLesetreningPage() {
     fd.set("year",        String(new Date().getFullYear()));
     images.slice(0, MAX_IMAGES).forEach((f, i) => fd.set(`image_${i}`, f));
 
-    setStep("questions");
-    const result = await createReadingSession(fd);
+    // Show "questions" step after a short delay so user sees the OCR step
+    setTimeout(() => setStep("questions"), 3000);
+    let result: { ok: boolean; sessionId?: string; error?: string } | undefined;
+    try {
+      result = await createReadingSession(fd);
+    } catch (e) {
+      setLoading(false);
+      setStep("");
+      setError("Noe gikk galt. Prøv med færre bilder, eller prøv igjen.");
+      console.error("createReadingSession threw:", e);
+      return;
+    }
+
     setLoading(false);
     setStep("");
 
-    if (!result.ok) {
-      setError(result.error ?? "Uventet feil");
+    if (!result || !result.ok) {
+      setError(result?.error ?? "Uventet feil — sjekk at bildene er leselige og prøv igjen.");
       return;
     }
     router.push(`/skole/lesetrening/${result.sessionId}`);
@@ -254,9 +265,11 @@ export default function NyLesetreningPage() {
               <Loader2 size={20} color={C.primary} style={{ flexShrink: 0, animation: "spin 1s linear infinite" }} />
               <div>
                 <div style={{ color: C.text, fontWeight: 600, fontSize: "0.875rem" }}>
-                  {step === "ocr" ? "Leser tekst fra bildene..." : "Lager graderte spørsmål med AI..."}
+                  {step === "ocr" ? "Leser tekst fra bildene…" : "Lager graderte spørsmål med AI…"}
                 </div>
-                <div style={{ color: C.textMuted, fontSize: "0.75rem" }}>Dette tar ca. 15–30 sekunder</div>
+                <div style={{ color: C.textMuted, fontSize: "0.75rem" }}>
+                  {step === "ocr" ? "Trinn 1 av 2 — OCR" : "Trinn 2 av 2 — kan ta 20–40 sekunder"}
+                </div>
               </div>
             </div>
           )}
