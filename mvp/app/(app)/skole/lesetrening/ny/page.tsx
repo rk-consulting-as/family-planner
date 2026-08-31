@@ -2,8 +2,32 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { createReadingSession } from "@/lib/actions/school_reading";
-import { Upload, X, ImagePlus, Loader2, BookOpen } from "lucide-react";
+import { X, ImagePlus, Loader2, BookOpen } from "lucide-react";
+
+// Compress a single image to max 1400px wide, JPEG 82% — keeps text readable for OCR
+async function compressImage(file: File): Promise<File> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const MAX = 1400;
+      let { width, height } = img;
+      if (width > MAX) { height = Math.round((height * MAX) / width); width = MAX; }
+      const canvas = document.createElement("canvas");
+      canvas.width = width; canvas.height = height;
+      canvas.getContext("2d")!.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => resolve(blob
+          ? new File([blob], file.name.replace(/\.\w+$/, ".jpg"), { type: "image/jpeg" })
+          : file),
+        "image/jpeg", 0.82,
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
 
 const C = {
   bg:         "#f6faff",
@@ -91,26 +115,31 @@ export default function NyLesetreningPage() {
     fd.set("subject",     subject);
     fd.set("week_number", String(weekNum));
     fd.set("year",        String(new Date().getFullYear()));
-    images.slice(0, MAX_IMAGES).forEach((f, i) => fd.set(`image_${i}`, f));
+
+    // Compress images before uploading (reduces ~24MB → ~2MB)
+    const compressed = await Promise.all(images.slice(0, MAX_IMAGES).map(compressImage));
+    compressed.forEach((f, i) => fd.set(`image_${i}`, f));
 
     // Show "questions" step after a short delay so user sees the OCR step
     setTimeout(() => setStep("questions"), 3000);
-    let result: { ok: boolean; sessionId?: string; error?: string } | undefined;
+
+    let result: { ok: boolean; sessionId?: string; error?: string };
     try {
-      result = await createReadingSession(fd);
+      const resp = await fetch("/api/lesetrening/create", { method: "POST", body: fd });
+      result = await resp.json();
     } catch (e) {
       setLoading(false);
       setStep("");
-      setError("Noe gikk galt. Prøv med færre bilder, eller prøv igjen.");
-      console.error("createReadingSession threw:", e);
+      setError("Noe gikk galt. Sjekk internettforbindelsen og prøv igjen.");
+      console.error("fetch /api/lesetrening/create threw:", e);
       return;
     }
 
     setLoading(false);
     setStep("");
 
-    if (!result || !result.ok) {
-      setError(result?.error ?? "Uventet feil — sjekk at bildene er leselige og prøv igjen.");
+    if (!result.ok) {
+      setError(result.error ?? "Uventet feil — prøv igjen.");
       return;
     }
     router.push(`/skole/lesetrening/${result.sessionId}`);
