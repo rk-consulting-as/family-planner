@@ -126,11 +126,18 @@ export default function NyLesetreningPage() {
     let result: { ok: boolean; sessionId?: string; error?: string };
     try {
       const resp = await fetch("/api/lesetrening/create", { method: "POST", body: fd });
+      if (!resp.ok) {
+        const text = await resp.text().catch(() => "");
+        setLoading(false);
+        setStep("");
+        setError(`Serverfeil HTTP ${resp.status} — ${text.slice(0, 120)}`);
+        return;
+      }
       result = await resp.json();
     } catch (e) {
       setLoading(false);
       setStep("");
-      setError("Noe gikk galt. Sjekk internettforbindelsen og prøv igjen.");
+      setError(`Nettverksfeil: ${e instanceof Error ? e.message : String(e)}`);
       console.error("fetch /api/lesetrening/create threw:", e);
       return;
     }
