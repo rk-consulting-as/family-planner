@@ -4,22 +4,17 @@ import { getActiveContext } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
 import { Linkify } from "@/components/ui/Linkify";
-import { Briefcase, Sparkles } from "lucide-react";
+import { Briefcase } from "lucide-react";
 import {
-  updateMilestoneStatus,
-  deleteMilestone,
   addNote,
   deleteProject,
 } from "@/lib/actions/projects";
 import AddMilestoneForm from "./AddMilestoneForm";
 import AiImportSection from "./AiImportSection";
 import PartiesSection from "./PartiesSection";
-import MilestoneComments from "./MilestoneComments";
-import EditMilestoneDialog from "./EditMilestoneDialog";
-import PushToCalendarButton from "./PushToCalendarButton";
 import ProjectMembersSection from "./ProjectMembersSection";
+import TimelineSearchWrapper from "./TimelineSearchWrapper";
 
 type MilestoneKind =
   | "past_event"
@@ -167,33 +162,9 @@ export default async function ProsjektPage({ params }: { params: { id: string } 
   const docList = (documents || []) as Doc[];
   const commentList = (msComments || []) as MsComment[];
 
-  const partyById = new Map(partyList.map((pt) => [pt.id, pt] as const));
-  const docById = new Map(docList.map((d) => [d.id, d] as const));
-  const commentsByMs = new Map<string, MsComment[]>();
-  commentList.forEach((c) => {
-    const arr = commentsByMs.get(c.milestone_id) || [];
-    arr.push(c);
-    commentsByMs.set(c.milestone_id, arr);
-  });
   const memberShort = memberList
     .filter((m): m is MemberRow & { profile: NonNullable<MemberRow["profile"]> } => !!m.profile)
     .map((m) => m.profile);
-
-  // Splitt tidslinje i fortid og fremtid
-  const now = new Date();
-  const upcoming = milestoneList
-    .filter((m) => {
-      if (m.status === "cancelled" || m.status === "completed") return false;
-      const date = m.due_at ? new Date(m.due_at) : m.occurred_at ? new Date(m.occurred_at) : null;
-      return date && date >= now;
-    })
-    .sort((a, b) => {
-      const da = new Date(a.due_at || a.occurred_at || 0).getTime();
-      const db = new Date(b.due_at || b.occurred_at || 0).getTime();
-      return da - db;
-    });
-
-  const past = milestoneList.filter((m) => !upcoming.includes(m));
 
   const isCreator = p.created_by === ctx.user.id;
 
@@ -233,71 +204,18 @@ export default async function ProsjektPage({ params }: { params: { id: string } 
       {/* AI-import seksjon */}
       <AiImportSection projectId={p.id} />
 
-      {/* Kommende */}
+      {/* Tidslinje med søk (kommende + fortid samlet) */}
       <Card>
-        <CardHeader className="flex items-center justify-between">
-          <CardTitle>
-            <Sparkles className="w-4 h-4 inline mr-1 text-amber-500" />
-            Kommende ({upcoming.length})
-          </CardTitle>
-        </CardHeader>
         <CardBody>
-          {upcoming.length === 0 ? (
-            <p className="text-sm text-slate-500">Ingen kommende hendelser.</p>
-          ) : (
-            <ul className="space-y-2">
-              {upcoming.map((m) => (
-                <MilestoneRow
-                  key={m.id}
-                  m={m}
-                  partyById={partyById}
-                  docById={docById}
-                  parties={partyList.map((pp) => ({ id: pp.id, name: pp.name }))}
-                  comments={commentsByMs.get(m.id) || []}
-                  members={memberShort.map((mm) => ({
-                    profile_id: mm.id,
-                    display_name: mm.display_name,
-                    color_hex: mm.color_hex,
-                  }))}
-                  currentUserId={ctx.user.id}
-                  projectId={p.id}
-                  highlight
-                />
-              ))}
-            </ul>
-          )}
-        </CardBody>
-      </Card>
-
-      {/* Tidslinje (fortid) */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Tidslinje ({past.length})</CardTitle>
-        </CardHeader>
-        <CardBody>
-          {past.length === 0 ? (
-            <p className="text-sm text-slate-500">Ingen tidligere hendelser registrert.</p>
-          ) : (
-            <ul className="space-y-2">
-              {past.map((m) => (
-                <MilestoneRow
-                  key={m.id}
-                  m={m}
-                  partyById={partyById}
-                  docById={docById}
-                  parties={partyList.map((pp) => ({ id: pp.id, name: pp.name }))}
-                  comments={commentsByMs.get(m.id) || []}
-                  members={memberShort.map((mm) => ({
-                    profile_id: mm.id,
-                    display_name: mm.display_name,
-                    color_hex: mm.color_hex,
-                  }))}
-                  currentUserId={ctx.user.id}
-                  projectId={p.id}
-                />
-              ))}
-            </ul>
-          )}
+          <TimelineSearchWrapper
+            milestones={milestoneList}
+            docs={docList}
+            parties={partyList.map(pp => ({ id: pp.id, name: pp.name, organization: pp.organization }))}
+            comments={commentList}
+            members={memberShort.map(mm => ({ profile_id: mm.id, display_name: mm.display_name, color_hex: mm.color_hex }))}
+            currentUserId={ctx.user.id}
+            projectId={p.id}
+          />
         </CardBody>
       </Card>
 
@@ -412,146 +330,3 @@ export default async function ProsjektPage({ params }: { params: { id: string } 
   );
 }
 
-function MilestoneRow({
-  m,
-  partyById,
-  docById,
-  parties,
-  comments,
-  members,
-  currentUserId,
-  projectId,
-  highlight = false,
-}: {
-  m: {
-    id: string;
-    title: string;
-    description: string | null;
-    kind: keyof typeof KIND_LABELS;
-    status: "planned" | "completed" | "cancelled" | "overdue";
-    occurred_at: string | null;
-    due_at: string | null;
-    responsible_party_id: string | null;
-    responsible_profile_ids: string[] | null;
-    source_document_id: string | null;
-    ai_extracted: boolean;
-    ai_source_excerpt: string | null;
-  };
-  partyById: Map<string, { name: string }>;
-  docById: Map<string, { id: string; title: string; public_url: string | null; mime_type: string | null }>;
-  parties: Array<{ id: string; name: string }>;
-  comments: Array<{ id: string; body: string; author_id: string | null; created_at: string }>;
-  members: Array<{ profile_id: string; display_name: string; color_hex: string | null }>;
-  currentUserId: string;
-  projectId: string;
-  highlight?: boolean;
-}) {
-  const k = KIND_LABELS[m.kind] || KIND_LABELS.note;
-  const date = m.due_at || m.occurred_at;
-  const dateLabel = date ? new Date(date).toLocaleDateString("nb-NO") : null;
-  const party = m.responsible_party_id ? partyById.get(m.responsible_party_id) : null;
-  const sourceDoc = m.source_document_id ? docById.get(m.source_document_id) : null;
-
-  return (
-    <li
-      className={`p-3 rounded-xl border ${
-        highlight
-          ? "border-amber-200 bg-amber-50"
-          : m.status === "completed"
-          ? "border-emerald-100 bg-emerald-50/40"
-          : "border-slate-200 bg-white"
-      }`}
-    >
-      <div className="flex items-start gap-3">
-        <span className="text-xl flex-shrink-0">{k.icon}</span>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold">{m.title}</span>
-            <Badge>{k.label}</Badge>
-            {m.status === "completed" && <Badge variant="success">Fullført</Badge>}
-            {m.ai_extracted && <Badge variant="info">🤖 AI-uttrekk</Badge>}
-            {sourceDoc?.public_url && (
-              <a
-                href={sourceDoc.public_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-brand-700 hover:underline"
-                title={sourceDoc.title}
-              >
-                📎 Se kilde
-              </a>
-            )}
-          </div>
-          <div className="text-xs text-slate-500 mt-0.5">
-            {dateLabel && (m.due_at ? `Frist: ${dateLabel}` : dateLabel)}
-            {party && ` • ${party.name}`}
-          </div>
-          {m.description && (
-            <p className="text-sm text-slate-700 mt-1">{m.description}</p>
-          )}
-          {m.ai_source_excerpt && (
-            <p className="text-xs italic text-slate-500 mt-1 bg-slate-50 rounded p-2">
-              Kildesitat: «{m.ai_source_excerpt}»
-            </p>
-          )}
-          <MilestoneComments
-            milestoneId={m.id}
-            projectId={projectId}
-            comments={comments}
-            members={members}
-            currentUserId={currentUserId}
-          />
-        </div>
-        <div className="flex flex-col gap-1 flex-shrink-0 items-end">
-          <EditMilestoneDialog
-            milestone={{
-              id: m.id,
-              title: m.title,
-              description: m.description,
-              kind: m.kind,
-              status: m.status,
-              occurred_at: m.occurred_at,
-              due_at: m.due_at,
-              responsible_party_id: m.responsible_party_id,
-              responsible_profile_ids: m.responsible_profile_ids,
-            }}
-            projectId={projectId}
-            parties={parties}
-            members={members}
-          />
-          <PushToCalendarButton
-            milestoneId={m.id}
-            projectId={projectId}
-            milestoneTitle={m.title}
-            baseDateIso={m.due_at || m.occurred_at}
-            members={members}
-            currentUserId={currentUserId}
-            defaultParticipantIds={
-              m.responsible_profile_ids && m.responsible_profile_ids.length > 0
-                ? m.responsible_profile_ids
-                : [currentUserId]
-            }
-          />
-          {m.status !== "completed" && (
-            <form
-              action={async () => {
-                "use server";
-                await updateMilestoneStatus(m.id, projectId, "completed");
-              }}
-            >
-              <button className="text-xs text-emerald-700 hover:underline">Fullført</button>
-            </form>
-          )}
-          <form
-            action={async () => {
-              "use server";
-              await deleteMilestone(m.id, projectId);
-            }}
-          >
-            <button className="text-xs text-slate-400 hover:text-red-600">Slett</button>
-          </form>
-        </div>
-      </div>
-    </li>
-  );
-}
