@@ -19,6 +19,7 @@ export const MODULES = [
   { key: "member_info", label: "Andres medlemsinfo", icon: "👤", default_member: false },
   { key: "utredning", label: "Utredning", icon: "🔬", default_member: false },
   { key: "skole", label: "Skole", icon: "🎒", default_member: true },
+  { key: "sak", label: "Sak / Jus", icon: "⚖️", default_member: false },
 ] as const;
 
 export type ModuleKey = (typeof MODULES)[number]["key"];

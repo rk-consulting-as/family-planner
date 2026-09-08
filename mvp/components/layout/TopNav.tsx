@@ -12,7 +12,7 @@ import {
   ShoppingCart, Gift, Briefcase, Mail, ChevronDown, Menu, X, Sparkles,
   BookOpen, Camera, Sun, Moon, LayoutGrid, HardHat, Apple, BookHeart,
   ClipboardList, BookMarked, FileBarChart2, FlaskConical, FolderOpen, Droplets,
-  GraduationCap, BookText, Calculator,
+  GraduationCap, BookText, Calculator, Scale,
 } from "lucide-react";
 
 type LeafItem = {
@@ -76,6 +76,15 @@ const NAV: NavGroup[] = [
       { href: "/dagbok/rakel/rapport",        label: "Rapport",        icon: FileBarChart2, module: "utredning" },
       { href: "/utredning/blodprover",        label: "Blodprøver",     icon: Droplets,      module: "utredning" },
       { href: "/utredning/tester",            label: "Tester",         icon: FlaskConical,  module: "utredning" },
+    ],
+  },
+  {
+    type: "group",
+    label: "Sak / Jus",
+    icon: Scale,
+    adminOnly: true,
+    items: [
+      { href: "/sak", label: "Hendelseslogg", icon: Scale, module: "sak" },
     ],
   },
   {
