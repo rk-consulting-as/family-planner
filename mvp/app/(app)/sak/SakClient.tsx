@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Scale, Plus, AlertTriangle, CheckCircle2, Clock, FileText,
-  ChevronDown, ChevronUp, BookOpen, X, Check, Trash2
+  ChevronDown, ChevronUp, BookOpen, X, Check, Trash2, Compass
 } from "lucide-react";
 import {
   createCaseEvent, deleteCaseEvent, markFollowUpDone
@@ -66,6 +66,217 @@ const LEGAL_REFS = [
   ]},
 ];
 
+// ── Veiledning: faseinndelt sjekkliste basert på norsk opplæringslov ───────────
+type GuideItem = {
+  title: string;
+  type: EventType;
+  institution: Institution;
+  legal: string[];
+  description: string;
+  law_note?: string;
+  is_violation?: boolean;
+  required?: boolean;
+};
+type GuidePhase = {
+  phase: string;
+  desc: string;
+  color: { bg: string; border: string; text: string };
+  items: GuideItem[];
+};
+
+const GUIDE_PHASES: GuidePhase[] = [
+  {
+    phase: "1. Tidlig bekymring",
+    desc: "Første signal fra skolen og skolens plikt til tilpasset opplæring",
+    color: C.blue,
+    items: [
+      {
+        title: "Første bekymringsmelding fra skolen",
+        type: "rapport", institution: "Skole",
+        legal: ["Oppl. § 5-1 — Rett til spesialundervisning"],
+        description: "Skolen informerte oss for første gang om at Rakel slet med læringsutbytte eller trivsel. Logg dato, hvem som sa det og hva som ble sagt.",
+        law_note: "Skolen har plikt til å melde bekymring til PPT dersom elever ikke har tilfredsstillende utbytte av opplæringen (Oppl. § 5-1, § 5-6). Logg dette som startpunkt for saken.",
+        required: true,
+      },
+      {
+        title: "Tilpasset opplæring ble forsøkt / iverksatt",
+        type: "vedtak", institution: "Skole",
+        legal: ["Oppl. § 5-1 — Rett til spesialundervisning"],
+        description: "Skolen satte i gang tilpasset opplæring som alternativ til spesialundervisning. Hva ble gjort, og var det tilstrekkelig?",
+        law_note: "Skolen SKAL prøve tilpasset opplæring, men har ikke lov til å bruke dette som unnskyldning for å vente med PPT-melding i årevis.",
+      },
+      {
+        title: "Tilpasset opplæring var ikke tilstrekkelig — logg manglende tiltak",
+        type: "brudd", institution: "Skole",
+        legal: ["Oppl. § 5-1 — Rett til spesialundervisning", "Fvl. § 17 — Forvaltningens utredningsplikt"],
+        description: "Tilpasset opplæring hjalp ikke, men skolen tok likevel ikke neste steg (PPT-melding). Logg tidsrom og hva som manglet.",
+        law_note: "Jo lenger tid det tok fra bekymring ble kjent til PPT ble kontaktet, jo sterkere brudd. Dokumenter dette grundig.",
+        is_violation: true,
+      },
+    ],
+  },
+  {
+    phase: "2. PPT-melding og utredning",
+    desc: "Hvem meldte, når, og hva PPT gjennomførte",
+    color: C.purple,
+    items: [
+      {
+        title: "PPT-melding ble sendt",
+        type: "henvendelse", institution: "PPT",
+        legal: ["Oppl. § 5-4 — Foreldrenes rett til å medvirke", "Oppl. § 5-6 — PPTs plikt til å hjelpe skolen"],
+        description: "Skolen eller vi som foreldre meldte formelt til PPT om Rakel. Logg hvem som sendte, dato og eventuelle vedlegg.",
+        law_note: "Foreldre kan selv kreve sakkyndig vurdering fra PPT (Oppl. § 5-4, 3. ledd). Skolen KAN IKKE nekte å sende meldingen videre. Å nekte eller utsette er et brudd.",
+        required: true,
+      },
+      {
+        title: "PPT bekreftet mottak og oppstart av utredning",
+        type: "rapport", institution: "PPT",
+        legal: ["Oppl. § 5-3 — Sakkyndig vurdering fra PPT"],
+        description: "PPT bekreftet at de mottok meldingen og startet kartlegging. Hva ble sagt om fremdrift og tidsfrist?",
+        law_note: "PPT har normalt 3 måneder på sakkyndig vurdering etter at melding er mottatt. Lengre saksbehandlingstid kan klages inn til Statsforvalteren.",
+      },
+      {
+        title: "PPT-melding ble forsinket / avslått av skolen",
+        type: "brudd", institution: "Skole",
+        legal: ["Oppl. § 5-4 — Foreldrenes rett til å medvirke", "Oppl. § 5-6 — PPTs plikt til å hjelpe skolen", "Fvl. § 35 — Omgjøring av ugyldig vedtak"],
+        description: "Skolen nektet å sende PPT-melding, ba oss vente, eller utsatte meldingen uten saklig grunn.",
+        law_note: "Dette er et rettighetsbr. Foreldre kan gå direkte til PPT og be om sakkyndig vurdering uten å gå via skolen.",
+        is_violation: true,
+        required: true,
+      },
+      {
+        title: "Sakkyndig vurdering mottatt fra PPT",
+        type: "rapport", institution: "PPT",
+        legal: ["Oppl. § 5-3 — Sakkyndig vurdering fra PPT"],
+        description: "PPT leverte sin sakkyndige vurdering. Hva anbefalte den? Var vi enige? Ble anbefalingene fulgt?",
+        law_note: "Vurderingen er ikke bindende for skolen, men skolen SKAL begrunne skriftlig hvorfor de eventuelt avviker fra den.",
+        required: true,
+      },
+    ],
+  },
+  {
+    phase: "3. Vedtak om spesialundervisning",
+    desc: "Rektor fatter vedtak — rettigheter og klageadgang",
+    color: C.teal,
+    items: [
+      {
+        title: "Vedtak om spesialundervisning ble fattet",
+        type: "vedtak", institution: "Skole",
+        legal: ["Oppl. § 5-1 — Rett til spesialundervisning", "Fvl. § 24 — Plikt til å begrunne vedtak"],
+        description: "Rektor fattet vedtak om spesialundervisning. Logg hva vedtaket inneholder, omfang (timer/uke), og om vi fikk tilstrekkelig begrunnelse.",
+        law_note: "Vedtaket skal være skriftlig og begrunnet (Fvl. § 24). Klagefrist er 3 uker fra mottaksdato (Fvl. § 29).",
+        required: true,
+      },
+      {
+        title: "Vedtak ble avslått eller ga for lite hjelp",
+        type: "brudd", institution: "Skole",
+        legal: ["Oppl. § 5-1 — Rett til spesialundervisning", "Fvl. § 28 — Rett til å klage på vedtak", "Fvl. § 24 — Plikt til å begrunne vedtak"],
+        description: "Skolen avslo søknad om spesialundervisning, eller vedtaket ga vesentlig mindre hjelp enn PPT anbefalte.",
+        law_note: "Dere kan klage til Statsforvalteren innen 3 uker (Fvl. § 28). Statsforvalteren kan overprøve vedtaket.",
+        is_violation: true,
+      },
+      {
+        title: "For lang tid fra PPT-vurdering til vedtak",
+        type: "brudd", institution: "Skole",
+        legal: ["Oppl. § 5-3 — Sakkyndig vurdering fra PPT", "Fvl. § 17 — Forvaltningens utredningsplikt"],
+        description: "Det tok urimelig lang tid fra PPT leverte sin vurdering til skolen fattet vedtak.",
+        law_note: "Vedtaket skal fattes innen rimelig tid. Mer enn 2–3 måneder uten begrunnelse er et tegn på saksbehandlingssvikt.",
+        is_violation: true,
+      },
+    ],
+  },
+  {
+    phase: "4. IOP – Individuell Opplæringsplan",
+    desc: "Utarbeidelse, innhold og halvårlig evaluering",
+    color: { bg: "#e8f5e9", border: "#81c784", text: "#1b5e20" },
+    items: [
+      {
+        title: "IOP ble utarbeidet",
+        type: "rapport", institution: "Skole",
+        legal: ["Oppl. § 5-5 — Individuell opplæringsplan (IOP)", "Oppl. § 5-4 — Foreldrenes rett til å medvirke"],
+        description: "Skolen utarbeidet IOP i samarbeid med oss. Logg dato, hva IOP inneholder og om vi fikk delta i utarbeidelsen.",
+        law_note: "IOP skal utarbeides innen 4 uker etter vedtak. Foreldre HAR RETT til å delta i utarbeidelsen (§ 5-4).",
+        required: true,
+      },
+      {
+        title: "IOP ikke utarbeidet innen 4 uker",
+        type: "brudd", institution: "Skole",
+        legal: ["Oppl. § 5-5 — Individuell opplæringsplan (IOP)"],
+        description: "IOP ble ikke laget innen 4 uker etter vedtak, eller foreldre ble ikke involvert i utarbeidelsen.",
+        law_note: "Manglende eller forsinket IOP er et direkte brudd på § 5-5. Dokumenter tidsforløpet nøye.",
+        is_violation: true,
+        required: true,
+      },
+      {
+        title: "Halvårsrapport / evaluering av IOP mottatt",
+        type: "rapport", institution: "Skole",
+        legal: ["Oppl. § 5-5 — Individuell opplæringsplan (IOP)"],
+        description: "Skolen sendte halvårsrapport. Hva sier rapporten om Rakels utvikling og IOP-måloppnåelse?",
+        law_note: "Skolen plikter å sende halvårsrapport til foreldre hvert halvår (Oppl. § 5-5, siste ledd). Manglende rapport er et brudd.",
+        required: true,
+      },
+      {
+        title: "Halvårsrapport mangler / ble ikke sendt",
+        type: "brudd", institution: "Skole",
+        legal: ["Oppl. § 5-5 — Individuell opplæringsplan (IOP)"],
+        description: "Vi mottok ikke halvårsrapport for det aktuelle halvåret.",
+        is_violation: true,
+      },
+    ],
+  },
+  {
+    phase: "5. Skolemiljø (§ 9A)",
+    desc: "Aktivitetsplikt og Statsforvalterens håndhevingsordning",
+    color: C.orange,
+    items: [
+      {
+        title: "Bekymring for Rakels trivsel og skolemiljø meldt til skolen",
+        type: "henvendelse", institution: "Skole",
+        legal: ["Oppl. § 9A-2 — Rett til trygt og godt skolemiljø", "Oppl. § 9A-4 — Skolens aktivitetsplikt"],
+        description: "Vi meldte bekymring til skolen om at Rakel ikke hadde det bra på skolen. Logg hva vi sa og til hvem.",
+        law_note: "Skolen har aktivitetsplikt og SKAL undersøke og sette inn tiltak innen rimelig tid. Det holder at skolen 'hadde grunn til å tro' at eleven ikke hadde det bra — de behøver ikke bevis.",
+      },
+      {
+        title: "Skolen fulgte ikke opp aktivitetsplikten",
+        type: "brudd", institution: "Skole",
+        legal: ["Oppl. § 9A-4 — Skolens aktivitetsplikt", "Oppl. § 9A-9 — Håndhevingsordning hos Statsforvalteren"],
+        description: "Skolen undersøkte ikke, satte ikke inn tiltak, eller tiltakene var åpenbart utilstrekkelige.",
+        law_note: "Dere kan klage direkte til Statsforvalteren under § 9A-9. Statsforvalteren kan gi pålegg og fatte vedtak om tiltak selv dersom skolen ikke følger opp.",
+        is_violation: true,
+      },
+    ],
+  },
+  {
+    phase: "6. Klager og juridisk opptrapping",
+    desc: "Klage til Statsforvalter, erstatningskrav og dokumentasjon av tap",
+    color: C.red,
+    items: [
+      {
+        title: "Formell klage sendt til Statsforvalteren",
+        type: "klage", institution: "Statsforvalter",
+        legal: ["Fvl. § 28 — Rett til å klage på vedtak", "Oppl. § 9A-9 — Håndhevingsordning hos Statsforvalteren"],
+        description: "Vi sendte formell klage til Statsforvalteren. Logg dato, hva klagen gjelder, og hva vi forventer som svar.",
+        law_note: "Klagefristen er 3 uker fra vedtak ble mottatt (Fvl. § 29). Klagen skal normalt sendes via skolen/kommunen, men kan ved særlige grunner sendes direkte.",
+      },
+      {
+        title: "Dokumentasjon av økonomisk tap (far mistet jobb)",
+        type: "rapport", institution: "NAV",
+        legal: ["Skl. § 2-1 — Det offentliges arbeidsgiveransvar", "Kommunens erstatningsansvar — svikt i tjenester"],
+        description: "Dokumenter at langvarig involvering i Rakels sak og utilstrekkelig oppfølging fra skolen/PPT påvirket arbeidsevnen og resulterte i tap av stilling/inntekt.",
+        law_note: "Erstatningskrav krever: (1) ansvarlig feil eller forsømmelse fra det offentlige, (2) dokumentert økonomisk tap, (3) årsakssammenheng mellom feil og tap. Tap av stilling og inntekt kan dokumenteres med arbeidskontrakt, oppsigelse, lønnslipper og legeerklæring.",
+        required: true,
+      },
+      {
+        title: "Erstatningskrav fremsatt mot kommunen",
+        type: "klage", institution: "Kommune",
+        legal: ["Skl. § 2-1 — Det offentliges arbeidsgiveransvar", "Kommunens erstatningsansvar — svikt i tjenester", "Statens erstatningsansvar — langvarig svikt"],
+        description: "Erstatningskrav ble formelt fremsatt mot kommunen for langvarig svikt i oppfølging av Rakel og konsekvensene dette har hatt for familien.",
+        law_note: "Kommunen kan holdes erstatningsansvarlig etter arbeidsgiveransvaret (Skl. § 2-1) for ansattes feil/forsømmelse. Konsulter advokat for konkret vurdering.",
+      },
+    ],
+  },
+];
+
 const EVENT_TYPES: { value: EventType; label: string }[] = [
   { value: "møte",         label: "Møte / samtale" },
   { value: "vedtak",       label: "Vedtak / beslutning" },
@@ -117,6 +328,8 @@ export default function SakClient({ events, documents }: Props) {
   const [filterViolation, setFilterViolation] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showRights, setShowRights] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
+  const [expandedPhase, setExpandedPhase] = useState<number | null>(null);
 
   // New event form state
   const [form, setForm] = useState({
@@ -170,6 +383,27 @@ export default function SakClient({ events, documents }: Props) {
     }));
   }
 
+  function presetFromTemplate(tpl: GuideItem) {
+    setForm(f => ({
+      ...f,
+      title: tpl.title,
+      description: tpl.description,
+      event_type: tpl.type,
+      institution: tpl.institution,
+      legal_refs: tpl.legal,
+      is_rights_violation: tpl.is_violation ?? false,
+      violation_notes: "",
+      follow_up_required: false,
+      follow_up_notes: "",
+      attendees: "",
+      responsible_party: "",
+      outcome: "",
+    }));
+    setShowGuide(false);
+    setShowNew(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   const inp: React.CSSProperties = {
     width: "100%", padding: "0.6rem 0.875rem",
     borderRadius: "0.625rem", border: `1px solid ${C.border}`,
@@ -198,12 +432,20 @@ export default function SakClient({ events, documents }: Props) {
               Hendelseslogg, rettighetsoversikt og bevisarkiv for Rakel
             </p>
           </div>
-          <button
-            onClick={() => setShowRights(!showRights)}
-            style={{ background: C.surfaceLow, border: `1px solid ${C.border}`, borderRadius: "0.625rem", padding: "0.5rem 0.875rem", color: C.primary, fontSize: "0.8rem", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "0.4rem" }}
-          >
-            <BookOpen size={15} /> Rettigheter
-          </button>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <button
+              onClick={() => { setShowGuide(!showGuide); setShowRights(false); }}
+              style={{ background: showGuide ? C.primary : C.surfaceLow, border: `1px solid ${showGuide ? C.primary : C.border}`, borderRadius: "0.625rem", padding: "0.5rem 0.875rem", color: showGuide ? "#fff" : C.primary, fontSize: "0.8rem", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "0.4rem" }}
+            >
+              <Compass size={15} /> Veiledning
+            </button>
+            <button
+              onClick={() => { setShowRights(!showRights); setShowGuide(false); }}
+              style={{ background: C.surfaceLow, border: `1px solid ${C.border}`, borderRadius: "0.625rem", padding: "0.5rem 0.875rem", color: C.primary, fontSize: "0.8rem", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "0.4rem" }}
+            >
+              <BookOpen size={15} /> Rettigheter
+            </button>
+          </div>
         </div>
 
         {/* Stats */}
@@ -243,6 +485,99 @@ export default function SakClient({ events, documents }: Props) {
             ))}
             <div style={{ marginTop: "0.75rem", padding: "0.75rem", background: C.orange.bg, border: `1px solid ${C.orange.border}`, borderRadius: "0.625rem", fontSize: "0.8rem", color: C.orange.text }}>
               <strong>Tips:</strong> Bruk Statsforvalterens håndhevingsordning (Oppl. § 9A-9) hvis skolen ikke følger opp skolemiljøsaker. Klagefrist er normalt 3 uker etter at vedtak er mottatt (Fvl. § 29).
+            </div>
+          </div>
+        )}
+
+        {/* Guide panel */}
+        {showGuide && (
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: "1rem", padding: "1.25rem", marginBottom: "1.5rem", boxShadow: "0 1px 3px rgba(17,29,37,.04)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.75rem" }}>
+              <div>
+                <h2 style={{ color: C.text, fontSize: "1rem", fontWeight: 700, margin: 0 }}>Saksveiledning — Rakels opplæringsrettigheter</h2>
+                <p style={{ color: C.textMuted, fontSize: "0.8rem", margin: "0.3rem 0 0" }}>
+                  Faseinndelt sjekkliste basert på Opplæringsloven. Klikk «Logg hendelse» for å forhåndsutfylle skjemaet med riktig type, instans og lovhenvisninger.
+                </p>
+              </div>
+              <button onClick={() => setShowGuide(false)} style={{ background: "none", border: "none", cursor: "pointer", flexShrink: 0 }}><X size={18} color={C.textMuted} /></button>
+            </div>
+
+            {/* Utredning-tip */}
+            <div style={{ background: C.blue.bg, border: `1px solid ${C.blue.border}`, borderRadius: "0.625rem", padding: "0.625rem 0.875rem", marginBottom: "1rem", fontSize: "0.8rem", color: C.blue.text }}>
+              <strong>💡 Tips:</strong> Du kan bruke datoer og dokumenter fra <strong>Utredning</strong>-modulen som kilde. Finn hendelsen der, noter dato og innhold, og logg den her som juridisk bevisførsel.
+            </div>
+
+            {/* Phases */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}>
+              {GUIDE_PHASES.map((phase, pi) => {
+                const open = expandedPhase === pi;
+                return (
+                  <div key={pi} style={{ border: `1px solid ${phase.color.border}`, borderRadius: "0.75rem", overflow: "hidden" }}>
+                    {/* Phase header */}
+                    <button
+                      onClick={() => setExpandedPhase(open ? null : pi)}
+                      style={{ width: "100%", background: phase.color.bg, border: "none", padding: "0.75rem 1rem", cursor: "pointer", textAlign: "left", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem" }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 700, color: phase.color.text, fontSize: "0.875rem" }}>{phase.phase}</div>
+                        <div style={{ color: phase.color.text, fontSize: "0.75rem", opacity: 0.8 }}>{phase.desc}</div>
+                      </div>
+                      {open ? <ChevronUp size={16} color={phase.color.text} /> : <ChevronDown size={16} color={phase.color.text} />}
+                    </button>
+
+                    {/* Phase items */}
+                    {open && (
+                      <div style={{ background: C.surface, padding: "0.75rem", display: "flex", flexDirection: "column", gap: "0.625rem" }}>
+                        {phase.items.map((item, ii) => (
+                          <div key={ii} style={{ border: `1px solid ${item.is_violation ? C.red.border : C.border}`, borderRadius: "0.625rem", padding: "0.75rem", background: item.is_violation ? C.red.bg : C.surfaceLow }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.5rem", marginBottom: "0.4rem" }}>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap", marginBottom: "0.25rem" }}>
+                                  {item.required && (
+                                    <span style={{ background: "#fff3cd", border: "1px solid #ffc107", color: "#856404", borderRadius: "0.3rem", padding: "0.05rem 0.4rem", fontSize: "0.65rem", fontWeight: 700 }}>
+                                      NØKKELMILEPÆL
+                                    </span>
+                                  )}
+                                  {item.is_violation && (
+                                    <span style={{ background: C.red.bg, border: `1px solid ${C.red.border}`, color: C.red.text, borderRadius: "0.3rem", padding: "0.05rem 0.4rem", fontSize: "0.65rem", fontWeight: 700 }}>
+                                      ⚠ RETTIGHETSBR.
+                                    </span>
+                                  )}
+                                </div>
+                                <div style={{ fontWeight: 700, color: item.is_violation ? C.red.text : C.text, fontSize: "0.85rem" }}>{item.title}</div>
+                                <div style={{ color: C.textMid, fontSize: "0.78rem", marginTop: "0.2rem" }}>{item.description}</div>
+                                {item.law_note && (
+                                  <div style={{ marginTop: "0.35rem", fontSize: "0.75rem", color: C.primary, fontStyle: "italic" }}>
+                                    📖 {item.law_note}
+                                  </div>
+                                )}
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.25rem", marginTop: "0.4rem" }}>
+                                  {item.legal.map(r => (
+                                    <span key={r} style={{ background: C.blue.bg, border: `1px solid ${C.blue.border}`, color: C.blue.text, borderRadius: "0.3rem", padding: "0.05rem 0.45rem", fontSize: "0.68rem", fontWeight: 700 }}>
+                                      {r.split(" — ")[0]}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => presetFromTemplate(item)}
+                                style={{ flexShrink: 0, background: C.primary, color: "#fff", border: "none", borderRadius: "0.5rem", padding: "0.4rem 0.75rem", fontSize: "0.75rem", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "0.3rem", whiteSpace: "nowrap" }}
+                              >
+                                <Plus size={13} /> Logg hendelse
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Bottom note */}
+            <div style={{ marginTop: "1rem", padding: "0.75rem", background: C.orange.bg, border: `1px solid ${C.orange.border}`, borderRadius: "0.625rem", fontSize: "0.8rem", color: C.orange.text }}>
+              <strong>Viktig for erstatningssak:</strong> Dokumenter alltid (1) hva som ble lovet, (2) hva som faktisk skjedde, (3) tidsgap mellom lov og gjennomføring, og (4) konsekvenser for Rakel og familien. Jo mer konkret og datert, jo sterkere sak.
             </div>
           </div>
         )}
