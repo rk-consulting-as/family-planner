@@ -62,6 +62,7 @@ const NAV: NavGroup[] = [
       { href: "/skole",              label: "Oversikt",     icon: GraduationCap, module: "skole" },
       { href: "/skole/ukeplan",      label: "Ukeplan",      icon: Calendar,      module: "skole" },
       { href: "/skole/lesetrening",  label: "Lesetrening",  icon: BookText,      module: "skole" },
+      { href: "/skole/quiz",         label: "AI-quiz",      icon: Sparkles,      module: "skole" },
       { href: "/skole/matte",        label: "Matte-øving",  icon: Calculator,    module: "skole" },
     ],
   },
