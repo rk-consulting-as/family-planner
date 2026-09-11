@@ -45,6 +45,7 @@ export default function QuizListClient({ quizzes, sessionMap, currentUserId }: P
     subject: "Engelsk fordypning",
     subjectCustom: "",
     topic: "",
+    focus: "",
     level: "middels" as "lett" | "middels" | "vanskelig",
     language: "engelsk" as "norsk" | "engelsk",
     questionCount: 8,
@@ -94,6 +95,7 @@ export default function QuizListClient({ quizzes, sessionMap, currentUserId }: P
         body: JSON.stringify({
           subject,
           topic: form.topic.trim(),
+          focus: form.focus.trim() || undefined,
           level: form.level,
           language: form.language,
           questionCount: form.questionCount,
@@ -211,7 +213,21 @@ export default function QuizListClient({ quizzes, sessionMap, currentUserId }: P
                 style={inp}
               />
               <div style={{ fontSize: "0.75rem", color: C.textMuted, marginTop: "0.3rem" }}>
-                Jo mer spesifikt, jo bedre spørsmål. Du kan beskrive hva dere jobbet med i timen.
+                Kort tittel på hva quizen handler om.
+              </div>
+            </div>
+
+            <div style={{ marginBottom: "0.875rem" }}>
+              <label style={lbl}>Fokus / vinkling <span style={{ fontWeight: 400, color: C.textMuted }}>(valgfritt)</span></label>
+              <textarea
+                value={form.focus}
+                onChange={e => setForm(f => ({ ...f, focus: e.target.value }))}
+                placeholder={"F.eks. «Fokuser på filmatiseringen og hvordan historien er fortalt — ikke så mye på Queen som band. Ta med budskapet i filmen og viktige scener.»"}
+                rows={3}
+                style={{ ...inp, resize: "vertical", minHeight: "4.5rem", lineHeight: 1.45 }}
+              />
+              <div style={{ fontSize: "0.75rem", color: C.textMuted, marginTop: "0.3rem" }}>
+                Beskriv hvordan spørsmålene skal vinkles — f.eks. mer om filmen, bandet, budskapet, karakterer, eller det dere jobbet med i timen.
               </div>
             </div>
 
@@ -297,6 +313,11 @@ export default function QuizListClient({ quizzes, sessionMap, currentUserId }: P
                           </span>
                         )}
                       </div>
+                      {q.focus && (
+                        <div style={{ fontSize: "0.72rem", color: C.textMid, marginTop: "0.25rem", lineHeight: 1.35, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" } as React.CSSProperties}>
+                          Fokus: {q.focus}
+                        </div>
+                      )}
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexShrink: 0 }}>
                       {bestSession && bestSession.total > 0 && (

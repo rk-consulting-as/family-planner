@@ -38,6 +38,12 @@ export async function POST(
 
     const lvlText = (LEVEL_INSTRUCTIONS[language] ?? LEVEL_INSTRUCTIONS.norsk)[quiz.level] ?? '';
     const isEn = language === 'engelsk';
+    const focus = (quiz.focus || '').trim();
+    const focusPart = focus
+      ? isEn
+        ? `\nFocus / angle (IMPORTANT — follow this closely):\n${focus}\n\nPrioritise this focus when choosing what to ask about.\n`
+        : `\nFokus / vinkling (VIKTIG — følg dette nøye):\n${focus}\n\nPrioriter dette fokuset når du velger hva det skal spørres om.\n`
+      : '';
 
     const prompt = isEn
       ? `You are a teacher creating a quiz for students.
@@ -46,7 +52,7 @@ Subject: ${quiz.subject}
 Topic: ${quiz.topic}
 Difficulty: ${quiz.level} — ${lvlText}
 Number of questions: ${quiz.question_count}
-
+${focusPart}
 Create ${quiz.question_count} multiple-choice questions IN ENGLISH. Each question must have exactly 4 answer options, only one correct.
 
 Return ONLY valid JSON:
@@ -72,7 +78,7 @@ Fag: ${quiz.subject}
 Emne/tema: ${quiz.topic}
 Nivå: ${quiz.level} — ${lvlText}
 Antall spørsmål: ${quiz.question_count}
-
+${focusPart}
 Lag ${quiz.question_count} flervalgsspørsmål PÅ NORSK. Hvert spørsmål skal ha nøyaktig 4 svaralternativer, kun ett riktig.
 
 Returner KUN gyldig JSON:

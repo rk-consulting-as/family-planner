@@ -204,6 +204,15 @@ export default function QuizClient({ quiz, questions, currentUserId, myBestSessi
               </span>
             </div>
 
+            {quiz.focus && (
+              <div style={{ background: C.surfaceLow, border: `1px solid ${C.border}`, borderRadius: "0.75rem", padding: "0.75rem 0.875rem", marginBottom: "1.25rem", textAlign: "left", fontSize: "0.82rem", color: C.textMid, lineHeight: 1.45 }}>
+                <div style={{ fontSize: "0.7rem", fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: "0.25rem" }}>
+                  Fokus / vinkling
+                </div>
+                {quiz.focus}
+              </div>
+            )}
+
             {prevPct !== null && (
               <div style={{ background: "#e8f5e9", border: "1px solid #81c784", borderRadius: "0.75rem", padding: "0.75rem", marginBottom: "1.5rem", fontSize: "0.85rem", color: "#1b5e20" }}>
                 <Trophy size={15} style={{ display: "inline", verticalAlign: "middle", marginRight: "0.3rem" }} />

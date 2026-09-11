@@ -21,9 +21,34 @@ const LEVEL_INSTRUCTIONS: Record<string, Record<string, string>> = {
   },
 };
 
-function buildPrompt(subject: string, topic: string, level: string, questionCount: number, language: string): string {
+function focusBlock(focus: string | null | undefined, language: string): string {
+  const trimmed = (focus || '').trim();
+  if (!trimmed) return '';
+  if (language === 'engelsk') {
+    return `
+Focus / angle (IMPORTANT — follow this closely):
+${trimmed}
+
+Prioritise this focus when choosing what to ask about. Stay on topic, but shape the questions around this angle rather than covering everything equally.`;
+  }
+  return `
+Fokus / vinkling (VIKTIG — følg dette nøye):
+${trimmed}
+
+Prioriter dette fokuset når du velger hva det skal spørres om. Hold deg til temaet, men form spørsmålene etter denne vinklingen i stedet for å dekke alt likt.`;
+}
+
+function buildPrompt(
+  subject: string,
+  topic: string,
+  level: string,
+  questionCount: number,
+  language: string,
+  focus?: string | null
+): string {
   const lang = language === 'engelsk' ? 'engelsk' : 'norsk';
   const lvlInstructions = (LEVEL_INSTRUCTIONS[lang] ?? LEVEL_INSTRUCTIONS.norsk)[level] ?? '';
+  const focusPart = focusBlock(focus, lang);
 
   if (lang === 'engelsk') {
     return `You are a teacher creating a quiz for students.
@@ -32,6 +57,7 @@ Subject: ${subject}
 Topic: ${topic}
 Difficulty: ${level} — ${lvlInstructions}
 Number of questions: ${questionCount}
+${focusPart}
 
 Create ${questionCount} multiple-choice questions IN ENGLISH. Each question must have exactly 4 answer options, with only one correct answer.
 
@@ -65,6 +91,7 @@ Fag: ${subject}
 Emne/tema: ${topic}
 Nivå: ${level} — ${lvlInstructions}
 Antall spørsmål: ${questionCount}
+${focusPart}
 
 Lag ${questionCount} flervalgsspørsmål PÅ NORSK. Hvert spørsmål skal ha nøyaktig 4 svaralternativer, kun ett riktig.
 
@@ -98,19 +125,28 @@ export async function POST(request: NextRequest) {
     if (!ctx) return NextResponse.json({ ok: false, error: 'Ikke innlogget' }, { status: 401 });
 
     const body = await request.json();
-    const { subject, topic, level, questionCount, language = 'norsk' } = body as {
+    const {
+      subject,
+      topic,
+      level,
+      questionCount,
+      language = 'norsk',
+      focus = '',
+    } = body as {
       subject: string;
       topic: string;
       level: 'lett' | 'middels' | 'vanskelig';
       questionCount: number;
       language?: 'norsk' | 'engelsk';
+      focus?: string;
     };
 
     if (!subject || !topic || !level || !questionCount) {
       return NextResponse.json({ ok: false, error: 'Manglende felter' }, { status: 400 });
     }
 
-    const prompt = buildPrompt(subject, topic, level, questionCount, language);
+    const focusTrimmed = (focus || '').trim().slice(0, 1500) || null;
+    const prompt = buildPrompt(subject, topic, level, questionCount, language, focusTrimmed);
 
     const response = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
@@ -138,26 +174,45 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
-    const { data: quiz, error: quizErr } = await supabase
-      .from('quizzes')
-      .insert({
-        group_id: ctx.group.id,
-        subject,
-        topic,
-        level,
-        language,
-        question_count: parsed.questions.length,
-        created_by: ctx.user.id,
-      })
-      .select('id')
-      .single();
+    const baseRow = {
+      group_id: ctx.group.id,
+      subject,
+      topic,
+      level,
+      language,
+      question_count: parsed.questions.length,
+      created_by: ctx.user.id,
+    };
+
+    let quiz: { id: string } | null = null;
+    let quizErr: { message: string } | null = null;
+
+    {
+      const res = await supabase
+        .from('quizzes')
+        .insert({ ...baseRow, focus: focusTrimmed })
+        .select('id')
+        .single();
+      quiz = res.data as { id: string } | null;
+      quizErr = res.error;
+
+      // If focus-column missing (migration not applied yet), retry without it
+      if (quizErr && /focus/i.test(quizErr.message)) {
+        const retry = await supabase.from('quizzes').insert(baseRow).select('id').single();
+        quiz = retry.data as { id: string } | null;
+        quizErr = retry.error;
+      }
+    }
 
     if (quizErr || !quiz) {
-      return NextResponse.json({ ok: false, error: 'Feil ved lagring av quiz' });
+      return NextResponse.json({
+        ok: false,
+        error: quizErr?.message ? `Feil ved lagring av quiz: ${quizErr.message}` : 'Feil ved lagring av quiz',
+      });
     }
 
     const questionRows = parsed.questions.map((q, i) => ({
-      quiz_id: quiz.id,
+      quiz_id: quiz!.id,
       question_order: i + 1,
       question_text: q.question_text,
       options: q.options,

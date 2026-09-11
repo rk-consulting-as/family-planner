@@ -28,6 +28,7 @@ export interface Quiz {
   group_id: string
   subject: string
   topic: string
+  focus: string | null
   level: QuizLevel
   language: QuizLanguage
   question_count: number
@@ -51,27 +52,53 @@ export async function getQuizzes(): Promise<Quiz[]> {
   const ctx = await getActiveContext()
   if (!ctx) return []
   const supabase = await createClient()
-  const { data } = await supabase
+  const colsWithFocus =
+    'id,group_id,subject,topic,focus,level,language,question_count,created_by,created_at'
+  const colsNoFocus =
+    'id,group_id,subject,topic,level,language,question_count,created_by,created_at'
+  let { data, error } = await supabase
     .from('quizzes')
-    .select('id,group_id,subject,topic,level,language,question_count,created_by,created_at')
+    .select(colsWithFocus)
     .eq('group_id', ctx.group.id)
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
-  return (data ?? []) as Quiz[]
+  if (error && /focus/i.test(error.message)) {
+    ({ data, error } = await supabase
+      .from('quizzes')
+      .select(colsNoFocus)
+      .eq('group_id', ctx.group.id)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false }))
+  }
+  return ((data ?? []) as Quiz[]).map((q) => ({ ...q, focus: q.focus ?? null }))
 }
 
 export async function getQuiz(id: string): Promise<Quiz | null> {
   const ctx = await getActiveContext()
   if (!ctx) return null
   const supabase = await createClient()
-  const { data } = await supabase
+  const colsWithFocus =
+    'id,group_id,subject,topic,focus,level,language,question_count,created_by,created_at'
+  const colsNoFocus =
+    'id,group_id,subject,topic,level,language,question_count,created_by,created_at'
+  let { data, error } = await supabase
     .from('quizzes')
-    .select('id,group_id,subject,topic,level,language,question_count,created_by,created_at')
+    .select(colsWithFocus)
     .eq('id', id)
     .eq('group_id', ctx.group.id)
     .is('deleted_at', null)
     .single()
-  return (data as Quiz) ?? null
+  if (error && /focus/i.test(error.message)) {
+    ({ data, error } = await supabase
+      .from('quizzes')
+      .select(colsNoFocus)
+      .eq('id', id)
+      .eq('group_id', ctx.group.id)
+      .is('deleted_at', null)
+      .single())
+  }
+  if (!data) return null
+  return { ...(data as Quiz), focus: (data as Quiz).focus ?? null }
 }
 
 export async function getQuizQuestions(quizId: string): Promise<QuizQuestion[]> {
