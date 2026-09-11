@@ -144,6 +144,7 @@ export default function AiImportSection({ projectId }: { projectId: string }) {
   function handleExtract() {
     setErr(null);
     setResult(null);
+    setSourceDocId(null);
     if (!text.trim()) {
       setErr("Lim inn tekst først");
       return;
@@ -154,7 +155,10 @@ export default function AiImportSection({ projectId }: { projectId: string }) {
       docFd.set("title", title || "Innlimt tekst — " + new Date().toLocaleDateString("nb-NO"));
       docFd.set("source_text", text);
       docFd.set("kind", "email");
-      await addPastedDocument(projectId, docFd);
+      const docRes = await addPastedDocument(projectId, docFd);
+      if (docRes.ok && docRes.document_id) {
+        setSourceDocId(docRes.document_id);
+      }
 
       // Kjør AI-uttrekk
       const fd = new FormData();

@@ -6,6 +6,7 @@ import { updateMilestoneStatus, deleteMilestone } from "@/lib/actions/projects";
 import MilestoneComments from "./MilestoneComments";
 import EditMilestoneDialog from "./EditMilestoneDialog";
 import PushToCalendarButton from "./PushToCalendarButton";
+import MilestoneAttachmentUploader from "./MilestoneAttachmentUploader";
 import { Search, X, FileText, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -172,6 +173,11 @@ function MilestoneRow({
             projectId={projectId}
             parties={parties}
             members={members}
+          />
+          <MilestoneAttachmentUploader
+            milestoneId={m.id}
+            projectId={projectId}
+            hasFileLink={hasLink}
           />
           <PushToCalendarButton
             milestoneId={m.id}

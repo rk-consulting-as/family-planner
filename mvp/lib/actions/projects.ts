@@ -468,7 +468,118 @@ export async function addPastedDocument(project_id: string, formData: FormData) 
     .single();
   if (error) return { ok: false, error: error.message };
   revalidatePath(`/prosjekter/${project_id}`);
+  revalidatePath("/utredning/dokumentasjon");
   return { ok: true, document_id: data?.id };
+}
+
+/** Knytt en allerede opplastet fil til en milestone (klikkbar «Se kilde»). */
+export async function attachFileToMilestone(
+  milestone_id: string,
+  project_id: string,
+  meta: {
+    storage_path: string;
+    public_url: string;
+    title: string;
+    mime_type: string;
+    size_bytes: number;
+  }
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Ikke innlogget" };
+
+  const { data: ms, error: msErr } = await supabase
+    .from("project_milestones")
+    .select("id, source_document_id")
+    .eq("id", milestone_id)
+    .eq("project_id", project_id)
+    .single();
+  if (msErr || !ms) return { ok: false, error: "Fant ikke hendelsen" };
+
+  const kind = meta.mime_type.startsWith("image/")
+    ? "image"
+    : meta.mime_type === "application/pdf"
+      ? "pdf"
+      : "document";
+
+  const existingDocId = (ms as { source_document_id: string | null }).source_document_id;
+  let docId = existingDocId;
+
+  if (existingDocId) {
+    const { data: existing } = await supabase
+      .from("project_documents")
+      .select("id, public_url")
+      .eq("id", existingDocId)
+      .single();
+    const hasFile = !!(existing as { public_url?: string | null } | null)?.public_url;
+
+    if (!hasFile) {
+      // Oppgrader tekst/epost-kilde med faktisk fil — beholder source_text
+      const { error: upErr } = await supabase
+        .from("project_documents")
+        .update({
+          title: meta.title,
+          kind,
+          storage_path: meta.storage_path,
+          public_url: meta.public_url,
+          mime_type: meta.mime_type,
+          size_bytes: meta.size_bytes,
+        })
+        .eq("id", existingDocId);
+      if (upErr) return { ok: false, error: upErr.message };
+    } else {
+      // Ny fil erstatter koblingen (gammel kilde blir stående i dokumentlisten)
+      const { data: docRow, error: insErr } = await supabase
+        .from("project_documents")
+        .insert({
+          project_id,
+          title: meta.title,
+          kind,
+          storage_path: meta.storage_path,
+          public_url: meta.public_url,
+          mime_type: meta.mime_type,
+          size_bytes: meta.size_bytes,
+          uploaded_by: user.id,
+        })
+        .select("id")
+        .single();
+      if (insErr) return { ok: false, error: insErr.message };
+      docId = (docRow as { id: string }).id;
+      const { error: linkErr } = await supabase
+        .from("project_milestones")
+        .update({ source_document_id: docId })
+        .eq("id", milestone_id);
+      if (linkErr) return { ok: false, error: linkErr.message };
+    }
+  } else {
+    const { data: docRow, error: insErr } = await supabase
+      .from("project_documents")
+      .insert({
+        project_id,
+        title: meta.title,
+        kind,
+        storage_path: meta.storage_path,
+        public_url: meta.public_url,
+        mime_type: meta.mime_type,
+        size_bytes: meta.size_bytes,
+        uploaded_by: user.id,
+      })
+      .select("id")
+      .single();
+    if (insErr) return { ok: false, error: insErr.message };
+    docId = (docRow as { id: string }).id;
+    const { error: linkErr } = await supabase
+      .from("project_milestones")
+      .update({ source_document_id: docId })
+      .eq("id", milestone_id);
+    if (linkErr) return { ok: false, error: linkErr.message };
+  }
+
+  revalidatePath(`/prosjekter/${project_id}`);
+  revalidatePath("/utredning/dokumentasjon");
+  return { ok: true, document_id: docId };
 }
 
 // ----- AI extraction --------------------------------------------------
@@ -935,5 +1046,6 @@ export async function applyExtractedSuggestions(
   }
 
   revalidatePath(`/prosjekter/${project_id}`);
+  revalidatePath("/utredning/dokumentasjon");
   return { ok: true };
 }
