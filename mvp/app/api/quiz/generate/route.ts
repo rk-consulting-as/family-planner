@@ -8,39 +8,65 @@ import { revalidatePath } from 'next/cache';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-const LEVEL_INSTRUCTIONS: Record<string, string> = {
-  lett: 'Spørsmålene skal være enkle og grunnleggende. Bruk enkelt språk. Svarene skal være tydelige. Passer for elever som akkurat har lært emnet.',
-  middels: 'Spørsmålene skal kreve at eleven forstår sammenhengen, ikke bare husker fakta. Moderat vanskelighetsgrad.',
-  vanskelig: 'Spørsmålene skal utfordre og kreve inngående forståelse, analyse eller vurdering. Distraktorer i flervalg skal være plausible.',
+const LEVEL_INSTRUCTIONS: Record<string, Record<string, string>> = {
+  norsk: {
+    lett:      'Spørsmålene skal være enkle og grunnleggende. Bruk enkelt språk. Svarene skal være tydelige. Passer for elever som akkurat har lært emnet.',
+    middels:   'Spørsmålene skal kreve at eleven forstår sammenhengen, ikke bare husker fakta. Moderat vanskelighetsgrad.',
+    vanskelig: 'Spørsmålene skal utfordre og kreve inngående forståelse, analyse eller vurdering. Distraktorer i flervalg skal være plausible.',
+  },
+  engelsk: {
+    lett:      'Questions should be simple and factual. Use clear, straightforward language suitable for students who have just learned the topic.',
+    middels:   'Questions should require understanding of context and connections, not just memorised facts. Moderate difficulty.',
+    vanskelig: 'Questions should challenge deeper understanding, analysis or evaluation. Distractors (wrong answers) should be plausible.',
+  },
 };
 
-export async function POST(request: NextRequest) {
-  try {
-    const ctx = await getActiveContext();
-    if (!ctx) return NextResponse.json({ ok: false, error: 'Ikke innlogget' }, { status: 401 });
+function buildPrompt(subject: string, topic: string, level: string, questionCount: number, language: string): string {
+  const lang = language === 'engelsk' ? 'engelsk' : 'norsk';
+  const lvlInstructions = (LEVEL_INSTRUCTIONS[lang] ?? LEVEL_INSTRUCTIONS.norsk)[level] ?? '';
 
-    const body = await request.json();
-    const { subject, topic, level, questionCount } = body as {
-      subject: string;
-      topic: string;
-      level: 'lett' | 'middels' | 'vanskelig';
-      questionCount: number;
-    };
+  if (lang === 'engelsk') {
+    return `You are a teacher creating a quiz for students.
 
-    if (!subject || !topic || !level || !questionCount) {
-      return NextResponse.json({ ok: false, error: 'Manglende felter' }, { status: 400 });
+Subject: ${subject}
+Topic: ${topic}
+Difficulty: ${level} — ${lvlInstructions}
+Number of questions: ${questionCount}
+
+Create ${questionCount} multiple-choice questions IN ENGLISH. Each question must have exactly 4 answer options, with only one correct answer.
+
+Return ONLY valid JSON in this exact format (no explanation outside the JSON):
+{
+  "questions": [
+    {
+      "question_text": "Question text here?",
+      "options": [
+        { "text": "Option A", "is_correct": false },
+        { "text": "Option B", "is_correct": true },
+        { "text": "Option C", "is_correct": false },
+        { "text": "Option D", "is_correct": false }
+      ],
+      "explanation": "Short explanation of why the answer is correct (1–2 sentences)."
     }
+  ]
+}
 
-    const levelText = LEVEL_INSTRUCTIONS[level] ?? LEVEL_INSTRUCTIONS.middels;
+Requirements:
+- ALL questions, answers and explanations must be in English
+- Exactly ONE correct answer per question
+- Wrong answers (distractors) should be realistic and plausible
+- The explanation should help the student learn something
+- Do not use "All/None of the above" as an option`;
+  }
 
-    const prompt = `Du er en lærer som lager en quiz for norske skoleelever.
+  return `Du er en lærer som lager en quiz for norske skoleelever.
 
 Fag: ${subject}
 Emne/tema: ${topic}
-Nivå: ${level} — ${levelText}
+Nivå: ${level} — ${lvlInstructions}
 Antall spørsmål: ${questionCount}
 
-Lag ${questionCount} flervalgsspørsmål på norsk. Hvert spørsmål skal ha nøyaktig 4 svaralternativer, kun ett riktig.
+Lag ${questionCount} flervalgsspørsmål PÅ NORSK. Hvert spørsmål skal ha nøyaktig 4 svaralternativer, kun ett riktig.
 
 Returner KUN gyldig JSON i dette formatet (ingen forklaring utenfor JSON):
 {
@@ -59,11 +85,32 @@ Returner KUN gyldig JSON i dette formatet (ingen forklaring utenfor JSON):
 }
 
 Krav:
-- Spørsmål og svar på norsk
+- Spørsmål og svar PÅ NORSK
 - Kun ETT riktig svaralternativ per spørsmål
 - Distraktorene (gale svar) skal være realistiske og plausible
 - Forklaringen skal hjelpe eleven lære noe nytt
 - Ikke bruk "Alle/ingen av de ovennevnte" som alternativ`;
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const ctx = await getActiveContext();
+    if (!ctx) return NextResponse.json({ ok: false, error: 'Ikke innlogget' }, { status: 401 });
+
+    const body = await request.json();
+    const { subject, topic, level, questionCount, language = 'norsk' } = body as {
+      subject: string;
+      topic: string;
+      level: 'lett' | 'middels' | 'vanskelig';
+      questionCount: number;
+      language?: 'norsk' | 'engelsk';
+    };
+
+    if (!subject || !topic || !level || !questionCount) {
+      return NextResponse.json({ ok: false, error: 'Manglende felter' }, { status: 400 });
+    }
+
+    const prompt = buildPrompt(subject, topic, level, questionCount, language);
 
     const response = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
@@ -72,8 +119,6 @@ Krav:
     });
 
     const raw = response.content[0].type === 'text' ? response.content[0].text : '';
-
-    // Extract JSON from response
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       return NextResponse.json({ ok: false, error: 'AI returnerte ugyldig format. Prøv igjen.' });
@@ -93,7 +138,6 @@ Krav:
 
     const supabase = await createClient();
 
-    // Insert quiz
     const { data: quiz, error: quizErr } = await supabase
       .from('quizzes')
       .insert({
@@ -101,6 +145,7 @@ Krav:
         subject,
         topic,
         level,
+        language,
         question_count: parsed.questions.length,
         created_by: ctx.user.id,
       })
@@ -111,7 +156,6 @@ Krav:
       return NextResponse.json({ ok: false, error: 'Feil ved lagring av quiz' });
     }
 
-    // Insert questions
     const questionRows = parsed.questions.map((q, i) => ({
       quiz_id: quiz.id,
       question_order: i + 1,

@@ -58,9 +58,10 @@ export type CommentData = { id: string; milestone_id: string; body: string; auth
 
 // ── MilestoneRow ───────────────────────────────────────────────────────────────
 function MilestoneRow({
-  m, docById, partyById, parties, comments, members, currentUserId, projectId, highlight,
+  m, docs, docById, partyById, parties, comments, members, currentUserId, projectId, highlight,
 }: {
   m: MilestoneData;
+  docs: DocData[];
   docById: Map<string, DocData>;
   partyById: Map<string, PartyData>;
   parties: PartyData[];
@@ -128,6 +129,12 @@ function MilestoneRow({
           <div className="text-xs text-slate-500 mt-0.5">
             {dateLabel && (m.due_at ? `Frist: ${dateLabel}` : dateLabel)}
             {party && ` • ${party.name}`}
+            {sourceDoc && (
+              <span className="text-slate-400">
+                {" · "}
+                {hasLink ? "📎" : "📝"} {sourceDoc.title}
+              </span>
+            )}
           </div>
 
           {m.description && (
@@ -178,6 +185,9 @@ function MilestoneRow({
             milestoneId={m.id}
             projectId={projectId}
             hasFileLink={hasLink}
+            currentDocumentId={m.source_document_id}
+            currentDocumentTitle={sourceDoc?.title ?? null}
+            docs={docs}
           />
           <PushToCalendarButton
             milestoneId={m.id}
@@ -285,7 +295,7 @@ export default function TimelineSearchWrapper({
   const totalMatches = filteredUpcoming.length + filteredPast.length;
 
   const rowProps = (m: MilestoneData, highlight = false) => ({
-    m, docById, partyById, parties, members, currentUserId, projectId, highlight,
+    m, docs, docById, partyById, parties, members, currentUserId, projectId, highlight,
     comments: commentsByMs.get(m.id) || [],
   });
 

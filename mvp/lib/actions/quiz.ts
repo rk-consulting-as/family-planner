@@ -7,6 +7,7 @@ import { revalidatePath } from 'next/cache'
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 export type QuizLevel = 'lett' | 'middels' | 'vanskelig'
+export type QuizLanguage = 'norsk' | 'engelsk'
 
 export interface QuizOption {
   text: string
@@ -28,6 +29,7 @@ export interface Quiz {
   subject: string
   topic: string
   level: QuizLevel
+  language: QuizLanguage
   question_count: number
   created_by: string | null
   created_at: string
@@ -51,7 +53,7 @@ export async function getQuizzes(): Promise<Quiz[]> {
   const supabase = await createClient()
   const { data } = await supabase
     .from('quizzes')
-    .select('id,group_id,subject,topic,level,question_count,created_by,created_at')
+    .select('id,group_id,subject,topic,level,language,question_count,created_by,created_at')
     .eq('group_id', ctx.group.id)
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
@@ -64,7 +66,7 @@ export async function getQuiz(id: string): Promise<Quiz | null> {
   const supabase = await createClient()
   const { data } = await supabase
     .from('quizzes')
-    .select('id,group_id,subject,topic,level,question_count,created_by,created_at')
+    .select('id,group_id,subject,topic,level,language,question_count,created_by,created_at')
     .eq('id', id)
     .eq('group_id', ctx.group.id)
     .is('deleted_at', null)

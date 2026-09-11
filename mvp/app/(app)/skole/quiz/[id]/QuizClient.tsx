@@ -197,6 +197,9 @@ export default function QuizClient({ quiz, questions, currentUserId, myBestSessi
                 {LEVEL_LABELS[quiz.level] ?? quiz.level}
               </span>
               <span style={{ background: C.surfaceLow, border: `1px solid ${C.border}`, color: C.textMid, borderRadius: "0.4rem", padding: "0.15rem 0.6rem", fontSize: "0.78rem", fontWeight: 600 }}>
+                {quiz.language === "engelsk" ? "🇬🇧 English" : "🇳🇴 Norsk"}
+              </span>
+              <span style={{ background: C.surfaceLow, border: `1px solid ${C.border}`, color: C.textMid, borderRadius: "0.4rem", padding: "0.15rem 0.6rem", fontSize: "0.78rem", fontWeight: 600 }}>
                 {questions.length} spørsmål
               </span>
             </div>

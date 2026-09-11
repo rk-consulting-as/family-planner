@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles, BookOpen, Trophy, Trash2, Plus, X, ChevronRight, Loader2 } from "lucide-react";
+import { Sparkles, BookOpen, Trophy, Trash2, Plus, X, ChevronRight, Loader2, RefreshCw } from "lucide-react";
 import { deleteQuiz } from "@/lib/actions/quiz";
 import type { Quiz } from "@/lib/actions/quiz";
 
@@ -40,11 +40,13 @@ export default function QuizListClient({ quizzes, sessionMap, currentUserId }: P
   const [showNew, setShowNew] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
   const [form, setForm] = useState({
     subject: "Engelsk fordypning",
     subjectCustom: "",
     topic: "",
     level: "middels" as "lett" | "middels" | "vanskelig",
+    language: "engelsk" as "norsk" | "engelsk",
     questionCount: 8,
   });
 
@@ -58,6 +60,24 @@ export default function QuizListClient({ quizzes, sessionMap, currentUserId }: P
     display: "block", color: C.textMid, fontSize: "0.775rem",
     fontWeight: 600, marginBottom: "0.3rem",
   };
+
+  async function handleRegenerate(quizId: string, targetLang: "norsk" | "engelsk") {
+    setRegeneratingId(quizId);
+    try {
+      const resp = await fetch(`/api/quiz/${quizId}/regenerate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ language: targetLang }),
+      });
+      const data = await resp.json();
+      if (!data.ok) alert(data.error ?? "Feil ved regenerering.");
+      else router.refresh();
+    } catch {
+      alert("Nettverksfeil ved regenerering.");
+    } finally {
+      setRegeneratingId(null);
+    }
+  }
 
   async function handleGenerate() {
     const subject = form.subject === "Annet" ? form.subjectCustom.trim() : form.subject;
@@ -75,6 +95,7 @@ export default function QuizListClient({ quizzes, sessionMap, currentUserId }: P
           subject,
           topic: form.topic.trim(),
           level: form.level,
+          language: form.language,
           questionCount: form.questionCount,
         }),
       });
@@ -159,6 +180,26 @@ export default function QuizListClient({ quizzes, sessionMap, currentUserId }: P
                   <option value="vanskelig">Vanskelig — dyp analyse</option>
                 </select>
               </div>
+              <div>
+                <label style={lbl}>Språk</label>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+                  {(["engelsk", "norsk"] as const).map(lang => (
+                    <button
+                      key={lang}
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, language: lang }))}
+                      style={{
+                        padding: "0.55rem", borderRadius: "0.625rem", fontSize: "0.82rem", fontWeight: 700, cursor: "pointer",
+                        border: `2px solid ${form.language === lang ? C.primary : C.border}`,
+                        background: form.language === lang ? C.surfaceLow : C.surface,
+                        color: form.language === lang ? C.primary : C.textMid,
+                      }}
+                    >
+                      {lang === "engelsk" ? "🇬🇧 Engelsk" : "🇳🇴 Norsk"}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
             <div style={{ marginBottom: "0.875rem" }}>
@@ -239,6 +280,9 @@ export default function QuizListClient({ quizzes, sessionMap, currentUserId }: P
                       <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap", marginBottom: "0.2rem" }}>
                         <span style={{ fontWeight: 700, color: C.text, fontSize: "0.9rem" }}>{q.topic}</span>
                         <span style={{ background: lvl.bg, border: `1px solid ${lvl.border}`, color: lvl.color, borderRadius: "0.3rem", padding: "0.05rem 0.45rem", fontSize: "0.68rem", fontWeight: 700 }}>{lvl.label}</span>
+                        <span style={{ background: C.surfaceLow, border: `1px solid ${C.border}`, color: C.textMid, borderRadius: "0.3rem", padding: "0.05rem 0.45rem", fontSize: "0.68rem", fontWeight: 600 }}>
+                          {q.language === "engelsk" ? "🇬🇧 EN" : "🇳🇴 NO"}
+                        </span>
                       </div>
                       <div style={{ fontSize: "0.78rem", color: C.textMuted }}>
                         {q.subject} · {q.question_count} spørsmål
@@ -267,8 +311,33 @@ export default function QuizListClient({ quizzes, sessionMap, currentUserId }: P
                     </div>
                   </button>
 
-                  {/* Delete row */}
-                  <div style={{ borderTop: `1px solid ${C.border}`, padding: "0.4rem 1rem", display: "flex", justifyContent: "flex-end" }}>
+                  {/* Actions row */}
+                  <div style={{ borderTop: `1px solid ${C.border}`, padding: "0.4rem 1rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ display: "flex", gap: "0.625rem" }}>
+                      {/* Regenerate to opposite language */}
+                      {(["engelsk", "norsk"] as const).map(lang => {
+                        const isCurrentLang = q.language === lang;
+                        const isRegen = regeneratingId === q.id;
+                        return (
+                          <button
+                            key={lang}
+                            onClick={() => !isCurrentLang && handleRegenerate(q.id, lang)}
+                            disabled={isCurrentLang || isRegen}
+                            style={{
+                              background: "none", border: "none", cursor: isCurrentLang ? "default" : "pointer",
+                              fontSize: "0.72rem", color: isCurrentLang ? C.border : C.primary,
+                              display: "flex", alignItems: "center", gap: "0.25rem",
+                              fontWeight: isCurrentLang ? 400 : 600, opacity: isCurrentLang ? 0.4 : 1,
+                            }}
+                          >
+                            {isRegen && !isCurrentLang
+                              ? <><Loader2 size={11} /> Genererer…</>
+                              : <><RefreshCw size={11} /> {lang === "engelsk" ? "🇬🇧 Bytt til EN" : "🇳🇴 Bytt til NO"}</>
+                            }
+                          </button>
+                        );
+                      })}
+                    </div>
                     <button
                       onClick={async () => {
                         if (confirm("Slette denne quizen?")) {

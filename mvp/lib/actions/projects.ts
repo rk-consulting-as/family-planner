@@ -582,6 +582,45 @@ export async function attachFileToMilestone(
   return { ok: true, document_id: docId };
 }
 
+/** Knytt et eksisterende prosjekt-dokument til en milestone (kan deles av flere hendelser). */
+export async function linkDocumentToMilestone(
+  milestone_id: string,
+  project_id: string,
+  document_id: string
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Ikke innlogget" };
+
+  const { data: doc, error: docErr } = await supabase
+    .from("project_documents")
+    .select("id")
+    .eq("id", document_id)
+    .eq("project_id", project_id)
+    .single();
+  if (docErr || !doc) return { ok: false, error: "Fant ikke dokumentet" };
+
+  const { data: ms, error: msErr } = await supabase
+    .from("project_milestones")
+    .select("id")
+    .eq("id", milestone_id)
+    .eq("project_id", project_id)
+    .single();
+  if (msErr || !ms) return { ok: false, error: "Fant ikke hendelsen" };
+
+  const { error } = await supabase
+    .from("project_milestones")
+    .update({ source_document_id: document_id })
+    .eq("id", milestone_id);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/prosjekter/${project_id}`);
+  revalidatePath("/utredning/dokumentasjon");
+  return { ok: true };
+}
+
 // ----- AI extraction --------------------------------------------------
 
 export type ExtractedSuggestion = {
