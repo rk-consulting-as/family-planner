@@ -8,7 +8,7 @@ import { startQuizSession, saveAnswer, finishQuizSession } from "@/lib/actions/q
 import type { Quiz, QuizQuestion } from "@/lib/actions/quiz";
 
 const LEVEL_LABELS: Record<string, string> = {
-  lett: "Lett", middels: "Middels", vanskelig: "Vanskelig",
+  grunnleggende: "Grunnleggende", lett: "Lett", middels: "Middels", vanskelig: "Vanskelig",
 };
 
 const OPTION_LETTERS = ["A", "B", "C", "D"];

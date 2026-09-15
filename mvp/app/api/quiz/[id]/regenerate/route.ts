@@ -11,14 +11,16 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const LEVEL_INSTRUCTIONS: Record<string, Record<string, string>> = {
   norsk: {
-    lett:      'Enkle og grunnleggende spørsmål. Enkelt språk.',
-    middels:   'Krever forståelse av sammenhenger, ikke bare fakta.',
-    vanskelig: 'Dyp forståelse, analyse og vurdering. Plausible distraktorer.',
+    grunnleggende: 'KUN direkte faktaspørsmål (hvem/hva/hvor/når). Ingen tolkning. Åpenbart gale svaralternativer. Korte setninger, enkelt ordforråd. Maks 12 ord per spørsmål. Høy mestringsfølelse.',
+    lett:          'Enkle og grunnleggende spørsmål. Enkelt språk. Kan inkludere enkle sammenhenger.',
+    middels:       'Krever forståelse av sammenhenger, ikke bare fakta.',
+    vanskelig:     'Dyp forståelse, analyse og vurdering. Plausible distraktorer.',
   },
   engelsk: {
-    lett:      'Simple and factual questions. Clear, straightforward language.',
-    middels:   'Require understanding of context, not just memorised facts.',
-    vanskelig: 'Challenge deeper understanding, analysis or evaluation. Plausible distractors.',
+    grunnleggende: 'ONLY direct factual questions (who/what/where/when). No inference. Obviously wrong distractors. Short sentences, simple vocabulary. Max 12 words per question. High success rate.',
+    lett:          'Simple and factual questions. Clear, straightforward language. May include basic connections.',
+    middels:       'Require understanding of context, not just memorised facts.',
+    vanskelig:     'Challenge deeper understanding, analysis or evaluation. Plausible distractors.',
   },
 };
 

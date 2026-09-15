@@ -7,9 +7,10 @@ import { deleteQuiz } from "@/lib/actions/quiz";
 import type { Quiz } from "@/lib/actions/quiz";
 
 const LEVEL_LABELS: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  lett:      { label: "Lett",      color: "#1b5e20", bg: "#e8f5e9", border: "#81c784" },
-  middels:   { label: "Middels",   color: "#e65100", bg: "#fff3e0", border: "#ffb74d" },
-  vanskelig: { label: "Vanskelig", color: "#b71c1c", bg: "#fde8e8", border: "#f28b82" },
+  grunnleggende: { label: "Grunnleggende", color: "#0d47a1", bg: "#e3f2fd", border: "#90caf9" },
+  lett:          { label: "Lett",          color: "#1b5e20", bg: "#e8f5e9", border: "#81c784" },
+  middels:       { label: "Middels",       color: "#e65100", bg: "#fff3e0", border: "#ffb74d" },
+  vanskelig:     { label: "Vanskelig",     color: "#b71c1c", bg: "#fde8e8", border: "#f28b82" },
 };
 
 const C = {
@@ -46,7 +47,7 @@ export default function QuizListClient({ quizzes, sessionMap, currentUserId }: P
     subjectCustom: "",
     topic: "",
     focus: "",
-    level: "middels" as "lett" | "middels" | "vanskelig",
+    level: "middels" as "grunnleggende" | "lett" | "middels" | "vanskelig",
     language: "engelsk" as "norsk" | "engelsk",
     questionCount: 8,
   });
@@ -176,7 +177,8 @@ export default function QuizListClient({ quizzes, sessionMap, currentUserId }: P
               )}
               <div>
                 <label style={lbl}>Nivå</label>
-                <select value={form.level} onChange={e => setForm(f => ({ ...f, level: e.target.value as "lett" | "middels" | "vanskelig" }))} style={inp}>
+                <select value={form.level} onChange={e => setForm(f => ({ ...f, level: e.target.value as "grunnleggende" | "lett" | "middels" | "vanskelig" }))} style={inp}>
+                  <option value="grunnleggende">Grunnleggende — kun faktaspørsmål</option>
                   <option value="lett">Lett — enkle grunnspørsmål</option>
                   <option value="middels">Middels — krever forståelse</option>
                   <option value="vanskelig">Vanskelig — dyp analyse</option>

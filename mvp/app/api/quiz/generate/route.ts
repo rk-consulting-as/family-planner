@@ -10,12 +10,14 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const LEVEL_INSTRUCTIONS: Record<string, Record<string, string>> = {
   norsk: {
-    lett:      'Spørsmålene skal være enkle og grunnleggende. Bruk enkelt språk. Svarene skal være tydelige. Passer for elever som akkurat har lært emnet.',
+    grunnleggende: 'Dette er det enkleste nivået, for elever som trenger å bygge mestringstro gradvis. Spørsmålene skal KUN spørre om fakta som er direkte og eksplisitt uttalt i materialet — ingen tolkning, slutning, analyse eller mening kreves. Bruk bare spørretypene hvem/hva/hvor/når. Gale svaralternativer skal være åpenbart og tydelig gale — ikke subtile. Bruk korte, enkle setninger og enkelt ordforråd. Maks 12 ord per spørsmål. Eleven skal oppleve høy mestringsfølelse.',
+    lett:      'Spørsmålene skal være enkle og grunnleggende. Bruk enkelt språk. Svarene skal være tydelige. Passer for elever som akkurat har lært emnet. Kan inkludere enkle sammenhenger.',
     middels:   'Spørsmålene skal kreve at eleven forstår sammenhengen, ikke bare husker fakta. Moderat vanskelighetsgrad.',
     vanskelig: 'Spørsmålene skal utfordre og kreve inngående forståelse, analyse eller vurdering. Distraktorer i flervalg skal være plausible.',
   },
   engelsk: {
-    lett:      'Questions should be simple and factual. Use clear, straightforward language suitable for students who have just learned the topic.',
+    grunnleggende: 'This is the easiest level, for students who need to rebuild confidence step by step. Questions must ONLY ask about facts that are directly and explicitly stated in the material — no inference, interpretation, analysis or opinion required. Only use question types: who/what/where/when. Wrong answers must be obviously and clearly incorrect — not subtle. Use short, simple sentences and basic vocabulary. Maximum 12 words per question. The student should experience a high success rate.',
+    lett:      'Questions should be simple and factual. Use clear, straightforward language suitable for students who have just learned the topic. May include basic connections.',
     middels:   'Questions should require understanding of context and connections, not just memorised facts. Moderate difficulty.',
     vanskelig: 'Questions should challenge deeper understanding, analysis or evaluation. Distractors (wrong answers) should be plausible.',
   },
@@ -135,7 +137,7 @@ export async function POST(request: NextRequest) {
     } = body as {
       subject: string;
       topic: string;
-      level: 'lett' | 'middels' | 'vanskelig';
+      level: 'grunnleggende' | 'lett' | 'middels' | 'vanskelig';
       questionCount: number;
       language?: 'norsk' | 'engelsk';
       focus?: string;

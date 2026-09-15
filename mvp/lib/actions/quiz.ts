@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
-export type QuizLevel = 'lett' | 'middels' | 'vanskelig'
+export type QuizLevel = 'grunnleggende' | 'lett' | 'middels' | 'vanskelig'
 export type QuizLanguage = 'norsk' | 'engelsk'
 
 export interface QuizOption {
