@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Scale, Plus, AlertTriangle, CheckCircle2, Clock, FileText,
-  ChevronDown, ChevronUp, BookOpen, X, Check, Trash2, Compass
+  ChevronDown, ChevronUp, BookOpen, X, Check, Trash2, Compass,
+  Sparkles, Loader2, ThumbsUp, ThumbsDown
 } from "lucide-react";
 import {
   createCaseEvent, deleteCaseEvent, markFollowUpDone
@@ -331,6 +332,71 @@ export default function SakClient({ events, documents }: Props) {
   const [showGuide, setShowGuide] = useState(false);
   const [expandedPhase, setExpandedPhase] = useState<number | null>(null);
 
+  // AI-assistent state
+  const [aiField, setAiField] = useState<string | null>(null); // which field is loading
+  const [aiSuggestion, setAiSuggestion] = useState<{
+    field: string;
+    improved: string;
+    follow_up_suggestions: string[];
+  } | null>(null);
+
+  async function requestAiAssist(field: 'description' | 'outcome' | 'violation_notes' | 'follow_up_notes') {
+    setAiField(field);
+    setAiSuggestion(null);
+    try {
+      const resp = await fetch('/api/sak/ai-assist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          field,
+          current_text: form[field] || '',
+          context: {
+            title: form.title,
+            event_date: form.event_date,
+            institution: form.institution,
+            event_type: form.event_type,
+            attendees: form.attendees,
+            responsible_party: form.responsible_party,
+          },
+          history: events.map(e => ({
+            event_date: e.event_date,
+            event_type: e.event_type,
+            institution: e.institution,
+            title: e.title,
+            description: e.description ?? undefined,
+            outcome: e.outcome ?? undefined,
+            follow_up_notes: e.follow_up_notes ?? undefined,
+            is_rights_violation: e.is_rights_violation,
+          })),
+        }),
+      });
+      const data = await resp.json();
+      if (data.ok) {
+        setAiSuggestion({ field, improved: data.improved, follow_up_suggestions: data.follow_up_suggestions ?? [] });
+      }
+    } catch {
+      // silently fail — user can retry
+    } finally {
+      setAiField(null);
+    }
+  }
+
+  function acceptAiSuggestion() {
+    if (!aiSuggestion) return;
+    const field = aiSuggestion.field as keyof typeof form;
+    setForm(f => ({ ...f, [field]: aiSuggestion.improved }));
+    // If follow-up suggestions exist and follow_up_required not yet set, pre-fill follow_up_notes
+    if (aiSuggestion.follow_up_suggestions.length > 0 && !form.follow_up_notes) {
+      setForm(f => ({
+        ...f,
+        [field]: aiSuggestion!.improved,
+        follow_up_required: true,
+        follow_up_notes: aiSuggestion!.follow_up_suggestions.join('\n'),
+      }));
+    }
+    setAiSuggestion(null);
+  }
+
   // New event form state
   const [form, setForm] = useState({
     event_date: new Date().toISOString().split("T")[0],
@@ -415,8 +481,83 @@ export default function SakClient({ events, documents }: Props) {
     fontWeight: 600, marginBottom: "0.3rem",
   };
 
+  // Reusable AI label row
+  function AiLabelRow({ fieldKey, label }: { fieldKey: 'description' | 'outcome' | 'violation_notes' | 'follow_up_notes'; label: string }) {
+    const isLoading = aiField === fieldKey;
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.3rem" }}>
+        <label style={{ ...lbl, marginBottom: 0 }}>{label}</label>
+        <button
+          type="button"
+          onClick={() => requestAiAssist(fieldKey)}
+          disabled={isLoading}
+          title="Få hjelp av AI til å formulere teksten"
+          style={{
+            background: "none", border: `1px solid ${C.border}`, borderRadius: "0.5rem",
+            padding: "0.2rem 0.55rem", cursor: isLoading ? "not-allowed" : "pointer",
+            fontSize: "0.72rem", fontWeight: 600, color: C.primary,
+            display: "flex", alignItems: "center", gap: "0.3rem",
+            opacity: isLoading ? 0.6 : 1,
+          }}
+        >
+          {isLoading
+            ? <><Loader2 size={11} style={{ animation: "spin 1s linear infinite" }} /> Tenker…</>
+            : <><Sparkles size={11} /> AI-hjelp</>
+          }
+        </button>
+      </div>
+    );
+  }
+
+  // AI suggestion box
+  function AiSuggestionBox({ fieldKey }: { fieldKey: string }) {
+    if (!aiSuggestion || aiSuggestion.field !== fieldKey) return null;
+    return (
+      <div style={{ marginTop: "0.5rem", background: "#f0f7ff", border: `1px solid ${C.primary}`, borderRadius: "0.75rem", padding: "0.875rem", fontSize: "0.83rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.5rem", color: C.primary, fontWeight: 700, fontSize: "0.78rem" }}>
+          <Sparkles size={13} /> AI-forslag
+        </div>
+        <div style={{ color: C.text, whiteSpace: "pre-wrap", lineHeight: 1.55, marginBottom: "0.75rem" }}>
+          {aiSuggestion.improved}
+        </div>
+        {aiSuggestion.follow_up_suggestions.length > 0 && (
+          <div style={{ marginBottom: "0.75rem", background: "#fff8e1", border: "1px solid #ffe082", borderRadius: "0.5rem", padding: "0.625rem 0.75rem" }}>
+            <div style={{ fontWeight: 700, fontSize: "0.72rem", color: "#e65100", marginBottom: "0.3rem" }}>💡 Foreslåtte oppfølgingspunkter:</div>
+            {aiSuggestion.follow_up_suggestions.map((s, i) => (
+              <div key={i} style={{ fontSize: "0.78rem", color: "#5d4037", marginBottom: "0.15rem" }}>· {s}</div>
+            ))}
+          </div>
+        )}
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          <button
+            type="button"
+            onClick={acceptAiSuggestion}
+            style={{ background: C.primary, color: "#fff", border: "none", borderRadius: "0.5rem", padding: "0.4rem 0.875rem", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "0.3rem" }}
+          >
+            <ThumbsUp size={12} /> Bruk forslag
+          </button>
+          <button
+            type="button"
+            onClick={() => setAiSuggestion(null)}
+            style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: "0.5rem", padding: "0.4rem 0.875rem", fontSize: "0.78rem", fontWeight: 600, cursor: "pointer", color: C.textMid, display: "flex", alignItems: "center", gap: "0.3rem" }}
+          >
+            <ThumbsDown size={12} /> Avvis
+          </button>
+          <button
+            type="button"
+            onClick={() => requestAiAssist(fieldKey as 'description' | 'outcome' | 'violation_notes' | 'follow_up_notes')}
+            style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: "0.5rem", padding: "0.4rem 0.875rem", fontSize: "0.78rem", fontWeight: 600, cursor: "pointer", color: C.primary, display: "flex", alignItems: "center", gap: "0.3rem" }}
+          >
+            <Sparkles size={11} /> Prøv igjen
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ minHeight: "100vh", background: C.bg }}>
+      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
       <div style={{ maxWidth: 720, margin: "0 auto", padding: "2rem 1.25rem" }}>
 
         {/* Header */}
@@ -650,10 +791,11 @@ export default function SakClient({ events, documents }: Props) {
             </div>
 
             <div style={{ marginBottom: "0.875rem" }}>
-              <label style={lbl}>Utfyllende beskrivelse</label>
+              <AiLabelRow fieldKey="description" label="Utfyllende beskrivelse" />
               <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                placeholder="Hva skjedde? Hva ble sagt? Hva ble lovet men ikke holdt?" rows={4}
+                placeholder="Hva skjedde? Hva ble sagt? Hva ble lovet men ikke holdt? — eller skriv stikkord og trykk AI-hjelp" rows={4}
                 style={{ ...inp, resize: "vertical" }} />
+              <AiSuggestionBox fieldKey="description" />
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.875rem", marginBottom: "0.875rem" }}>
@@ -662,8 +804,9 @@ export default function SakClient({ events, documents }: Props) {
                 <input value={form.attendees} onChange={e => setForm(f => ({ ...f, attendees: e.target.value }))} placeholder="Navn, navn, navn..." style={inp} />
               </div>
               <div>
-                <label style={lbl}>Resultat / vedtak</label>
+                <AiLabelRow fieldKey="outcome" label="Resultat / vedtak" />
                 <input value={form.outcome} onChange={e => setForm(f => ({ ...f, outcome: e.target.value }))} placeholder="Hva ble bestemt?" style={inp} />
+                <AiSuggestionBox fieldKey="outcome" />
               </div>
             </div>
 
@@ -708,9 +851,13 @@ export default function SakClient({ events, documents }: Props) {
                 </span>
               </label>
               {form.is_rights_violation && (
-                <textarea value={form.violation_notes} onChange={e => setForm(f => ({ ...f, violation_notes: e.target.value }))}
-                  placeholder="Beskriv hva som ble brutt og konsekvensene..." rows={2}
-                  style={{ ...inp, marginTop: "0.625rem", resize: "vertical", background: C.surface }} />
+                <div style={{ marginTop: "0.625rem" }}>
+                  <AiLabelRow fieldKey="violation_notes" label="Beskriv hva som ble brutt" />
+                  <textarea value={form.violation_notes} onChange={e => setForm(f => ({ ...f, violation_notes: e.target.value }))}
+                    placeholder="Beskriv hva som ble brutt og konsekvensene..." rows={2}
+                    style={{ ...inp, resize: "vertical", background: C.surface }} />
+                  <AiSuggestionBox fieldKey="violation_notes" />
+                </div>
               )}
             </div>
 
@@ -721,8 +868,13 @@ export default function SakClient({ events, documents }: Props) {
                 Krever oppfølging
               </label>
               {form.follow_up_required && (
-                <input value={form.follow_up_notes} onChange={e => setForm(f => ({ ...f, follow_up_notes: e.target.value }))}
-                  placeholder="Hva må følges opp og av hvem?" style={{ ...inp, marginTop: "0.5rem" }} />
+                <div style={{ marginTop: "0.5rem" }}>
+                  <AiLabelRow fieldKey="follow_up_notes" label="Hva må følges opp?" />
+                  <textarea value={form.follow_up_notes} onChange={e => setForm(f => ({ ...f, follow_up_notes: e.target.value }))}
+                    placeholder="Hva må følges opp og av hvem? — eller trykk AI-hjelp for forslag basert på historikk" rows={2}
+                    style={{ ...inp, resize: "vertical" }} />
+                  <AiSuggestionBox fieldKey="follow_up_notes" />
+                </div>
               )}
             </div>
 
