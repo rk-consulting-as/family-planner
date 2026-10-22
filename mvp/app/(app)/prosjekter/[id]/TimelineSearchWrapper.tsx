@@ -166,6 +166,10 @@ function MilestoneRow({
             comments={comments}
             members={members}
             currentUserId={currentUserId}
+            milestoneTitle={m.title}
+            milestoneDescription={m.description}
+            milestoneKind={m.kind}
+            milestoneDate={m.occurred_at ?? m.due_at}
           />
         </div>
 
